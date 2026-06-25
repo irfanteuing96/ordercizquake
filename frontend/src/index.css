@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@theme {
+  --color-on-error: #ffffff;
+  --color-surface-container-high: #ffe2dd;
+  --color-surface-container-highest: #ffdad4;
+  --color-secondary-fixed: #f7e28e;
+  --color-primary-fixed-dim: #fabd00;
+  --color-surface-tint: #785900;
+  --color-on-secondary: #ffffff;
+  --color-secondary-fixed-dim: #dac675;
+  --color-secondary: #6c5e17;
+  --color-on-primary-container: #6d5100;
+  --color-on-tertiary-fixed-variant: #763300;
+  --color-inverse-on-surface: #ffedea;
+  --color-surface-container: #ffe9e5;
+  --color-on-error-container: #93000a;
+  --color-primary: #785900;
+  --color-surface-variant: #ffdad4;
+  --color-background: #fff8f6;
+  --color-secondary-container: #f4df8c;
+  --color-surface-dim: #f8d1cb;
+  --color-surface-container-low: #fff0ee;
+  --color-on-tertiary-container: #8c3e00;
+  --color-inverse-primary: #fabd00;
+  --color-inverse-surface: #422a26;
+  --color-on-surface: #2b1613;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary: #9b4500;
+  --color-on-secondary-container: #71621c;
+  --color-tertiary-container: #ffbc97;
+  --color-on-surface-variant: #4f4632;
+  --color-error: #ba1a1a;
+  --color-on-primary-fixed-variant: #5b4300;
+  --color-tertiary-fixed: #ffdbc9;
+  --color-surface-bright: #fff8f6;
+  --color-on-tertiary-fixed: #331200;
+  --color-outline-variant: #d4c5ab;
+  --color-primary-fixed: #ffdf9e;
+  --color-on-secondary-fixed: #221b00;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-fixed-variant: #534600;
+  --color-tertiary-fixed-dim: #ffb68d;
+  --color-on-background: #2b1613;
+  --color-outline: #827660;
+  --color-on-primary: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-primary-container: #ffc107;
+  --color-on-primary-fixed: #261a00;
+  --color-surface: #fff8f6;
+
+  --spacing-container-margin-mobile: 20px;
+
+  --font-display: Montserrat, sans-serif;
+  --font-body: Quicksand, sans-serif;
+  --font-label: Quicksand, sans-serif;
+}
+
+body {
+    background-color: #fff8f6; /* Surface background */
+    color: #2b1613; /* on-background */
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Quicksand', sans-serif;
+    min-height: 100vh;
+}
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+}
+
+.custom-shadow {
+    box-shadow: 0 20px 40px rgba(66, 42, 38, 0.06);
+}
+
+.item-card-shadow {
+    box-shadow: 0 4px 20px 0 rgba(66, 42, 38, 0.06);
+}
+
+.cake-card-shadow {
+    box-shadow: 0 20px 40px -15px rgba(66, 42, 38, 0.06);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Limit max width on desktop and center it for a premium mobile-first look */
+#root {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: #fffbf7; /* Warm cream background */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 50px rgba(66, 42, 38, 0.08);
+}
+
+/* Robust styling overrides to ensure match with Foto 1 regardless of Tailwind v4 dynamic compilation */
+.cizquake-featured-badge {
+    background-color: #fabd00 !important;
+    color: #2b1613 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    padding: 4px 12px !important;
+    border-radius: 9999px !important;
+    text-transform: uppercase !important;
+}
+
+.cizquake-btn-order-now {
+    background-color: #fabd00 !important;
+    color: #2b1613 !important;
+    font-weight: 800 !important;
+    padding: 10px 20px !important;
+    border-radius: 9999px !important;
+    font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(250, 189, 0, 0.3) !important;
+}
+
+.cizquake-card {
+    background-color: #ffffff !important;
+    border: none !important;
+    border-radius: 16px !important; /* Made border radius smaller */
+    box-shadow: 0 10px 25px rgba(66, 42, 38, 0.04) !important;
+    overflow: hidden !important;
+}
+
+.cizquake-btn-add {
+    background-color: #fabd00 !important;
+    color: #ffffff !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 9999px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    transition: all 0.2s !important;
+}
+
+.cizquake-btn-add:active {
+    transform: scale(0.9) !important;
+}
+
+.cizquake-btn-add-small {
+    background-color: #fabd00 !important;
+    color: #ffffff !important;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 9999px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: none !important;
+    transition: all 0.2s !important;
+}
+
+.cizquake-btn-add-small:active {
+    transform: scale(0.9) !important;
+}
+
+.cizquake-nav-active {
+    background-color: #fabd00 !important;
+    color: #6d5100 !important;
+    border-radius: 9999px !important;
+    font-weight: 800 !important;
+    padding: 8px 16px !important;
+}
+

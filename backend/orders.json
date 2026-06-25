@@ -1,0 +1,375 @@
+[
+  {
+    "orderId": "CIZ-1782311165863",
+    "customer": {
+      "name": "Budi Santoso",
+      "phone": "08123456789"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      },
+      {
+        "id": "mini-strawberry",
+        "name": "Mini Box - Strawberry",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi Selatan III No.27, Cijaura, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 55500,
+    "shippingPrice": 12500,
+    "grossAmount": 68000,
+    "paymentStatus": "paid",
+    "shippingStatus": "delivered",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-1782311179209",
+      "courier_driver_name": "Budi Santoso (GoSend)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-24T14:26:05.863Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782311165863-68000",
+    "paymentExpiry": "2026-06-24T14:41:05.871Z"
+  },
+  {
+    "orderId": "CIZ-1782319795870",
+    "customer": {
+      "name": "irfan",
+      "phone": "0821145023"
+    },
+    "items": [
+      {
+        "id": "mini-strawberry",
+        "name": "Mini Box - Strawberry",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "saturnus\n, Lengkong, Kota Bandung",
+      "latitude": -6.9284,
+      "longitude": 107.6234,
+      "courierCompany": "gosend",
+      "courierService": "Same Day"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 15000,
+    "grossAmount": 33500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-24T16:49:55.870Z"
+  },
+  {
+    "orderId": "CIZ-1782319979883",
+    "customer": {
+      "name": "irfan",
+      "phone": "0821145023"
+    },
+    "items": [
+      {
+        "id": "mini-strawberry",
+        "name": "Mini Box - Strawberry",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "saturnus\n, Lengkong, Kota Bandung",
+      "latitude": -6.9284,
+      "longitude": 107.6234,
+      "courierCompany": "gosend",
+      "courierService": "Same Day"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 15000,
+    "grossAmount": 33500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-24T16:52:59.883Z"
+  },
+  {
+    "orderId": "CIZ-1782320000403",
+    "customer": {
+      "name": "AS",
+      "phone": "821424382"
+    },
+    "items": [
+      {
+        "id": "mini-strawberry",
+        "name": "Mini Box - Strawberry",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "SADFASAS, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 12500,
+    "grossAmount": 31000,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-24T16:53:20.403Z"
+  },
+  {
+    "orderId": "CIZ-1782320040877",
+    "customer": {
+      "name": "asas",
+      "phone": "09232371"
+    },
+    "items": [
+      {
+        "id": "mini-oreo",
+        "name": "Mini Box - Oreo",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "sadfasdfas, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 12500,
+    "grossAmount": 31000,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-24T16:54:00.877Z"
+  },
+  {
+    "orderId": "CIZ-1782369954018",
+    "customer": {
+      "name": "Ahmad",
+      "phone": "081234567890"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi No. 12, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 12500,
+    "grossAmount": 49500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-25T06:45:54.019Z"
+  },
+  {
+    "orderId": "CIZ-1782370044444",
+    "customer": {
+      "name": "Ahmad",
+      "phone": "081234567890"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi No. 12, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 12500,
+    "grossAmount": 49500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-25T06:47:24.446Z"
+  },
+  {
+    "orderId": "CIZ-1782370197058",
+    "customer": {
+      "name": "Ahmad",
+      "phone": "081234567890"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi No. 12, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 12500,
+    "grossAmount": 49500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-25T06:49:57.058Z"
+  },
+  {
+    "orderId": "CIZ-1782370462086",
+    "customer": {
+      "name": "Ahmad",
+      "phone": "081234567890"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi No. 12, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "grab",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 13000,
+    "grossAmount": 50000,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-25T06:54:22.086Z"
+  },
+  {
+    "orderId": "CIZ-1782370681625",
+    "customer": {
+      "name": "Ahmad",
+      "phone": "081234567890"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "CizQuake Medium Box",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Jl. Margawangi No. 12, Buahbatu, Kota Bandung",
+      "latitude": -6.9554,
+      "longitude": 107.6588,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 12500,
+    "grossAmount": 49500,
+    "paymentStatus": "paid",
+    "shippingStatus": "delivered",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-1782370700073",
+      "courier_driver_name": "Budi Santoso (GoSend)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-25T06:58:01.625Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782370681625-49500",
+    "paymentExpiry": "2026-06-25T07:13:02.176Z",
+    "paymentType": "qris_mock_fallback"
+  },
+  {
+    "orderId": "CIZ-1782405333998",
+    "customer": {
+      "name": "Yunus Fauzan",
+      "phone": "08433443344"
+    },
+    "items": [
+      {
+        "id": "berry-swirl-bliss",
+        "name": "Berry Swirl Bliss",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Rancasari, Bandung, Jawa Barat. 40292",
+      "courierCompany": "grab",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 23000,
+    "grossAmount": 41500,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-25T16:35:33.998Z"
+  },
+  {
+    "orderId": "CIZ-1782405335464",
+    "customer": {
+      "name": "Yunus Fauzan",
+      "phone": "08433443344"
+    },
+    "items": [
+      {
+        "id": "berry-swirl-bliss",
+        "name": "Berry Swirl Bliss",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Rancasari, Bandung, Jawa Barat. 40292",
+      "courierCompany": "grab",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 23000,
+    "grossAmount": 41500,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782405349381",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-25T16:35:35.464Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782405335464-41500",
+    "paymentExpiry": "2026-06-25T16:50:35.673Z",
+    "paymentType": "qris_mock_fallback"
+  }
+]

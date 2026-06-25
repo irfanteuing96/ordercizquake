@@ -1,0 +1,1345 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const BACKEND_URL = 'http://localhost:5000';
+
+// Menu data as parsed from ShopeeFood screenshots, enriched with premium descriptions
+const MENU_DATA = [
+  {
+    id: 'berry-swirl-bliss',
+    name: 'Berry Swirl Bliss',
+    category: 'Strawberry',
+    price: 18500,
+    sales: '1.2RB terjual',
+    description: 'Strawberry Swirl Cheesecake, featuring vibrant red berry compote marbled through a dense, creamy white base.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxMl1ARgdAywyrP3E_6iA4Ftme1mOye_AxHKZbBSgJ7NiC0R09ESlOdRWG7tny5VxBqlJR0yB5QCQXbZzdgIRyFxtdxXBajDzd4AdPOPe7GP89D_byP001e4Crssc97dD1IV4JbHfTwPNzRm3YKCFqZGoSCv1tDBSIs8sUnlbXKE3LGloWTQJtIeo1_6fBlmOjnFnj3pIIl1NPJUO3GPA9jmupRKATDvffggpn1hq24nEEFSTWvSOs9RGWOVZ2cpROCN3vrHXAKM1Y',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '1.2k'
+  },
+  {
+    id: 'midnight-cacao',
+    name: 'Midnight Cacao',
+    category: 'Dark Cacao',
+    price: 21000,
+    sales: '856 terjual',
+    description: 'A decadent Cacao Crust Cheesecake with a dark, crumbly chocolate base and a silky ganache topping.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCKrM0yHdoemoeIniGub_i3y9Ogrd7Lhfyc9IeDcxxHTrwWXtw_G16LfzJKxqtcDP2833Ih91ZsKxYt2VUrk9FoBOBvhul3T5VVzVnD4xg0WlammsBWdaUCVWIFjA525LQMHpGpJQpYtc4xJolwm1tZ0BJOhoJoUjrLKF9bgMvl2Irh7tZUadfDnpitL9CUNKx8rB_CWDXv6j1snilnVdgvho8vH3cuCDtwn_IJzEESedext74UEpv3mpaHZO8f62D1-soWr2Lzm2t',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '856'
+  },
+  {
+    id: 'sun-kissed-persimmon',
+    name: 'Sun-Kissed Persimmon',
+    category: 'Persimmon',
+    price: 19900,
+    sales: '430 terjual',
+    description: 'A vibrant Persimmon Glazed Cheesecake with a bright orange, translucent mirror glaze topping.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBulOywWjOOoMp5nnVbfUMPgFGvBYC68MSCKAPsw5KGXATCTTDfXJRIePtzewPM_aZd1LQIX7Si4ZjoGiH33ooPT985iSZT-bO9YITwcZwNY4vZixICodeN1jSpOjp7tI8TJvibYNi5-7UmYHZjYhZw_ekmB_L7vEfKQUVPuCWs0UbrY73_4JtwI1rjixGxH4DwpohzRFW6nmoGNulQPPHqAbl-30zkyA5bm2M5M-hD5MAf23u7Uv-VkxR04_Plm3Nf4zt3605ZV5XB',
+    inStock: true,
+    rating: 4.7,
+    salesCount: '430'
+  },
+  {
+    id: 'basque-burnt-artisan',
+    name: 'Artisan Basque Burnt',
+    category: 'Classic Cream',
+    price: 22000,
+    sales: '2.1RB terjual',
+    description: 'A minimalist Japanese-style Burnt Basque Cheesecake with a deeply caramelized, dark brown top and creamy center.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1r-Bp3BRz1JCeg_ZjZoo0ecNYCPM5F8i1UTpstbASjcsHzoVXPDEZuEGMNc2-Baiz-cW-C-MYLQw1T7tveBUnMBVEwNsAhOxmunX1oiVMgQC4HtwRbNwD8hTWnV8eaWjX8_810RwSjMuI5CN1_wKTIgkT-HIayOapcuhBQADSbq_qxu6dvfFooHREs4Sx_JRefVx0spTnRczYV5RYPIS6ENFj6sGVuTz_QJVx7K9xuCXjkbM_KmUtRL2D1ScSbrGVNvUnuV6oU6g-',
+    inStock: true,
+    rating: 5.0,
+    salesCount: '2.1k'
+  },
+  {
+    id: 'classic-new-york',
+    name: 'Classic New York',
+    category: 'Classic Cream',
+    price: 24000,
+    sales: '300+ terjual',
+    description: 'Our signature creamy cheesecake with a buttery graham cracker crust.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjq0s03pkGzwG4FRJ9xa1mI7b35sdu22EtD1zSu3vqggDO5hFs2GqQN4G75JS56cUqiIQaIwjA1ro3bjCJrhGxwkh_F8v5gJjpV8Mepq-CKlA2aVvugFfOq530FCe5vr3IlWFygfkF246emodMKhTBO8-SoxsY-lrflLnZ_bqDTfFWQQ9rTjitLncPZoAKlVaMJp1rzcs-aNsD7WGgDZj6_uy66_QYPisGAOVLFPT9EnYhkgCfDXNyeXG3nJuYYX0ukPjsE08gnaJZ',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '2.1k'
+  },
+  {
+    id: 'strawberry-bliss',
+    name: 'Strawberry Bliss',
+    category: 'Strawberry',
+    price: 28000,
+    sales: '1.2RB terjual',
+    description: 'Fresh organic strawberries swirled into our classic base with a fruit glaze.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQpvOlrsGHimN6wjmEw-TdnOXXBoNxptdwgANi05XTT9iZKnIXyZNqORehzDJ50LjzgKTf7e0ohLGBe7A2NUzAI8kUZFGH_6JC7_GPtzZeVuBba6JiKmf5XnGxq0UO2wTPstVBtWnS_C34Uw_Oh0ieNeEpBeYUPezUzPuCOyGpOYNrF4nS53MDm50sd_4HpHNJ4gbLFOlV_r1P4w4SKc6SxSPhaavsbjy2HbjhKSztJYXugZzzVkrSX-5MwSxKSoG0Z3g7P68OWGO3',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '1.2k'
+  },
+  {
+    id: 'mini-sampler',
+    name: 'Mini Sampler Box',
+    category: 'Mini Cakes',
+    price: 32000,
+    sales: '300+ terjual',
+    description: '6 assorted bite-sized cheesecakes featuring our most popular flavors.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYJhgcKtMQhwJjGeXuSVzY7qqs1XMSR_1kTy2JKTEkaW_I4SoI0aa9_4_bO0qXcxe3OBK6Z4T7HRYH3Gp3vUoGKBypmIt_M6ZjfyAhH8RKmynJnJgq9SxIFcSzn3Yrw2Q-S3coTbN7BLYmFRCtDPui-FWTL1yiWzrKerSz7tAFNXYLITfaJAv4iRyXZXIjOSN8DM2tbNsEhahxcCIzsz206bVkY_j37s07CJVMnKpPXsWKLPMw38psdTJfOI-5D6OcK1TxlAFo0KJR',
+    inStock: true,
+    rating: 4.7,
+    salesCount: '430'
+  },
+  {
+    id: 'lemon-zest',
+    name: 'Lemon Zest Swirl',
+    category: 'Fruit Topped',
+    price: 26000,
+    sales: '95 terjual',
+    description: 'Zesty lemon curd swirled with wild blueberries for a refreshing tart finish.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBpRsi-RtBeXxt1iNTu4LAuWLZ4-zIEtZheorNWaj4sSJV7da9UbiUOd_-50CO8U6ycNIGPRsUggGJSzEdGmd-e01w3XaGpTUhU6TNvg6SlRiSHRqD80HezImxG9cvCyv5wcGrdsDCXHEjzhFxWqn9Bs7D8mF8n1GpNcj1OTkvBQPFmWfjwreaOcoFN_3sIOpb8cnka8OqHSaCi741nb7hoaC0VfshPrNCI-bZklxwZFxPsyVnke5pXYTWazTUSMYHp1SQlo0O7LB5H',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '95'
+  },
+  {
+    id: 'medium-box',
+    name: 'Signature Triple Cheese Cake',
+    category: 'Classic Cream',
+    price: 37000,
+    sales: '300+ terjual',
+    description: 'Signature Triple Cheese Cake, showcasing three distinct layers of creamy texture with gold leaf flakes.',
+    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALE1EK4P4FGX7Uiax4dxOtjERlRfoI1-dqsxKThBy4hjReHMFBLw7Y9WWsWrwb8y5tKZcmKirgjz5nIWwe7GJljc9g7-N4CRCd4hALgUXrOEszDBMNvobAp4JVA7V44xAI2YU-gqXHzIolvgsYJWfpFqtYjAyxJ9GhmE7OVCXv_th6pdDLDGGJFbQZUWjWy_KET22OqyrOuT-R8sq_6UVqYdJm6WmfOTYX_uk-SISZMhKpgYsmZz47Zl9GlnsDwiTNNjpgatHnaWtI',
+    inStock: true,
+    rating: 5.0,
+    salesCount: '300+'
+  }
+];
+
+export default function App() {
+  // App views: 'catalog', 'checkout', 'payment', 'tracking'
+  const [currentView, setCurrentView] = useState('catalog');
+  
+  // Catalog State
+  const [selectedCategory, setSelectedCategory] = useState('All Flavors');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cart, setCart] = useState([]);
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState('All');
+
+  // Checkout State
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [addressSearch, setAddressSearch] = useState('');
+  const [areaResults, setAreaResults] = useState([]);
+  const [selectedArea, setSelectedArea] = useState(null);
+  const [detailedAddress, setDetailedAddress] = useState('');
+  const [couriers, setCouriers] = useState([]);
+  const [selectedCourier, setSelectedCourier] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ewallet');
+  const [isLoadingRates, setIsLoadingRates] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
+  // Payment State
+  const [activeOrderId, setActiveOrderId] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [paymentExpiryTimer, setPaymentExpiryTimer] = useState('15:00');
+
+  // Tracking State
+  const [trackingInfo, setTrackingInfo] = useState(null);
+
+  // Debouncing Address Search
+  useEffect(() => {
+    if (addressSearch.length < 3) {
+      setAreaResults([]);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/shipping/areas?q=${addressSearch}`);
+        if (response.data.success) {
+          setAreaResults(response.data.areas);
+        }
+      } catch (err) {
+        console.error('Error fetching areas:', err);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [addressSearch]);
+
+  // Fetch rates when area changes or cart changes
+  useEffect(() => {
+    if (selectedArea && cart.length > 0) {
+      fetchShippingRates();
+    }
+  }, [selectedArea, cart]);
+
+  // Real-time tracking polling when in tracking view
+  useEffect(() => {
+    let pollInterval;
+    if (currentView === 'tracking' && activeOrderId) {
+      fetchOrderStatus(); // initial fetch
+      pollInterval = setInterval(fetchOrderStatus, 3000); // poll every 3s
+    }
+    return () => clearInterval(pollInterval);
+  }, [currentView, activeOrderId]);
+
+  // Payment Timer countdown simulation
+  useEffect(() => {
+    if (currentView === 'payment' && paymentInfo) {
+      const expiry = new Date(paymentInfo.expiryTime).getTime();
+      const timer = setInterval(() => {
+        const now = new Date().getTime();
+        const diff = expiry - now;
+
+        if (diff <= 0) {
+          clearInterval(timer);
+          setPaymentExpiryTimer('Expired');
+        } else {
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setPaymentExpiryTimer(
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          );
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [currentView, paymentInfo]);
+
+  // -----------------
+  // API CALLS
+  // -----------------
+  const fetchShippingRates = async () => {
+    setIsLoadingRates(true);
+    setCouriers([]);
+    setSelectedCourier(null);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/shipping/rates`, {
+        destination_latitude: selectedArea.latitude,
+        destination_longitude: selectedArea.longitude,
+        destination_area_id: selectedArea.id,
+        items: cart.map(item => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        }))
+      });
+      if (response.data.success) {
+        setCouriers(response.data.rates);
+        if (response.data.rates.length > 0) {
+          setSelectedCourier(response.data.rates[0]);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching rates:', err);
+    } finally {
+      setIsLoadingRates(false);
+    }
+  };
+
+  const handleCheckoutSubmit = async () => {
+    if (!customerName || !customerPhone || !selectedArea || !detailedAddress || !selectedCourier) {
+      alert('Mohon lengkapi seluruh data pengiriman.');
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    try {
+      const payload = {
+        customer: {
+          name: customerName,
+          phone: customerPhone
+        },
+        items: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity
+        })),
+        shipping: {
+          address: `${detailedAddress}, ${selectedArea.name}`,
+          latitude: selectedArea.latitude,
+          longitude: selectedArea.longitude,
+          courierCompany: selectedCourier.company,
+          courierService: selectedCourier.courier_service_name
+        },
+        totalProductPrice: getCartSubtotal(),
+        shippingPrice: selectedCourier.price
+      };
+
+      const response = await axios.post(`${BACKEND_URL}/api/checkout`, payload);
+      if (response.data.success) {
+        setActiveOrderId(response.data.orderId);
+        setPaymentInfo(response.data);
+        setCurrentView('payment');
+      }
+    } catch (err) {
+      console.error('Error creating checkout:', err);
+      alert('Gagal memproses pesanan. Silakan coba kembali.');
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  };
+
+  const fetchOrderStatus = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/order/${activeOrderId}`);
+      if (response.data.success) {
+        setTrackingInfo(response.data.order);
+      }
+    } catch (err) {
+      console.error('Error checking order status:', err);
+    }
+  };
+
+  const triggerSimulatePayment = async () => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/order/${activeOrderId}/simulate-pay`);
+      if (response.data.success) {
+        setCurrentView('tracking');
+      }
+    } catch (err) {
+      console.error('Error simulating payment:', err);
+    }
+  };
+
+  // -----------------
+  // CART ACTIONS
+  // -----------------
+  const addToCart = (product) => {
+    if (!product.inStock) return;
+    setCart(prev => {
+      const existing = prev.find(item => item.id === product.id);
+      if (existing) {
+        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateCartQuantity = (id, delta) => {
+    setCart(prev => {
+      return prev.map(item => {
+        if (item.id === id) {
+          const newQty = item.quantity + delta;
+          return newQty > 0 ? { ...item, quantity: newQty } : null;
+        }
+        return item;
+      }).filter(Boolean);
+    });
+  };
+
+  const getCartCount = () => cart.reduce((sum, item) => sum + item.quantity, 0);
+  const getCartSubtotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  // Dynamic enrichment of MENU_DATA with ratings and sales counts for Stitch design alignment
+  const ENRICHED_MENU_DATA = MENU_DATA.map(item => {
+    let rating = 4.8;
+    let salesCount = item.sales ? item.sales.replace(' terjual', '') : '100+';
+    if (item.name.toLowerCase().includes('basque') || item.name.toLowerCase().includes('medium')) {
+      rating = 5.0;
+    } else if (item.name.toLowerCase().includes('double cheese') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cokel')) {
+      rating = 4.9;
+    } else if (item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('strawberry')) {
+      rating = 4.8;
+    }
+    return { ...item, rating, salesCount };
+  });
+
+  // Filtering menu items for Home tab
+  const filteredMenuItems = ENRICHED_MENU_DATA.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (selectedCategory === 'All Flavors' || selectedCategory === 'All') return true;
+
+    // Custom filtering matching chips from Stitch
+    if (selectedCategory === 'Strawberry') {
+      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry');
+    }
+    if (selectedCategory === 'Dark Cacao' || selectedCategory === 'Chocolate') {
+      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat');
+    }
+    if (selectedCategory === 'Persimmon') {
+      return item.category === 'CizQuake Drink';
+    }
+    if (selectedCategory === 'Classic Cream' || selectedCategory === 'Classic') {
+      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel');
+    }
+    if (selectedCategory === 'Mini Cakes') {
+      return item.category === 'Mini Dessert Box';
+    }
+
+    return item.category === selectedCategory;
+  });
+
+  // Filtering menu items for Menu tab
+  const filteredMenuTabItems = ENRICHED_MENU_DATA.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (selectedMenuCategory === 'All') return true;
+
+    if (selectedMenuCategory === 'Classic') {
+      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('basque');
+    }
+    if (selectedMenuCategory === 'Fruit Topped') {
+      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry') || item.name.toLowerCase().includes('lemon') || item.name.toLowerCase().includes('red velvet');
+    }
+    if (selectedMenuCategory === 'Chocolate') {
+      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('oreo');
+    }
+    if (selectedMenuCategory === 'Mini Cakes') {
+      return item.category === 'Mini Dessert Box';
+    }
+
+    return item.category === selectedMenuCategory;
+  });
+
+  return (
+    <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
+      
+      {/* 1. CATALOG VIEW (TABS: HOME, MENU, CART, PROFILE) */}
+      {currentView === 'catalog' && (
+        <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
+          
+          {/* TAB 1: HOME */}
+          {activeTab === 'home' && (
+            <>
+              {/* Header */}
+              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+                    <img 
+                      className="w-full h-full object-cover" 
+                      alt="Cizquake Logo" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkcPqBDl5zoA2WUVELEMVtvVecKe8zxLqSLK4G-o1ikzhy_mq-sqjFwOAYD6rDW8w_l4KjiCQbN3qv0bq7mMD3TxokY6gM_6eEmgVXa9E-oWOIOcbj8n6gUOlrqN-jLWRV-U5jfcQ--c3kHNgSrGDnzvv1RGXWU9S_K7zDzxUxDhMY-h5PuejayRXJIykU4HT6HPl5p_uOspuDFz_JiEaDs9XqBfZnuU7cC2H0vqSQ3E-ce6HZHWJXFDhwczk2bH8s2GEeF7gy7fH4"
+                    />
+                  </div>
+                  <h1 className="font-display text-lg font-bold text-[#785900]">Cizquake</h1>
+                </div>
+                
+                <button 
+                  onClick={() => setActiveTab('profile')}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-[#785900]"
+                >
+                  <span className="material-symbols-outlined text-xl">notifications</span>
+                </button>
+              </header>
+
+              <main className="mt-16 pt-4 pb-32">
+                {/* Hero Section */}
+                <section className="px-container-margin-mobile mb-6">
+                  <div className="relative w-full h-[380px] rounded-[24px] overflow-hidden group cursor-pointer transition-transform duration-500 hover:scale-[1.01] shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
+                    <img 
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                      alt="Signature Triple Cheese Cake" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuALE1EK4P4FGX7Uiax4dxOtjERlRfoI1-dqsxKThBy4hjReHMFBLw7Y9WWsWrwb8y5tKZcmKirgjz5nIWwe7GJljc9g7-N4CRCd4hALgUXrOEszDBMNvobAp4JVA7V44xAI2YU-gqXHzIolvgsYJWfpFqtYjAyxJ9GhmE7OVCXv_th6pdDLDGGJFbQZUWjWy_KET22OqyrOuT-R8sq_6UVqYdJm6WmfOTYX_uk-SISZMhKpgYsmZz47Zl9GlnsDwiTNNjpgatHnaWtI"
+                    />
+                    <div className="absolute bottom-0 left-0 p-6 z-20 w-full text-left">
+                      <div className="flex flex-col gap-1">
+                        <span className="cizquake-featured-badge w-fit mb-2">Featured Favorite</span>
+                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">Signature Triple Cheese Cake</h2>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="font-display text-[#fabd00] font-bold text-lg">Rp 37.000</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const item = ENRICHED_MENU_DATA.find(i => i.id === 'medium-box');
+                              if (item) addToCart(item);
+                            }}
+                            className="cizquake-btn-order-now transition-all active:scale-90"
+                          >
+                            <span className="material-symbols-outlined text-sm font-bold">shopping_bag</span>
+                            Order Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Categories scroll */}
+                <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-2.5">
+                  {['All Flavors', 'Strawberry', 'Dark Cacao', 'Persimmon', 'Classic Cream'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-5 py-2.5 rounded-full font-label-lg whitespace-nowrap transition-all active:scale-95 text-[11px] font-bold ${
+                        selectedCategory === cat 
+                          ? 'chip-active shadow-sm' 
+                          : 'chip-inactive'
+                      }`}
+                    >
+                      {cat === 'Persimmon' ? 'Drinks' : cat}
+                    </button>
+                  ))}
+                </section>
+
+                {/* Popular Menu (Grid layout) */}
+                <section className="px-container-margin-mobile mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display text-md text-[#2b1613] font-extrabold">Popular Menu</h3>
+                    <button onClick={() => setActiveTab('menu')} className="text-[#785900] font-label-lg font-extrabold hover:underline text-xs">See All</button>
+                  </div>
+
+                  {/* 2-Column Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {filteredMenuItems.map(product => (
+                      <div 
+                        key={product.id} 
+                        className={`cizquake-card overflow-hidden group flex flex-col h-full transition-all ${
+                          !product.inStock ? 'opacity-70' : ''
+                        }`}
+                      >
+                        <div className="relative aspect-square overflow-hidden shrink-0">
+                          <img className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={product.name} src={product.image} />
+                          <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-1.5 shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform">
+                            <span className="material-symbols-outlined text-[#785900] text-xs font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                          </div>
+                          {!product.inStock && (
+                            <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
+                              <span className="text-[9px] text-white font-extrabold bg-red-600 px-2 py-0.5 rounded-full uppercase tracking-wider">SOLD OUT</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-2.5 flex flex-col flex-grow text-left">
+                          <div className="flex items-center gap-1 mb-0.5 text-[9px] text-on-surface-variant font-semibold">
+                            <span className="text-[#fabd00] text-xs">★</span>
+                            <span>{product.rating ? product.rating.toFixed(1) : '4.8'} <span className="opacity-70">({product.salesCount || '100+'})</span></span>
+                          </div>
+                          <h4 className="font-display text-[11px] font-extrabold text-[#2b1613] mb-1.5 leading-tight flex-grow line-clamp-2">{product.name}</h4>
+                          <div className="flex items-center justify-between mt-auto pt-0.5">
+                            <span className="font-display font-extrabold text-[#785900] text-[12px]">Rp {product.price.toLocaleString('id-ID')}</span>
+                            {product.inStock ? (
+                              <button 
+                                onClick={() => addToCart(product)}
+                                className="cizquake-btn-add-small hover:shadow-md"
+                              >
+                                <span className="material-symbols-outlined text-xs font-bold text-white">add</span>
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-error font-bold bg-red-50 border border-red-150 px-1.5 py-0.5 rounded">Habis</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Promo Banner */}
+                {selectedCategory === 'All Flavors' && (
+                  <section className="px-container-margin-mobile">
+                    <div className="bg-[#ffbc97]/30 rounded-2xl p-5 flex items-center justify-between relative overflow-hidden text-left border border-[#ffbc97]/20">
+                      <div className="z-10 relative">
+                        <h3 className="font-display text-sm text-[#763300] mb-1 font-bold">Sweet First Order?</h3>
+                        <p className="text-[#763300]/80 mb-4 text-[11px] font-semibold">Get 20% off your first luxury slice.</p>
+                        <button className="bg-[#9b4500] text-white px-5 py-2 rounded-full font-label-lg shadow-md active:scale-95 transition-transform text-[10px] font-bold">Claim Now</button>
+                      </div>
+                      <div className="absolute -right-8 -top-8 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
+                      <div className="relative w-16 h-16 z-10 shrink-0">
+                        <img 
+                          className="w-full h-full object-contain" 
+                          alt="Cheesecake box illustration" 
+                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWkUAG5dt3aS0xq_RG5FIRHZAuv9xiP8x0lpG40Q96UQ7gr6jd5QcPDrVisx9LrsWDBJSzBucQyOvjXv73RbWB8Rim4DxXSZOJNTbtpOVl5LshNssyn-oZIQPDo9jPvUqX2Eg8-fErGFBkt92ytjaSLDkGn-c8IYI9rhvlCfQZDdFIrCKjT7GA6-P1MS_A80BMRAZ312hoz1g2St7IB-EFqZ0WIkBzzH2hGfe5g3b-bQIFT3JE2VuA-HMg_LcIXPQbpJ-nv22Q8k6_"
+                        />
+                      </div>
+                    </div>
+                  </section>
+                )}
+              </main>
+            </>
+          )}
+
+          {/* TAB 2: MENU (LIST VIEW) */}
+          {activeTab === 'menu' && (
+            <>
+              {/* Header */}
+              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+                    <span className="material-symbols-outlined text-on-primary-container font-bold">restaurant</span>
+                  </div>
+                  <h1 className="font-display text-headline-md font-extrabold text-primary font-bold">Menu Cizquake</h1>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('profile')}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary"
+                >
+                  <span className="material-symbols-outlined text-2xl">notifications</span>
+                </button>
+              </header>
+
+              <main className="mt-16 pt-4 pb-32">
+                {/* Search Input */}
+                <section className="px-container-margin-mobile mb-6">
+                  <div className="relative flex items-center">
+                    <span className="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
+                    <input 
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary-container font-body-md text-on-surface placeholder-on-surface-variant/60 transition-all outline-none" 
+                      placeholder="Cari cizquake favoritmu..." 
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </section>
+
+                {/* Menu Category Chips */}
+                <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-3">
+                  {['All', 'Classic', 'Fruit Topped', 'Chocolate', 'Mini Cakes'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedMenuCategory(cat)}
+                      className={`px-5 py-2 rounded-full font-label-lg whitespace-nowrap transition-all active:scale-95 text-xs font-bold ${
+                        selectedMenuCategory === cat 
+                          ? 'bg-primary-container text-on-primary-container shadow-sm font-bold' 
+                          : 'bg-secondary-container/30 text-on-surface-variant'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </section>
+
+                {/* Popular Picks (List Layout) */}
+                <section className="px-container-margin-mobile">
+                  <h2 className="font-headline-md text-headline-md text-primary mb-4 text-left font-bold">Popular Picks</h2>
+                  
+                  <div className="flex flex-col gap-4">
+                    {filteredMenuTabItems.map(product => (
+                      <div 
+                        key={product.id} 
+                        className={`bg-surface-container-lowest rounded-lg p-4 cake-card-shadow flex gap-4 items-center group transition-all border border-on-surface/5 text-left ${
+                          !product.inStock ? 'opacity-70' : ''
+                        }`}
+                      >
+                        <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 relative">
+                          <img className="w-full h-full object-cover" alt={product.name} src={product.image} />
+                          {!product.inStock && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="text-[9px] text-white font-bold bg-error px-2.5 py-1 rounded-full">SOLD OUT</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-grow">
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="font-headline-md text-sm font-bold text-on-surface leading-tight">{product.name}</h3>
+                            <span className="font-label-lg text-primary text-sm font-bold whitespace-nowrap">Rp {product.price.toLocaleString('id-ID')}</span>
+                          </div>
+                          <p className="text-on-surface-variant text-[11px] line-clamp-2 mt-1">{product.description}</p>
+                          <div className="flex justify-between items-center mt-3">
+                            <div className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[#fabd00] text-xs font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                              <span className="text-[10px] font-bold text-on-surface-variant/80">{product.rating || '4.8'} ({product.salesCount || '100+'})</span>
+                            </div>
+                            {product.inStock ? (
+                              <button 
+                                onClick={() => addToCart(product)}
+                                className="flex items-center gap-1 bg-primary-container text-on-primary-container px-4 py-1.5 rounded-full text-xs font-bold transition-transform active:scale-90 hover:brightness-105"
+                              >
+                                <span className="material-symbols-outlined text-sm font-bold">add</span> Add
+                              </button>
+                            ) : (
+                              <span className="text-xs text-error font-bold">Stok Habis</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </main>
+            </>
+          )}
+
+          {/* TAB 3: CART */}
+          {activeTab === 'cart' && (
+            <div className="min-h-screen pb-40">
+              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setActiveTab('home')} className="transition-transform active:scale-95 text-primary p-2">
+                    <span className="material-symbols-outlined">arrow_back</span>
+                  </button>
+                  <h1 className="font-headline-md text-headline-md text-primary font-bold">Keranjang Saya</h1>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('profile')}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary"
+                >
+                  <span className="material-symbols-outlined text-2xl">notifications</span>
+                </button>
+              </header>
+
+              <main className="mt-16 pt-4 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
+                {/* Cart Items Section */}
+                <div className="flex flex-col gap-4">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-12 text-on-surface-variant bg-surface-container-lowest rounded-lg border border-outline-variant/30 p-8 my-4">
+                      <span className="material-symbols-outlined text-5xl text-primary opacity-50 mb-3">shopping_basket</span>
+                      <p className="text-sm font-semibold">Keranjang belanja kosong.</p>
+                      <p className="text-xs text-on-surface-variant/70 mt-1">Pilih menu Cizquake lezat untuk ditambahkan ke sini!</p>
+                      <button 
+                        onClick={() => setActiveTab('menu')}
+                        className="mt-6 bg-primary-container text-on-primary-container px-6 py-2 rounded-full text-xs font-bold"
+                      >
+                        Mulai Belanja
+                      </button>
+                    </div>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.id} className="bg-surface-container-lowest rounded-lg p-4 flex gap-4 shadow-[0_20px_20px_0_rgba(66,42,38,0.06)] border border-on-surface/5">
+                        <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                          <img className="w-full h-full object-cover" alt={item.name} src={item.image} />
+                        </div>
+                        <div className="flex flex-col justify-between flex-grow text-left">
+                          <div>
+                            <div className="flex justify-between items-start">
+                              <h3 className="font-headline-md text-sm font-bold text-on-surface leading-tight">{item.name}</h3>
+                              <button 
+                                onClick={() => updateCartQuantity(item.id, -item.quantity)} 
+                                className="text-error opacity-65 hover:opacity-100 transition-opacity p-1"
+                              >
+                                <span className="material-symbols-outlined text-lg">delete</span>
+                              </button>
+                            </div>
+                            <p className="text-on-surface-variant font-label-lg text-xs mt-0.5">{item.category}</p>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="font-display text-primary font-bold text-sm">Rp {item.price.toLocaleString('id-ID')}</span>
+                            <div className="flex items-center gap-3 bg-secondary-container rounded-full px-2 py-1">
+                              <button 
+                                onClick={() => updateCartQuantity(item.id, -1)} 
+                                className="w-7 h-7 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center transition-all active:scale-90"
+                              >
+                                <span className="material-symbols-outlined text-xs font-bold">remove</span>
+                              </button>
+                              <span className="font-bold text-xs text-on-secondary-container">{item.quantity}</span>
+                              <button 
+                                onClick={() => updateCartQuantity(item.id, 1)} 
+                                className="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center transition-all active:scale-90"
+                              >
+                                <span className="material-symbols-outlined text-xs font-bold">add</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {cart.length > 0 && (
+                  <>
+                    {/* Order Summary Card */}
+                    <div className="bg-surface-container-low rounded-lg p-6 flex flex-col gap-4 border border-on-surface/5">
+                      <h2 className="font-headline-md text-lg text-on-surface font-bold text-left">Ringkasan Pesanan</h2>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-on-surface-variant">Subtotal Produk</span>
+                        <span className="font-bold text-on-surface">Rp {getCartSubtotal().toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="h-[1px] bg-outline-variant/30 my-1"></div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-display text-md text-on-surface font-bold">Total Estimasi</span>
+                        <span className="font-display text-xl text-primary font-bold">Rp {getCartSubtotal().toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+
+                    {/* Vouchers/Promo Section */}
+                    <button className="flex items-center justify-between bg-surface-container rounded-lg px-4 py-4 w-full group transition-all hover:bg-surface-container-high border border-outline-variant/20">
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-primary">confirmation_number</span>
+                        <span className="font-label-lg text-on-surface text-sm font-semibold">Gunakan voucher promo</span>
+                      </div>
+                      <span className="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+                    </button>
+                  </>
+                )}
+              </main>
+
+              {/* Bottom Action Bar */}
+              {cart.length > 0 && (
+                <div className="fixed bottom-20 left-0 right-0 bg-surface-container-lowest p-5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-40 max-w-[480px] mx-auto border-t border-outline-variant/20">
+                  <button 
+                    onClick={() => {
+                      setCurrentView('checkout');
+                    }}
+                    className="w-full bg-primary-container text-on-primary-container py-4 rounded-full font-display font-bold text-md shadow-lg hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>Lanjut ke Pengiriman</span>
+                    <span className="material-symbols-outlined text-lg">payments</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: PROFILE */}
+          {activeTab === 'profile' && (
+            <div className="pb-32">
+              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+                <h1 className="font-display text-headline-md font-extrabold text-primary font-bold">Profil Saya</h1>
+                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary">
+                  <span className="material-symbols-outlined text-2xl">notifications</span>
+                </button>
+              </header>
+
+              <main className="mt-16 pt-6 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
+                {/* User Card */}
+                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 flex items-center gap-4 text-left">
+                  <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-2xl font-bold font-display shadow-md">
+                    JD
+                  </div>
+                  <div>
+                    <h2 className="font-display font-bold text-headline-md text-on-surface font-bold">Jane Doe</h2>
+                    <p className="text-on-surface-variant text-xs font-semibold">customer@cizquake.com</p>
+                    <p className="text-on-surface-variant text-[11px] font-semibold mt-1 bg-secondary-container/45 px-2.5 py-0.5 rounded-full w-fit text-secondary">Member Gold</p>
+                  </div>
+                </div>
+
+                {/* Account Details */}
+                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
+                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Informasi Akun</h3>
+                  <div className="space-y-3 text-xs">
+                    <div className="flex justify-between py-1 border-b border-outline-variant/10">
+                      <span className="text-on-surface-variant font-semibold">Nomor Telepon</span>
+                      <span className="text-on-surface font-bold">081234567890</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-outline-variant/10">
+                      <span className="text-on-surface-variant font-semibold">Alamat Utama</span>
+                      <span className="text-on-surface font-bold truncate max-w-[200px]">Jalan Melati No. 42, Bandung</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-on-surface-variant font-semibold">Rasa Favorit</span>
+                      <span className="text-on-surface font-bold text-primary font-bold">Classic Double Cheese</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order History */}
+                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
+                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Riwayat Pesanan</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b border-outline-variant/10">
+                      <div>
+                        <p className="text-xs font-bold text-on-surface">Pesanan #CZ-99104</p>
+                        <p className="text-[10px] text-on-surface-variant font-semibold">24 Juni 2026 • 2 item</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-primary font-bold">Rp 56.000</p>
+                        <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <div>
+                        <p className="text-xs font-bold text-on-surface">Pesanan #CZ-98711</p>
+                        <p className="text-[10px] text-on-surface-variant font-semibold">18 Juni 2026 • 1 item</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-primary font-bold">Rp 37.000</p>
+                        <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </main>
+            </div>
+          )}
+
+          {/* Floating Sticky Cart Bar (Contextual) */}
+          {getCartCount() > 0 && (activeTab === 'home' || activeTab === 'menu') && (
+            <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-40px)] max-w-[440px]">
+              <div className="bg-primary text-white p-3.5 rounded-full flex items-center justify-between shadow-xl shadow-primary/30">
+                <div className="flex items-center gap-3 text-left pl-2">
+                  <div className="bg-white/20 p-2 rounded-full flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-lg">shopping_basket</span>
+                  </div>
+                  <div>
+                    <p className="font-label-lg text-xs font-bold leading-none">{getCartCount()} Item</p>
+                    <p className="text-[10px] text-white/80 font-bold mt-1">Rp {getCartSubtotal().toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setActiveTab('cart')}
+                  className="bg-white text-primary px-5 py-2.5 rounded-full font-display font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform"
+                >
+                  Lihat Keranjang
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Shared Bottom Navigation Bar */}
+          <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] z-50 flex justify-around items-center px-4 py-3 pb-6 bg-surface-container-lowest shadow-[0_-4px_20px_0_rgba(0,0,0,0.06)] rounded-t-lg mx-auto">
+            {/* Home Tab */}
+            <button 
+              onClick={() => setActiveTab('home')}
+              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                activeTab === 'home' 
+                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                  : 'flex-col text-[#785900]/70 px-3 py-1'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "'FILL' 0" }}>home</span>
+              <span className={`font-label-lg font-bold ${activeTab === 'home' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Home</span>
+            </button>
+            
+            {/* Menu Tab */}
+            <button 
+              onClick={() => setActiveTab('menu')}
+              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                activeTab === 'menu' 
+                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                  : 'flex-col text-[#785900]/70 px-3 py-1'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'menu' ? "'FILL' 1" : "'FILL' 0" }}>restaurant_menu</span>
+              <span className={`font-label-lg font-bold ${activeTab === 'menu' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Menu</span>
+            </button>
+
+            {/* Cart Tab */}
+            <button 
+              onClick={() => setActiveTab('cart')}
+              className={`relative flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                activeTab === 'cart' 
+                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                  : 'flex-col text-[#785900]/70 px-3 py-1'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'cart' ? "'FILL' 1" : "'FILL' 0" }}>shopping_bag</span>
+              <span className={`font-label-lg font-bold ${activeTab === 'cart' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Cart</span>
+              {getCartCount() > 0 && activeTab !== 'cart' && (
+                <span className="absolute -top-1.5 -right-1 bg-red-600 text-white rounded-full text-[9px] w-4.5 h-4.5 flex items-center justify-center font-extrabold shadow-sm">
+                  {getCartCount()}
+                </span>
+              )}
+            </button>
+
+            {/* Profile Tab */}
+            <button 
+              onClick={() => setActiveTab('profile')}
+              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                activeTab === 'profile' 
+                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                  : 'flex-col text-[#785900]/70 px-3 py-1'
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}>person</span>
+              <span className={`font-label-lg font-bold ${activeTab === 'profile' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Profile</span>
+            </button>
+          </nav>
+        </div>
+      )}
+
+      {/* 3. CHECKOUT VIEW */}
+      {currentView === 'checkout' && (
+        <div className="bg-background min-h-screen pb-32">
+          <header className="fixed top-0 left-0 right-0 z-50 bg-background flex items-center justify-between px-container-margin-mobile w-full h-16 max-w-[480px] mx-auto border-b border-outline-variant/20">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setCurrentView('catalog')} className="p-2 transition-transform active:scale-95 text-primary">
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              <h1 className="font-display text-headline-md font-extrabold text-primary">Checkout</h1>
+            </div>
+          </header>
+
+          <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
+            
+            {/* Customer Information */}
+            <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
+              <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
+                <span className="material-symbols-outlined text-lg">person</span>
+                Detail Penerima
+              </h2>
+              <div className="space-y-4 text-left">
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Nama Lengkap</label>
+                  <input 
+                    type="text" 
+                    value={customerName}
+                    onChange={e => setCustomerName(e.target.value)}
+                    placeholder="Masukkan nama penerima" 
+                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Nomor WhatsApp</label>
+                  <input 
+                    type="tel" 
+                    value={customerPhone}
+                    onChange={e => setCustomerPhone(e.target.value)}
+                    placeholder="Contoh: 0812XXXXXXXX" 
+                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 outline-none"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Delivery Address Section */}
+            <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
+              <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
+                <span className="material-symbols-outlined text-lg">location_on</span>
+                Alamat Pengiriman
+              </h2>
+              
+              <div className="space-y-4 text-left">
+                <div className="relative">
+                  <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Cari Kelurahan / Kecamatan (Bandung)</label>
+                  <input 
+                    type="text"
+                    value={addressSearch}
+                    onChange={e => {
+                      setAddressSearch(e.target.value);
+                      if (selectedArea) setSelectedArea(null);
+                    }}
+                    placeholder="Ketik minimal 3 huruf..." 
+                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 outline-none"
+                  />
+                  
+                  {/* Results Autocomplete */}
+                  {areaResults.length > 0 && !selectedArea && (
+                    <div className="absolute z-10 w-full mt-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {areaResults.map(area => (
+                        <div 
+                          key={area.id}
+                          onClick={() => {
+                            setSelectedArea(area);
+                            setAddressSearch(area.name);
+                            setAreaResults([]);
+                          }}
+                          className="px-4 py-3 cursor-pointer hover:bg-primary-fixed/20 text-on-surface text-sm border-b border-outline-variant/10"
+                        >
+                          {area.name} (Kode Pos: {area.postal_code})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedArea && (
+                  <div className="flex items-center gap-2 text-green-750 text-xs bg-green-100/50 p-3 rounded-lg border border-green-200">
+                    <span className="material-symbols-outlined text-sm font-bold text-green-600">check_circle</span>
+                    <span className="text-green-800">Area Terpilih: <strong>{selectedArea.name}</strong></span>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Alamat Lengkap & Patokan Rumah</label>
+                  <textarea 
+                    value={detailedAddress}
+                    onChange={e => setDetailedAddress(e.target.value)}
+                    placeholder="No. Rumah, RT/RW, nama jalan, patokan gerbang, pagar rumah, dll."
+                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 h-20 resize-none pt-3 outline-none"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* Courier Selection */}
+            {selectedArea && (
+              <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
+                <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
+                  <span className="material-symbols-outlined text-lg">local_shipping</span>
+                  Pilih Kurir Instan (Pengiriman dari Buahbatu)
+                </h2>
+
+                {isLoadingRates ? (
+                  <div className="text-center py-8 text-on-surface-variant text-xs flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
+                    <span>Mencari tarif kurir instan terbaik...</span>
+                  </div>
+                ) : couriers.length === 0 ? (
+                  <div className="text-center py-6 text-error text-xs flex items-center justify-center gap-2 bg-red-50 rounded-lg border border-red-100">
+                    <span className="material-symbols-outlined">warning</span>
+                    <span>Layanan kurir tidak tersedia / area pengiriman terlalu jauh.</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {couriers.map(courier => (
+                      <div 
+                        key={courier.courier_name}
+                        onClick={() => setSelectedCourier(courier)}
+                        className={`cursor-pointer p-4 rounded-xl border-2 flex items-center justify-between transition-all text-left ${
+                          selectedCourier?.courier_name === courier.courier_name 
+                            ? 'border-primary bg-primary-fixed/20' 
+                            : 'border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-bold text-on-surface text-sm uppercase">{courier.courier_name}</p>
+                          <p className="text-on-surface-variant text-xs mt-0.5">Estimasi tiba: {courier.duration}</p>
+                        </div>
+                        <span className="font-display font-bold text-primary text-sm">Rp {courier.price.toLocaleString('id-ID')}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Payment Method Selector */}
+            <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
+              <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
+                <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
+                Metode Pembayaran
+              </h2>
+              <div className="grid grid-cols-1 gap-3">
+                <label className="cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="ewallet" 
+                    checked={selectedPaymentMethod === 'ewallet'}
+                    onChange={() => setSelectedPaymentMethod('ewallet')}
+                    className="hidden peer" 
+                  />
+                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest">
+                    <div className="w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
+                      <span className="material-symbols-outlined text-primary">payments</span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-bold text-on-surface text-sm">E-Wallet QRIS (Otomatis)</p>
+                      <p className="text-on-surface-variant text-xs">Mendukung GoPay, OVO, DANA, LinkAja, BCA, dll.</p>
+                    </div>
+                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
+                  </div>
+                </label>
+              </div>
+            </section>
+
+            {/* Final Calculation Section */}
+            <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow mb-8 border border-outline-variant/10 text-left">
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Subtotal Cizquake ({getCartCount()} item)</span>
+                  <span className="text-on-surface font-semibold">Rp {getCartSubtotal().toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-on-surface-variant">
+                  <span>Biaya Pengiriman</span>
+                  <span className="text-on-surface font-semibold">
+                    {selectedCourier ? `Rp ${selectedCourier.price.toLocaleString('id-ID')}` : 'Pilih Kurir'}
+                  </span>
+                </div>
+                <div className="pt-3 border-t border-outline-variant/30 flex justify-between items-center">
+                  <span className="font-display font-bold text-md text-on-surface">Total Pembayaran</span>
+                  <span className="font-display font-bold text-lg text-primary">
+                    Rp {(getCartSubtotal() + (selectedCourier ? selectedCourier.price : 0)).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </main>
+
+          {/* Sticky Bottom Confirm Button */}
+          <div className="fixed bottom-0 left-0 right-0 p-container-margin-mobile bg-surface-container-lowest/80 backdrop-blur-md z-40 max-w-[480px] mx-auto border-t border-outline-variant/20">
+            <button 
+              onClick={handleCheckoutSubmit}
+              disabled={isSubmittingOrder || !selectedCourier || !customerName || !customerPhone}
+              className="w-full py-4 bg-primary-container text-on-primary-container font-display font-extrabold text-md rounded-full shadow-lg transition-all hover:brightness-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Konfirmasi & Bayar'}</span>
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. PAYMENT VIEW (QRIS DISPLAY) */}
+      {currentView === 'payment' && paymentInfo && (
+        <div className="bg-background min-h-screen pb-32">
+          <header className="bg-background fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 max-w-[480px] mx-auto">
+            <span className="text-base font-bold text-primary flex items-center gap-2 font-display">
+              <span className="material-symbols-outlined text-lg animate-pulse text-amber-500">payments</span>
+              Pembayaran QRIS
+            </span>
+            <span className="bg-primary-container text-on-primary-container px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+              <span className="material-symbols-outlined text-xs">schedule</span>
+              {paymentExpiryTimer}
+            </span>
+          </header>
+
+          <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col items-center">
+            
+            {/* Developer Simulation Warning */}
+            <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-center shadow-sm">
+              <p className="text-red-700 text-xs font-bold mb-2 uppercase tracking-wide">MODE SIMULATOR DEVELOPER</p>
+              <p className="text-[11px] text-red-600 mb-3 font-semibold">Klik tombol di bawah ini untuk menyimulasikan notifikasi sukses pembayaran QRIS tanpa memindai kode.</p>
+              <button 
+                onClick={triggerSimulatePayment} 
+                className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-md shadow-red-200"
+              >
+                Simulasikan Pembayaran Sukses
+              </button>
+            </div>
+
+            <div className="text-center mb-6">
+              <h3 className="text-xs font-bold text-on-surface-variant/80 uppercase">Total Nominal Pembayaran</h3>
+              <p className="text-3xl font-extrabold text-primary mt-1 font-display font-bold">
+                Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
+              </p>
+              <p className="text-[10px] text-on-surface-variant font-mono mt-2 bg-surface-container px-3 py-1 rounded-full border border-outline-variant/30 inline-block">ID Pesanan: {paymentInfo.orderId}</p>
+            </div>
+
+            {/* QRIS Code Image */}
+            <div className="bg-surface-container-lowest p-6 rounded-lg custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
+              <div className="w-[220px] h-[220px] bg-white p-2 border border-outline-variant/40 rounded-lg flex items-center justify-center shadow-inner">
+                {paymentInfo.paymentQrUrl ? (
+                  <img 
+                    src={paymentInfo.paymentQrUrl} 
+                    alt="QRIS Code" 
+                    className="w-full h-full object-contain" 
+                  />
+                ) : (
+                  <div className="text-center flex flex-col items-center gap-2">
+                    <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+                    <span className="text-[11px] text-on-surface-variant">Memuat QRIS...</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex flex-col items-center text-center gap-1.5 mt-4 max-w-[280px]">
+                <p className="text-xs font-bold text-on-surface">Pindai QRIS Menggunakan Aplikasi Bank/E-Wallet</p>
+                <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.</p>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 mb-8 text-left">
+              <h4 className="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-1.5 font-bold">
+                <span className="material-symbols-outlined text-sm font-bold">info</span>
+                Petunjuk Pembayaran
+              </h4>
+              <ol className="text-left text-xs text-on-surface-variant space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
+                <li>Simpan kode QR dengan melakukan screenshot halaman ini, atau scan langsung menggunakan handphone lain.</li>
+                <li>Buka e-wallet (GoPay, DANA, OVO) atau aplikasi m-Banking Anda.</li>
+                <li>Pilih menu scan QR/Pay dan arahkan kamera ke kode QRIS di atas.</li>
+                <li>Setelah konfirmasi bayar sukses di simulator/aplikasi, halaman ini akan otomatis berganti ke halaman pelacakan pesanan.</li>
+              </ol>
+            </div>
+          </main>
+        </div>
+      )}
+
+      {/* 5. TRACKING VIEW */}
+      {currentView === 'tracking' && trackingInfo && (
+        <div className="bg-background min-h-screen pb-32">
+          <header className="bg-background fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 max-w-[480px] mx-auto">
+            <span className="text-base font-bold text-primary font-display flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg animate-bounce text-amber-500">local_shipping</span>
+              Status Pengiriman
+            </span>
+            <span className="text-[11px] bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full font-bold uppercase tracking-wider font-bold">
+              Lunas / Paid
+            </span>
+          </header>
+
+          <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
+            
+            {/* Summary Order Box */}
+            <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
+              <div className="flex items-start gap-4 text-left">
+                <div className="bg-primary-container p-3 rounded-xl text-on-primary-container">
+                  <span className="material-symbols-outlined text-xl">package</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-on-surface">Pesanan #{trackingInfo.orderId.substring(0, 12)}...</h3>
+                  <p className="text-xs text-on-surface-variant mt-1 font-semibold">Total: Rp {trackingInfo.grossAmount.toLocaleString('id-ID')}</p>
+                  <p className="text-[11px] text-on-surface-variant/80 mt-2 font-semibold bg-surface-container-low px-3 py-2 rounded-lg border border-outline-variant/10 leading-relaxed">
+                    Alamat: {trackingInfo.shipping.address}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tracking Steps Timeline */}
+            <h3 className="text-sm font-bold text-primary mb-1 text-left flex items-center gap-1.5 font-bold">
+              <span className="material-symbols-outlined text-md">list_alt</span>
+              Progres Pengiriman Cizquake
+            </h3>
+            
+            <div className="relative border-l-2 border-outline-variant/40 ml-4 pl-6 space-y-6 text-left pb-4">
+              
+              {/* Step 1: Pembayaran Sukses */}
+              <div className="relative">
+                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
+                  trackingInfo.paymentStatus === 'paid' ? 'bg-primary border-primary shadow-sm shadow-primary/40' : 'bg-background border-outline-variant'
+                }`}></div>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Pembayaran Diterima</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Dana sebesar Rp {trackingInfo.grossAmount.toLocaleString('id-ID')} berhasil dikonfirmasi secara aman.</p>
+              </div>
+
+              {/* Step 2: Mencari Driver */}
+              <div className="relative">
+                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
+                  ['searching', 'driver_assigned', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
+                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
+                    : 'bg-background border-outline-variant'
+                }`}></div>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Menghubungi Kurir</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Mempersiapkan pengiriman instan via {trackingInfo.shipping.courierCompany} dari Buahbatu.</p>
+              </div>
+
+              {/* Step 3: Kurir ditugaskan */}
+              <div className="relative">
+                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
+                  ['driver_assigned', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
+                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
+                    : 'bg-background border-outline-variant'
+                }`}></div>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Driver Ditemukan</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">
+                  {trackingInfo.shippingOrderInfo?.courier_driver_name 
+                    ? `Kurir: ${trackingInfo.shippingOrderInfo.courier_driver_name} (${trackingInfo.shippingOrderInfo.courier_driver_phone})`
+                    : 'Menghubungi/menugaskan driver ke restoran...'}
+                </p>
+              </div>
+
+              {/* Step 4: Dalam Perjalanan */}
+              <div className="relative">
+                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
+                  ['on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
+                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
+                    : 'bg-background border-outline-variant'
+                }`}></div>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Dalam Pengantaran</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Cizquake sedang dibawa kurir dan dalam perjalanan ke tempat Anda.</p>
+              </div>
+
+              {/* Step 5: Selesai */}
+              <div className="relative">
+                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
+                  trackingInfo.shippingStatus === 'delivered' ? 'bg-primary border-primary shadow-sm shadow-primary/40' : 'bg-background border-outline-variant'
+                }`}></div>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Pesanan Tiba</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Paket lezat Anda sudah sampai tujuan. Selamat menikmati!</p>
+              </div>
+            </div>
+
+            {/* Back to Home Button */}
+            <button 
+              onClick={() => {
+                setCart([]);
+                setSelectedArea(null);
+                setAddressSearch('');
+                setDetailedAddress('');
+                setSelectedCourier(null);
+                setActiveTab('home');
+                setCurrentView('catalog');
+              }}
+              className="w-full py-4 bg-primary-container text-on-primary-container font-display font-extrabold text-sm rounded-full shadow-lg transition-transform active:scale-95 hover:brightness-105 my-8"
+            >
+              Kembali ke Menu Utama
+            </button>
+          </main>
+        </div>
+      )}
+
+    </div>
+  );
+}
