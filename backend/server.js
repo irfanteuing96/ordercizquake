@@ -86,51 +86,40 @@ app.get('/api/shipping/areas', async (req, res) => {
   }
 
   try {
-    // Query OpenStreetMap Nominatim API for exact street / building suggestions in Bandung
-    // Bounded to Bandung bounding box: left: 107.52, top: -6.85, right: 107.72, bottom: -6.98
-    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+    // Query Photon API (OpenStreetMap-based autocomplete with prefix support)
+    // Bounded to Bandung bounding box: minLon: 107.52, minLat: -6.98, maxLon: 107.72, maxLat: -6.85
+    const response = await axios.get('https://photon.komoot.io/api/', {
       params: {
         q: query,
-        format: 'json',
-        addressdetails: 1,
         limit: 8,
-        countrycodes: 'id',
-        viewbox: '107.52,-6.85,107.72,-6.98',
-        bounded: 1
-      },
-      headers: {
-        'User-Agent': 'CizquakeOrderingApp/1.0 (contact@cizquake.com)'
+        bbox: '107.52,-6.98,107.72,-6.85'
       }
     });
 
-    // Map Nominatim results to the schema expected by the frontend
-    const areas = response.data.map((item, idx) => {
-      // Create a clean readable name: e.g. "Jl. Ibrahim Adjie No.12, Kec. Batununggal, Bandung"
-      const details = item.address;
-      const road = details.road || details.suburb || details.neighbourhood || '';
-      const county = details.county || details.city_district || details.city || '';
-      const state = details.state || '';
-      
-      // Filter out empty parts
-      const cleanParts = [item.display_name.split(',')[0]];
-      if (details.suburb && details.suburb !== cleanParts[0]) cleanParts.push(details.suburb);
-      if (details.city_district && details.city_district !== details.suburb) cleanParts.push(details.city_district);
-      cleanParts.push('Bandung');
-      
-      const cleanName = cleanParts.filter(Boolean).join(', ');
+    // Map Photon GeoJSON features to the schema expected by the frontend
+    const areas = response.data.features.map((feature, idx) => {
+      const p = feature.properties;
+      const coords = feature.geometry.coordinates; // [longitude, latitude] in GeoJSON
+
+      // Build a clean readable address name
+      const nameParts = [p.name];
+      if (p.locality && p.locality !== p.name) nameParts.push(p.locality);
+      if (p.district && p.district !== p.locality) nameParts.push(p.district);
+      nameParts.push(p.city || 'Bandung');
+      const cleanName = nameParts.filter(Boolean).join(', ');
 
       return {
-        id: item.place_id || `OSM-${idx}-${Date.now()}`,
+        id: p.osm_id ? `OSM-${p.osm_type}-${p.osm_id}` : `PH-${idx}-${Date.now()}`,
         name: cleanName,
-        postal_code: details.postcode || '40000',
-        latitude: parseFloat(item.lat),
-        longitude: parseFloat(item.lon)
+        postal_code: p.postcode || '40000',
+        latitude: parseFloat(coords[1]), // Latitude is index 1
+        longitude: parseFloat(coords[0]) // Longitude is index 0
       };
     });
 
     res.json({ success: true, areas });
   } catch (error) {
-    console.warn('OpenStreetMap search failed, falling back to Biteship Areas. Reason:', error.message);
+    console.warn('Photon autocomplete failed, falling back to Biteship Areas. Reason:', error.message);
     try {
       const response = await axios.get(`https://api.biteship.com/v1/maps/areas`, {
         params: { countries: 'ID', input: query },

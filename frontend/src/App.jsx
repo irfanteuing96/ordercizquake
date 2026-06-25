@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = 'https://cizquake-backend.onrender.com';
 
 // Menu data as parsed from ShopeeFood screenshots, enriched with premium descriptions
 const MENU_DATA = [
