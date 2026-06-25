@@ -86,14 +86,61 @@ app.get('/api/shipping/areas', async (req, res) => {
   }
 
   try {
-    const response = await axios.get(`https://api.biteship.com/v1/maps/areas`, {
-      params: { countries: 'ID', input: query },
-      headers: { 'Authorization': `Bearer ${process.env.BITESHIP_API_KEY}` }
+    // Query OpenStreetMap Nominatim API for exact street / building suggestions in Bandung
+    // Bounded to Bandung bounding box: left: 107.52, top: -6.85, right: 107.72, bottom: -6.98
+    const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+      params: {
+        q: query,
+        format: 'json',
+        addressdetails: 1,
+        limit: 8,
+        countrycodes: 'id',
+        viewbox: '107.52,-6.85,107.72,-6.98',
+        bounded: 1
+      },
+      headers: {
+        'User-Agent': 'CizquakeOrderingApp/1.0 (contact@cizquake.com)'
+      }
     });
-    res.json({ success: true, areas: response.data.areas });
+
+    // Map Nominatim results to the schema expected by the frontend
+    const areas = response.data.map((item, idx) => {
+      // Create a clean readable name: e.g. "Jl. Ibrahim Adjie No.12, Kec. Batununggal, Bandung"
+      const details = item.address;
+      const road = details.road || details.suburb || details.neighbourhood || '';
+      const county = details.county || details.city_district || details.city || '';
+      const state = details.state || '';
+      
+      // Filter out empty parts
+      const cleanParts = [item.display_name.split(',')[0]];
+      if (details.suburb && details.suburb !== cleanParts[0]) cleanParts.push(details.suburb);
+      if (details.city_district && details.city_district !== details.suburb) cleanParts.push(details.city_district);
+      cleanParts.push('Bandung');
+      
+      const cleanName = cleanParts.filter(Boolean).join(', ');
+
+      return {
+        id: item.place_id || `OSM-${idx}-${Date.now()}`,
+        name: cleanName,
+        postal_code: details.postcode || '40000',
+        latitude: parseFloat(item.lat),
+        longitude: parseFloat(item.lon)
+      };
+    });
+
+    res.json({ success: true, areas });
   } catch (error) {
-    console.error('Error searching areas from BiteShip:', error.response?.data || error.message);
-    res.status(500).json({ success: false, error: 'Gagal mencari area alamat' });
+    console.warn('OpenStreetMap search failed, falling back to Biteship Areas. Reason:', error.message);
+    try {
+      const response = await axios.get(`https://api.biteship.com/v1/maps/areas`, {
+        params: { countries: 'ID', input: query },
+        headers: { 'Authorization': `Bearer ${process.env.BITESHIP_API_KEY}` }
+      });
+      res.json({ success: true, areas: response.data.areas });
+    } catch (err) {
+      console.error('Error searching areas from BiteShip fallback:', err.message);
+      res.status(500).json({ success: false, error: 'Gagal mencari area alamat' });
+    }
   }
 });
 
