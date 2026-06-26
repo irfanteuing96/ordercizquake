@@ -12,7 +12,7 @@ const MENU_DATA = [
     id: 'mini-blueberry',
     name: 'Mini Box Blueberry',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '1.2RB terjual',
     description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
     image: '/img/Blueberry.jpeg',
@@ -24,7 +24,7 @@ const MENU_DATA = [
     id: 'mini-cheese',
     name: 'Mini Box Double Cheese',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '2.5RB terjual',
     description: 'Classic creamy mini cheesecake with a generous layer of grated cheddar cheese.',
     image: '/img/cheese.jpeg',
@@ -36,7 +36,7 @@ const MENU_DATA = [
     id: 'mini-chocolate',
     name: 'Mini Box Chocolate',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '1.8RB terjual',
     description: 'Decadent mini cheesecake with a rich and smooth chocolate ganache topping.',
     image: '/img/Coklat.jpeg',
@@ -48,7 +48,7 @@ const MENU_DATA = [
     id: 'mini-lotus',
     name: 'Mini Box Lotus Biscoff',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 12500,
     sales: '940 terjual',
     description: 'Creamy mini cheesecake layered with smooth Lotus Biscoff spread and biscuit crumbs.',
     image: '/img/Lotus.jpeg',
@@ -60,7 +60,7 @@ const MENU_DATA = [
     id: 'mini-matcha',
     name: 'Mini Box Matcha',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '560 terjual',
     description: 'Mini cheesecake infused with high-quality Uji Matcha for a perfect sweet-bitter balance.',
     image: '/img/Matcha.jpeg',
@@ -72,7 +72,7 @@ const MENU_DATA = [
     id: 'mini-oreo',
     name: 'Mini Box Oreo',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '2.1RB terjual',
     description: 'Delicious mini cheesecake with crushed Oreo cookies folded inside and on top.',
     image: '/img/Oreo.jpeg',
@@ -84,7 +84,7 @@ const MENU_DATA = [
     id: 'mini-redvelvet',
     name: 'Mini Box Red Velvet',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '870 terjual',
     description: 'Elegant red velvet mini cheesecake topped with cream cheese frosting and cake crumbs.',
     image: '/img/Redvelvet.jpeg',
@@ -96,7 +96,7 @@ const MENU_DATA = [
     id: 'mini-seasalt',
     name: 'Mini Box Sea Salt Caramel',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '1.1RB terjual',
     description: 'Indulgent mini cheesecake with a perfect blend of sweet caramel and a touch of sea salt.',
     image: '/img/Seasalt.jpeg',
@@ -108,121 +108,13 @@ const MENU_DATA = [
     id: 'mini-tiramisu',
     name: 'Mini Box Tiramisu',
     category: 'Mini Dessert Box',
-    price: 18500,
+    price: 10000,
     sales: '1.5RB terjual',
     description: 'Coffee-infused cream cheese layers on a soft ladyfinger biscuit base, dusted with cocoa powder.',
     image: '/img/Tiramisu.jpeg',
     inStock: true,
     rating: 4.9,
     salesCount: '1.5k'
-  },
-  {
-    id: 'berry-swirl-bliss',
-    name: 'Berry Swirl Bliss',
-    category: 'Strawberry',
-    price: 18500,
-    sales: '1.2RB terjual',
-    description: 'Strawberry Swirl Cheesecake, featuring vibrant red berry compote marbled through a dense, creamy white base.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxMl1ARgdAywyrP3E_6iA4Ftme1mOye_AxHKZbBSgJ7NiC0R09ESlOdRWG7tny5VxBqlJR0yB5QCQXbZzdgIRyFxtdxXBajDzd4AdPOPe7GP89D_byP001e4Crssc97dD1IV4JbHfTwPNzRm3YKCFqZGoSCv1tDBSIs8sUnlbXKE3LGloWTQJtIeo1_6fBlmOjnFnj3pIIl1NPJUO3GPA9jmupRKATDvffggpn1hq24nEEFSTWvSOs9RGWOVZ2cpROCN3vrHXAKM1Y',
-    inStock: true,
-    rating: 4.8,
-    salesCount: '1.2k'
-  },
-  {
-    id: 'midnight-cacao',
-    name: 'Midnight Cacao',
-    category: 'Dark Cacao',
-    price: 21000,
-    sales: '856 terjual',
-    description: 'A decadent Cacao Crust Cheesecake with a dark, crumbly chocolate base and a silky ganache topping.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCKrM0yHdoemoeIniGub_i3y9Ogrd7Lhfyc9IeDcxxHTrwWXtw_G16LfzJKxqtcDP2833Ih91ZsKxYt2VUrk9FoBOBvhul3T5VVzVnD4xg0WlammsBWdaUCVWIFjA525LQMHpGpJQpYtc4xJolwm1tZ0BJOhoJoUjrLKF9bgMvl2Irh7tZUadfDnpitL9CUNKx8rB_CWDXv6j1snilnVdgvho8vH3cuCDtwn_IJzEESedext74UEpv3mpaHZO8f62D1-soWr2Lzm2t',
-    inStock: true,
-    rating: 4.9,
-    salesCount: '856'
-  },
-  {
-    id: 'sun-kissed-persimmon',
-    name: 'Sun-Kissed Persimmon',
-    category: 'Persimmon',
-    price: 19900,
-    sales: '430 terjual',
-    description: 'A vibrant Persimmon Glazed Cheesecake with a bright orange, translucent mirror glaze topping.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBulOywWjOOoMp5nnVbfUMPgFGvBYC68MSCKAPsw5KGXATCTTDfXJRIePtzewPM_aZd1LQIX7Si4ZjoGiH33ooPT985iSZT-bO9YITwcZwNY4vZixICodeN1jSpOjp7tI8TJvibYNi5-7UmYHZjYhZw_ekmB_L7vEfKQUVPuCWs0UbrY73_4JtwI1rjixGxH4DwpohzRFW6nmoGNulQPPHqAbl-30zkyA5bm2M5M-hD5MAf23u7Uv-VkxR04_Plm3Nf4zt3605ZV5XB',
-    inStock: true,
-    rating: 4.7,
-    salesCount: '430'
-  },
-  {
-    id: 'basque-burnt-artisan',
-    name: 'Artisan Basque Burnt',
-    category: 'Classic Cream',
-    price: 22000,
-    sales: '2.1RB terjual',
-    description: 'A minimalist Japanese-style Burnt Basque Cheesecake with a deeply caramelized, dark brown top and creamy center.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1r-Bp3BRz1JCeg_ZjZoo0ecNYCPM5F8i1UTpstbASjcsHzoVXPDEZuEGMNc2-Baiz-cW-C-MYLQw1T7tveBUnMBVEwNsAhOxmunX1oiVMgQC4HtwRbNwD8hTWnV8eaWjX8_810RwSjMuI5CN1_wKTIgkT-HIayOapcuhBQADSbq_qxu6dvfFooHREs4Sx_JRefVx0spTnRczYV5RYPIS6ENFj6sGVuTz_QJVx7K9xuCXjkbM_KmUtRL2D1ScSbrGVNvUnuV6oU6g-',
-    inStock: true,
-    rating: 5.0,
-    salesCount: '2.1k'
-  },
-  {
-    id: 'classic-new-york',
-    name: 'Classic New York',
-    category: 'Classic Cream',
-    price: 24000,
-    sales: '300+ terjual',
-    description: 'Our signature creamy cheesecake with a buttery graham cracker crust.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAjq0s03pkGzwG4FRJ9xa1mI7b35sdu22EtD1zSu3vqggDO5hFs2GqQN4G75JS56cUqiIQaIwjA1ro3bjCJrhGxwkh_F8v5gJjpV8Mepq-CKlA2aVvugFfOq530FCe5vr3IlWFygfkF246emodMKhTBO8-SoxsY-lrflLnZ_bqDTfFWQQ9rTjitLncPZoAKlVaMJp1rzcs-aNsD7WGgDZj6_uy66_QYPisGAOVLFPT9EnYhkgCfDXNyeXG3nJuYYX0ukPjsE08gnaJZ',
-    inStock: true,
-    rating: 4.9,
-    salesCount: '2.1k'
-  },
-  {
-    id: 'strawberry-bliss',
-    name: 'Strawberry Bliss',
-    category: 'Strawberry',
-    price: 28000,
-    sales: '1.2RB terjual',
-    description: 'Fresh organic strawberries swirled into our classic base with a fruit glaze.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQpvOlrsGHimN6wjmEw-TdnOXXBoNxptdwgANi05XTT9iZKnIXyZNqORehzDJ50LjzgKTf7e0ohLGBe7A2NUzAI8kUZFGH_6JC7_GPtzZeVuBba6JiKmf5XnGxq0UO2wTPstVBtWnS_C34Uw_Oh0ieNeEpBeYUPezUzPuCOyGpOYNrF4nS53MDm50sd_4HpHNJ4gbLFOlV_r1P4w4SKc6SxSPhaavsbjy2HbjhKSztJYXugZzzVkrSX-5MwSxKSoG0Z3g7P68OWGO3',
-    inStock: true,
-    rating: 4.8,
-    salesCount: '1.2k'
-  },
-  {
-    id: 'mini-sampler',
-    name: 'Mini Sampler Box',
-    category: 'Mini Cakes',
-    price: 32000,
-    sales: '300+ terjual',
-    description: '6 assorted bite-sized cheesecakes featuring our most popular flavors.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAYJhgcKtMQhwJjGeXuSVzY7qqs1XMSR_1kTy2JKTEkaW_I4SoI0aa9_4_bO0qXcxe3OBK6Z4T7HRYH3Gp3vUoGKBypmIt_M6ZjfyAhH8RKmynJnJgq9SxIFcSzn3Yrw2Q-S3coTbN7BLYmFRCtDPui-FWTL1yiWzrKerSz7tAFNXYLITfaJAv4iRyXZXIjOSN8DM2tbNsEhahxcCIzsz206bVkY_j37s07CJVMnKpPXsWKLPMw38psdTJfOI-5D6OcK1TxlAFo0KJR',
-    inStock: true,
-    rating: 4.7,
-    salesCount: '430'
-  },
-  {
-    id: 'lemon-zest',
-    name: 'Lemon Zest Swirl',
-    category: 'Fruit Topped',
-    price: 26000,
-    sales: '95 terjual',
-    description: 'Zesty lemon curd swirled with wild blueberries for a refreshing tart finish.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBpRsi-RtBeXxt1iNTu4LAuWLZ4-zIEtZheorNWaj4sSJV7da9UbiUOd_-50CO8U6ycNIGPRsUggGJSzEdGmd-e01w3XaGpTUhU6TNvg6SlRiSHRqD80HezImxG9cvCyv5wcGrdsDCXHEjzhFxWqn9Bs7D8mF8n1GpNcj1OTkvBQPFmWfjwreaOcoFN_3sIOpb8cnka8OqHSaCi741nb7hoaC0VfshPrNCI-bZklxwZFxPsyVnke5pXYTWazTUSMYHp1SQlo0O7LB5H',
-    inStock: true,
-    rating: 4.8,
-    salesCount: '95'
-  },
-  {
-    id: 'medium-box',
-    name: 'Signature Triple Cheese Cake',
-    category: 'Classic Cream',
-    price: 37000,
-    sales: '300+ terjual',
-    description: 'Signature Triple Cheese Cake, showcasing three distinct layers of creamy texture with gold leaf flakes.',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALE1EK4P4FGX7Uiax4dxOtjERlRfoI1-dqsxKThBy4hjReHMFBLw7Y9WWsWrwb8y5tKZcmKirgjz5nIWwe7GJljc9g7-N4CRCd4hALgUXrOEszDBMNvobAp4JVA7V44xAI2YU-gqXHzIolvgsYJWfpFqtYjAyxJ9GhmE7OVCXv_th6pdDLDGGJFbQZUWjWy_KET22OqyrOuT-R8sq_6UVqYdJm6WmfOTYX_uk-SISZMhKpgYsmZz47Zl9GlnsDwiTNNjpgatHnaWtI',
-    inStock: true,
-    rating: 5.0,
-    salesCount: '300+'
   }
 ];
 
@@ -466,21 +358,24 @@ export default function App() {
 
     if (selectedCategory === 'All Flavors' || selectedCategory === 'All') return true;
 
-    // Custom filtering matching chips from Stitch
-    if (selectedCategory === 'Strawberry') {
-      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry');
+    if (selectedCategory === 'Classic') {
+      return item.name.toLowerCase().includes('cheese') || 
+             item.name.toLowerCase().includes('tiramisu') || 
+             item.name.toLowerCase().includes('lotus') || 
+             item.name.toLowerCase().includes('biscoff') || 
+             item.name.toLowerCase().includes('matcha') || 
+             item.name.toLowerCase().includes('seasalt') || 
+             item.name.toLowerCase().includes('caramel');
     }
-    if (selectedCategory === 'Dark Cacao' || selectedCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('chocolate') || item.name.toLowerCase().includes('oreo');
+    if (selectedCategory === 'Chocolate') {
+      return item.name.toLowerCase().includes('chocolate') || 
+             item.name.toLowerCase().includes('coklat') || 
+             item.name.toLowerCase().includes('oreo');
     }
-    if (selectedCategory === 'Persimmon') {
-      return item.category === 'CizQuake Drink';
-    }
-    if (selectedCategory === 'Classic Cream' || selectedCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('lotus') || item.name.toLowerCase().includes('biscoff') || item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('velvet') || item.name.toLowerCase().includes('seasalt');
-    }
-    if (selectedCategory === 'Mini Cakes') {
-      return item.category === 'Mini Dessert Box' || item.category === 'Mini Cakes';
+    if (selectedCategory === 'Fruit & Sweet') {
+      return item.name.toLowerCase().includes('blueberry') || 
+             item.name.toLowerCase().includes('red velvet') || 
+             item.name.toLowerCase().includes('velvet');
     }
 
     return item.category === selectedCategory;
@@ -494,16 +389,23 @@ export default function App() {
     if (selectedMenuCategory === 'All') return true;
 
     if (selectedMenuCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('basque') || item.name.toLowerCase().includes('lotus') || item.name.toLowerCase().includes('biscoff') || item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('seasalt');
-    }
-    if (selectedMenuCategory === 'Fruit Topped') {
-      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry') || item.name.toLowerCase().includes('lemon') || item.name.toLowerCase().includes('red velvet') || item.name.toLowerCase().includes('velvet');
+      return item.name.toLowerCase().includes('cheese') || 
+             item.name.toLowerCase().includes('tiramisu') || 
+             item.name.toLowerCase().includes('lotus') || 
+             item.name.toLowerCase().includes('biscoff') || 
+             item.name.toLowerCase().includes('matcha') || 
+             item.name.toLowerCase().includes('seasalt') || 
+             item.name.toLowerCase().includes('caramel');
     }
     if (selectedMenuCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('chocolate') || item.name.toLowerCase().includes('oreo');
+      return item.name.toLowerCase().includes('chocolate') || 
+             item.name.toLowerCase().includes('coklat') || 
+             item.name.toLowerCase().includes('oreo');
     }
-    if (selectedMenuCategory === 'Mini Cakes') {
-      return item.category === 'Mini Dessert Box' || item.category === 'Mini Cakes';
+    if (selectedMenuCategory === 'Fruit & Sweet') {
+      return item.name.toLowerCase().includes('blueberry') || 
+             item.name.toLowerCase().includes('red velvet') || 
+             item.name.toLowerCase().includes('velvet');
     }
 
     return item.category === selectedMenuCategory;
@@ -547,19 +449,19 @@ export default function App() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
                     <img 
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      alt="Signature Triple Cheese Cake" 
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuALE1EK4P4FGX7Uiax4dxOtjERlRfoI1-dqsxKThBy4hjReHMFBLw7Y9WWsWrwb8y5tKZcmKirgjz5nIWwe7GJljc9g7-N4CRCd4hALgUXrOEszDBMNvobAp4JVA7V44xAI2YU-gqXHzIolvgsYJWfpFqtYjAyxJ9GhmE7OVCXv_th6pdDLDGGJFbQZUWjWy_KET22OqyrOuT-R8sq_6UVqYdJm6WmfOTYX_uk-SISZMhKpgYsmZz47Zl9GlnsDwiTNNjpgatHnaWtI"
+                      alt="Mini Box Double Cheese" 
+                      src="/img/cheese.jpeg"
                     />
                     <div className="absolute bottom-0 left-0 p-6 z-20 w-full text-left">
                       <div className="flex flex-col gap-1">
                         <span className="cizquake-featured-badge w-fit mb-2">Featured Favorite</span>
-                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">Signature Triple Cheese Cake</h2>
+                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">Mini Box Double Cheese</h2>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="font-display text-[#fabd00] font-bold text-lg">Rp 37.000</span>
+                          <span className="font-display text-[#fabd00] font-bold text-lg">Rp 10.000</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              const item = ENRICHED_MENU_DATA.find(i => i.id === 'medium-box');
+                              const item = ENRICHED_MENU_DATA.find(i => i.id === 'mini-cheese');
                               if (item) addToCart(item);
                             }}
                             className="cizquake-btn-order-now transition-all active:scale-90"
@@ -575,7 +477,7 @@ export default function App() {
 
                 {/* Categories scroll */}
                 <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-2.5">
-                  {['All Flavors', 'Strawberry', 'Dark Cacao', 'Persimmon', 'Classic Cream'].map(cat => (
+                  {['All Flavors', 'Classic', 'Chocolate', 'Fruit & Sweet'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
@@ -585,7 +487,7 @@ export default function App() {
                           : 'chip-inactive'
                       }`}
                     >
-                      {cat === 'Persimmon' ? 'Drinks' : cat}
+                      {cat}
                     </button>
                   ))}
                 </section>
@@ -703,7 +605,7 @@ export default function App() {
 
                 {/* Menu Category Chips */}
                 <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-3">
-                  {['All', 'Classic', 'Fruit Topped', 'Chocolate', 'Mini Cakes'].map(cat => (
+                  {['All', 'Classic', 'Chocolate', 'Fruit & Sweet'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedMenuCategory(cat)}
@@ -928,7 +830,7 @@ export default function App() {
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-on-surface-variant font-semibold">Rasa Favorit</span>
-                      <span className="text-on-surface font-bold text-primary font-bold">Classic Double Cheese</span>
+                      <span className="text-on-surface font-bold text-primary font-bold">Mini Box Double Cheese</span>
                     </div>
                   </div>
                 </div>
@@ -943,7 +845,7 @@ export default function App() {
                         <p className="text-[10px] text-on-surface-variant font-semibold">24 Juni 2026 • 2 item</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-bold text-primary font-bold">Rp 56.000</p>
+                        <p className="text-xs font-bold text-primary font-bold">Rp 20.000</p>
                         <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
                       </div>
                     </div>
@@ -953,7 +855,7 @@ export default function App() {
                         <p className="text-[10px] text-on-surface-variant font-semibold">18 Juni 2026 • 1 item</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs font-bold text-primary font-bold">Rp 37.000</p>
+                        <p className="text-xs font-bold text-primary font-bold">Rp 12.500</p>
                         <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
                       </div>
                     </div>

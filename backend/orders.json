@@ -65,9 +65,14 @@
     "totalProductPrice": 18500,
     "shippingPrice": 15000,
     "grossAmount": 33500,
-    "paymentStatus": "pending",
-    "shippingStatus": "idle",
-    "shippingOrderInfo": null,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782458328557",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
     "createdAt": "2026-06-24T16:49:55.870Z"
   },
   {
@@ -94,9 +99,14 @@
     "totalProductPrice": 18500,
     "shippingPrice": 15000,
     "grossAmount": 33500,
-    "paymentStatus": "pending",
-    "shippingStatus": "idle",
-    "shippingOrderInfo": null,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782458341443",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
     "createdAt": "2026-06-24T16:52:59.883Z"
   },
   {
@@ -370,6 +380,204 @@
     "createdAt": "2026-06-25T16:35:35.464Z",
     "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782405335464-41500",
     "paymentExpiry": "2026-06-25T16:50:35.673Z",
+    "paymentType": "qris_mock_fallback"
+  },
+  {
+    "orderId": "CIZ-1782460043034",
+    "customer": {
+      "name": "irfan",
+      "phone": "08231123221"
+    },
+    "items": [
+      {
+        "id": "berry-swirl-bliss",
+        "name": "Berry Swirl Bliss",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Buahbatu, Bandung",
+      "latitude": -6.9480801,
+      "longitude": 107.6512145,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 12925,
+    "grossAmount": 31425,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-26T07:47:23.034Z"
+  },
+  {
+    "orderId": "CIZ-1782460043680",
+    "customer": {
+      "name": "irfan",
+      "phone": "08231123221"
+    },
+    "items": [
+      {
+        "id": "berry-swirl-bliss",
+        "name": "Berry Swirl Bliss",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Buahbatu, Bandung",
+      "latitude": -6.9480801,
+      "longitude": 107.6512145,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 12925,
+    "grossAmount": 31425,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-26T07:47:23.680Z"
+  },
+  {
+    "orderId": "CIZ-1782460189129",
+    "customer": {
+      "name": "Yunus Fauzan",
+      "phone": "08211322321`1"
+    },
+    "items": [
+      {
+        "id": "sun-kissed-persimmon",
+        "name": "Sun-Kissed Persimmon",
+        "price": 19900,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Buahbatu, Bandung",
+      "latitude": -6.9480801,
+      "longitude": 107.6512145,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 19900,
+    "shippingPrice": 12925,
+    "grossAmount": 32825,
+    "paymentStatus": "pending",
+    "shippingStatus": "idle",
+    "shippingOrderInfo": null,
+    "createdAt": "2026-06-26T07:49:49.129Z"
+  },
+  {
+    "orderId": "CIZ-1782460190029",
+    "customer": {
+      "name": "Yunus Fauzan",
+      "phone": "08211322321`1"
+    },
+    "items": [
+      {
+        "id": "sun-kissed-persimmon",
+        "name": "Sun-Kissed Persimmon",
+        "price": 19900,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Buahbatu, Bandung",
+      "latitude": -6.9480801,
+      "longitude": 107.6512145,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 19900,
+    "shippingPrice": 12925,
+    "grossAmount": 32825,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782460193731",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-26T07:49:50.029Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782460190029-32825",
+    "paymentExpiry": "2026-06-26T08:04:50.163Z",
+    "paymentType": "qris_mock_fallback"
+  },
+  {
+    "orderId": "CIZ-1782460273828",
+    "customer": {
+      "name": "Yunus Fauzan",
+      "phone": "082115004713"
+    },
+    "items": [
+      {
+        "id": "berry-swirl-bliss",
+        "name": "Berry Swirl Bliss",
+        "price": 18500,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Asep, Cipariuk, Lembang",
+      "latitude": -6.7884197,
+      "longitude": 107.6045124,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 18500,
+    "shippingPrice": 58724,
+    "grossAmount": 77224,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782460276401",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-26T07:51:13.828Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782460273828-77224",
+    "paymentExpiry": "2026-06-26T08:06:13.941Z",
+    "paymentType": "qris_mock_fallback"
+  },
+  {
+    "orderId": "CIZ-1782460342354",
+    "customer": {
+      "name": "Muhammad IRfan",
+      "phone": "082115004713"
+    },
+    "items": [
+      {
+        "id": "medium-box",
+        "name": "Signature Triple Cheese Cake",
+        "price": 37000,
+        "quantity": 1
+      }
+    ],
+    "shipping": {
+      "address": "Masjid Asy-Syuhada, Jl. Ir. Haji Juanda, Cikampek Tim., Kec. Cikampek, Happy Farm - Strawberry Field, Sukaluyu, Lembang",
+      "latitude": -6.8183926,
+      "longitude": 107.6110639,
+      "courierCompany": "gosend",
+      "courierService": "Instant"
+    },
+    "totalProductPrice": 37000,
+    "shippingPrice": 50261,
+    "grossAmount": 87261,
+    "paymentStatus": "paid",
+    "shippingStatus": "driver_assigned",
+    "shippingOrderInfo": {
+      "courier_order_id": "BITESHIP-FALLBACK-1782460344929",
+      "courier_driver_name": "Budi Santoso (GoSend - Mock)",
+      "courier_driver_phone": "085566778899",
+      "courier_tracking_url": "https://biteship.com/tracking/mock"
+    },
+    "createdAt": "2026-06-26T07:52:22.354Z",
+    "paymentQrUrl": "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-CIZ-1782460342354-87261",
+    "paymentExpiry": "2026-06-26T08:07:22.457Z",
     "paymentType": "qris_mock_fallback"
   }
 ]
