@@ -87,14 +87,15 @@ app.get('/api/shipping/areas', async (req, res) => {
 
   try {
     // Query Photon API (OpenStreetMap-based autocomplete with prefix support)
-    // Bounded to Bandung bounding box: minLon: 107.52, minLat: -6.98, maxLon: 107.72, maxLat: -6.85
+    // Bounded to Bandung Raya (Greater Bandung) bounding box to include areas like Baleendah, Soreang, Lembang, Jatinangor, etc.
     const response = await axios.get('https://photon.komoot.io/api/', {
       params: {
         q: query,
         limit: 8,
-        bbox: '107.52,-6.98,107.72,-6.85'
+        bbox: '107.35,-7.15,107.90,-6.70'
       }
     });
+
 
     // Map Photon GeoJSON features to the schema expected by the frontend
     const areas = response.data.features.map((feature, idx) => {
