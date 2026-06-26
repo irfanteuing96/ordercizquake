@@ -6,6 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import axios from 'axios';
 import midtransClient from 'midtrans-client';
+import { sendOrderPaidNotifications } from './whatsappService.js';
+
 
 // Load Environment Variables
 dotenv.config();
@@ -573,10 +575,12 @@ app.post('/api/payment-callback', async (req, res) => {
   orders[orderIdx].paymentStatus = paymentStatus;
   writeOrders(orders);
 
-  // Jika status pembayaran sukses, jalankan booking kurir otomatis
+  // Jika status pembayaran sukses, jalankan booking kurir otomatis dan kirim WA
   if (paymentStatus === 'paid' && orders[orderIdx].shippingStatus === 'idle') {
     // Run async booking
     bookCourierAutomatically(orders[orderIdx]);
+    // Kirim notifikasi WA ke customer dan admin
+    sendOrderPaidNotifications(orders[orderIdx]);
   }
 
   res.json({ success: true });
@@ -613,9 +617,10 @@ app.post('/api/order/:id/simulate-pay', (req, res) => {
   orders[orderIdx].paymentStatus = 'paid';
   writeOrders(orders);
 
-  // Trigger booking kurir otomatis
+  // Trigger booking kurir otomatis dan kirim WA
   if (orders[orderIdx].shippingStatus === 'idle') {
     bookCourierAutomatically(orders[orderIdx]);
+    sendOrderPaidNotifications(orders[orderIdx]);
   }
 
   res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order: orders[orderIdx] });
