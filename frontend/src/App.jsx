@@ -9,6 +9,114 @@ const BACKEND_URL = window.location.hostname === 'localhost' || window.location.
 // Menu data as parsed from ShopeeFood screenshots, enriched with premium descriptions
 const MENU_DATA = [
   {
+    id: 'mini-blueberry',
+    name: 'Mini Box Blueberry',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '1.2RB terjual',
+    description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
+    image: '/img/Blueberry.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '1.2k'
+  },
+  {
+    id: 'mini-cheese',
+    name: 'Mini Box Double Cheese',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '2.5RB terjual',
+    description: 'Classic creamy mini cheesecake with a generous layer of grated cheddar cheese.',
+    image: '/img/cheese.jpeg',
+    inStock: true,
+    rating: 5.0,
+    salesCount: '2.5k'
+  },
+  {
+    id: 'mini-chocolate',
+    name: 'Mini Box Chocolate',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '1.8RB terjual',
+    description: 'Decadent mini cheesecake with a rich and smooth chocolate ganache topping.',
+    image: '/img/Coklat.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.8k'
+  },
+  {
+    id: 'mini-lotus',
+    name: 'Mini Box Lotus Biscoff',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '940 terjual',
+    description: 'Creamy mini cheesecake layered with smooth Lotus Biscoff spread and biscuit crumbs.',
+    image: '/img/Lotus.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '940'
+  },
+  {
+    id: 'mini-matcha',
+    name: 'Mini Box Matcha',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '560 terjual',
+    description: 'Mini cheesecake infused with high-quality Uji Matcha for a perfect sweet-bitter balance.',
+    image: '/img/Matcha.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '560'
+  },
+  {
+    id: 'mini-oreo',
+    name: 'Mini Box Oreo',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '2.1RB terjual',
+    description: 'Delicious mini cheesecake with crushed Oreo cookies folded inside and on top.',
+    image: '/img/Oreo.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '2.1k'
+  },
+  {
+    id: 'mini-redvelvet',
+    name: 'Mini Box Red Velvet',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '870 terjual',
+    description: 'Elegant red velvet mini cheesecake topped with cream cheese frosting and cake crumbs.',
+    image: '/img/Redvelvet.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '870'
+  },
+  {
+    id: 'mini-seasalt',
+    name: 'Mini Box Sea Salt Caramel',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '1.1RB terjual',
+    description: 'Indulgent mini cheesecake with a perfect blend of sweet caramel and a touch of sea salt.',
+    image: '/img/Seasalt.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.1k'
+  },
+  {
+    id: 'mini-tiramisu',
+    name: 'Mini Box Tiramisu',
+    category: 'Mini Dessert Box',
+    price: 18500,
+    sales: '1.5RB terjual',
+    description: 'Coffee-infused cream cheese layers on a soft ladyfinger biscuit base, dusted with cocoa powder.',
+    image: '/img/Tiramisu.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.5k'
+  },
+  {
     id: 'berry-swirl-bliss',
     name: 'Berry Swirl Bliss',
     category: 'Strawberry',
@@ -363,16 +471,16 @@ export default function App() {
       return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry');
     }
     if (selectedCategory === 'Dark Cacao' || selectedCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat');
+      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('chocolate') || item.name.toLowerCase().includes('oreo');
     }
     if (selectedCategory === 'Persimmon') {
       return item.category === 'CizQuake Drink';
     }
     if (selectedCategory === 'Classic Cream' || selectedCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel');
+      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('lotus') || item.name.toLowerCase().includes('biscoff') || item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('velvet') || item.name.toLowerCase().includes('seasalt');
     }
     if (selectedCategory === 'Mini Cakes') {
-      return item.category === 'Mini Dessert Box';
+      return item.category === 'Mini Dessert Box' || item.category === 'Mini Cakes';
     }
 
     return item.category === selectedCategory;
@@ -386,16 +494,16 @@ export default function App() {
     if (selectedMenuCategory === 'All') return true;
 
     if (selectedMenuCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('basque');
+      return item.name.toLowerCase().includes('cheese') || item.name.toLowerCase().includes('tiramisu') || item.name.toLowerCase().includes('caramel') || item.name.toLowerCase().includes('basque') || item.name.toLowerCase().includes('lotus') || item.name.toLowerCase().includes('biscoff') || item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('seasalt');
     }
     if (selectedMenuCategory === 'Fruit Topped') {
-      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry') || item.name.toLowerCase().includes('lemon') || item.name.toLowerCase().includes('red velvet');
+      return item.name.toLowerCase().includes('strawberry') || item.name.toLowerCase().includes('blueberry') || item.name.toLowerCase().includes('lemon') || item.name.toLowerCase().includes('red velvet') || item.name.toLowerCase().includes('velvet');
     }
     if (selectedMenuCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('oreo');
+      return item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cacao') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('chocolate') || item.name.toLowerCase().includes('oreo');
     }
     if (selectedMenuCategory === 'Mini Cakes') {
-      return item.category === 'Mini Dessert Box';
+      return item.category === 'Mini Dessert Box' || item.category === 'Mini Cakes';
     }
 
     return item.category === selectedMenuCategory;
