@@ -82,7 +82,7 @@ export async function sendOrderPaidNotifications(order) {
     // 3. Notify Admins
     const adminNumbers = process.env.ADMIN_WA_NUMBERS || '';
     if (adminNumbers) {
-      const adminMessage = `🔔 *PESANAN BARU MASUK (SUDAH BAYAR)*\n\n- *Order ID:* #${order.orderId}\n- *Customer:* ${order.customer.name} (${order.customer.phone})\n- *Total Pembayaran:* *Rp ${order.grossAmount.toLocaleString('id-ID')}*\n\n*Daftar Kue yang Harus Disiapkan:*\n${itemsText}\n\n*Pengiriman:*\n- Alamat: ${order.shipping.address}\n- Kurir: ${order.shipping.courierCompany.toUpperCase()} ${order.shipping.courierService}\n\nMohon segera siapkan pesanan! 🍰`;
+      const adminMessage = `*Pesanan #${order.orderId}*\n\n🔔 *PESANAN BARU MASUK (SUDAH BAYAR)*\n\n- *Customer:* ${order.customer.name} (${order.customer.phone})\n- *Total Pembayaran:* *Rp ${order.grossAmount.toLocaleString('id-ID')}*\n\n*Daftar Kue yang Harus Disiapkan:*\n${itemsText}\n\n*Pengiriman:*\n- Alamat: ${order.shipping.address}\n- Kurir: ${order.shipping.courierCompany.toUpperCase()} ${order.shipping.courierService}\n\nMohon segera siapkan pesanan! 🍰`;
       
       await sendWhatsAppMessage(adminNumbers, adminMessage);
     } else {

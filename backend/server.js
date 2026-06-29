@@ -207,6 +207,59 @@ const updateOrderFields = async (orderId, fields) => {
   }
 };
 
+// Helper to generate sequential order IDs (e.g. CIZ-0001, CIZ-0002)
+const getNextOrderId = async () => {
+  if (isUseSupabase) {
+    try {
+      // Query the latest order by created_at descending
+      const { data, error } = await supabase
+        .from('orders')
+        .select('order_id')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const lastId = data[0].order_id;
+        const match = lastId.match(/^CIZ-(\d+)$/);
+        if (match) {
+          const lastNum = parseInt(match[1], 10);
+          // Ignore legacy timestamp IDs (larger than 999999)
+          if (lastNum < 1000000) {
+            return `CIZ-${(lastNum + 1).toString().padStart(4, '0')}`;
+          }
+        }
+      }
+      
+      // Fallback: count table rows
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true });
+      return `CIZ-${(count + 1).toString().padStart(4, '0')}`;
+    } catch (error) {
+      console.error('[Supabase] Error generating sequential ID, using timestamp fallback:', error.message);
+      return `CIZ-${Date.now()}`;
+    }
+  } else {
+    const orders = readOrders();
+    let maxNum = 0;
+    orders.forEach(o => {
+      const match = o.orderId.match(/^CIZ-(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num < 1000000 && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    });
+    if (maxNum === 0) {
+      return `CIZ-${(orders.length + 1).toString().padStart(4, '0')}`;
+    }
+    return `CIZ-${(maxNum + 1).toString().padStart(4, '0')}`;
+  }
+};
+
 // -----------------
 // ENDPOINT 1: SEARCH AREA (BITESHIP MAPS)
 // -----------------
@@ -415,7 +468,7 @@ app.post('/api/shipping/rates', async (req, res) => {
 app.post('/api/checkout', async (req, res) => {
   const { customer, items, shipping, totalProductPrice, shippingPrice } = req.body;
   
-  const orderId = `CIZ-${Date.now()}`;
+  const orderId = await getNextOrderId();
   const grossAmount = totalProductPrice + shippingPrice;
 
   // 1. Buat pesanan di database

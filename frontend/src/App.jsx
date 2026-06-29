@@ -1261,7 +1261,7 @@ export default function App() {
                   <span className="material-symbols-outlined text-xl">package</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-bold text-on-surface">Pesanan #{trackingInfo.orderId.substring(0, 12)}...</h3>
+                  <h3 className="text-sm font-bold text-on-surface">Pesanan #{trackingInfo.orderId.length > 12 ? `${trackingInfo.orderId.substring(0, 12)}...` : trackingInfo.orderId}</h3>
                   <p className="text-xs text-on-surface-variant mt-1 font-semibold">Total: Rp {trackingInfo.grossAmount.toLocaleString('id-ID')}</p>
                   <p className="text-[11px] text-on-surface-variant/80 mt-2 font-semibold bg-surface-container-low px-3 py-2 rounded-lg border border-outline-variant/10 leading-relaxed">
                     Alamat: {trackingInfo.shipping.address}
