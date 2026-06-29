@@ -76,6 +76,17 @@ if (isUseSupabase) {
   console.log('[Supabase] No credentials found or incomplete. Falling back to local orders.json database.');
 }
 
+// Helper to wrap Supabase queries with a timeout to prevent hanging
+const supabaseWithTimeout = (thenable, ms = 4000) => {
+  const nativePromise = (async () => {
+    return await thenable;
+  })();
+  return Promise.race([
+    nativePromise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase request timeout')), ms))
+  ]);
+};
+
 const MENU_DATA = [
   {
     id: 'mini-blueberry',
@@ -219,9 +230,10 @@ const getMenuData = async () => {
   const menu = MENU_DATA.map(item => ({ ...item }));
   if (isUseSupabase) {
     try {
-      const { data, error } = await supabase
-        .from('menu_stock')
-        .select('*');
+      const { data, error } = await supabaseWithTimeout(
+        supabase.from('menu_stock').select('*'),
+        4000
+      );
       
       if (error) throw error;
       
@@ -256,9 +268,10 @@ const getMenuData = async () => {
 const updateMenuStock = async (id, inStock) => {
   if (isUseSupabase) {
     try {
-      const { error } = await supabase
-        .from('menu_stock')
-        .upsert({ id, in_stock: inStock });
+      const { error } = await supabaseWithTimeout(
+        supabase.from('menu_stock').upsert({ id, in_stock: inStock }),
+        4000
+      );
       
       if (error) throw error;
       console.log(`[Supabase] Success updating stock for ${id}: ${inStock}`);
@@ -305,11 +318,10 @@ const writeOrders = (orders) => {
 const getOrderById = async (orderId) => {
   if (isUseSupabase) {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('order_id', orderId)
-        .maybeSingle();
+      const { data, error } = await supabaseWithTimeout(
+        supabase.from('orders').select('*').eq('order_id', orderId).maybeSingle(),
+        4000
+      );
       
       if (error) throw error;
       if (!data) return null;
@@ -372,9 +384,10 @@ const createOrder = async (order) => {
         created_at: order.createdAt || new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('orders')
-        .insert(dbOrder);
+      const { error } = await supabaseWithTimeout(
+        supabase.from('orders').insert(dbOrder),
+        4000
+      );
       
       if (error) throw error;
       console.log(`[Supabase] Success inserting order: ${order.orderId}`);
@@ -401,10 +414,10 @@ const updateOrderFields = async (orderId, fields) => {
       if (fields.paymentQrUrl !== undefined) dbUpdates.payment_qr_url = fields.paymentQrUrl;
       if (fields.paymentExpiry !== undefined) dbUpdates.payment_expiry = fields.paymentExpiry;
       
-      const { error } = await supabase
-        .from('orders')
-        .update(dbUpdates)
-        .eq('order_id', orderId);
+      const { error } = await supabaseWithTimeout(
+        supabase.from('orders').update(dbUpdates).eq('order_id', orderId),
+        4000
+      );
       
       if (error) throw error;
       console.log(`[Supabase] Success updating order: ${orderId}`);
@@ -430,11 +443,10 @@ const getNextOrderId = async () => {
   if (isUseSupabase) {
     try {
       // Query the latest order by created_at descending
-      const { data, error } = await supabase
-        .from('orders')
-        .select('order_id')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const { data, error } = await supabaseWithTimeout(
+        supabase.from('orders').select('order_id').order('created_at', { ascending: false }).limit(1),
+        4000
+      );
       
       if (error) throw error;
       
@@ -451,9 +463,10 @@ const getNextOrderId = async () => {
       }
       
       // Fallback: count table rows
-      const { count } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true });
+      const { count } = await supabaseWithTimeout(
+        supabase.from('orders').select('*', { count: 'exact', head: true }),
+        4000
+      );
       return `CIZ-${(count + 1).toString().padStart(4, '0')}`;
     } catch (error) {
       console.error('[Supabase] Error generating sequential ID, using timestamp fallback:', error.message);
@@ -1047,10 +1060,10 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/api/admin/orders', async (req, res) => {
   if (isUseSupabase) {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabaseWithTimeout(
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        4000
+      );
       
       if (error) throw error;
       
