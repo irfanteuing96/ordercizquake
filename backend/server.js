@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import axios from 'axios';
 import midtransClient from 'midtrans-client';
+import { createClient } from '@supabase/supabase-js';
 import { sendOrderPaidNotifications } from './whatsappService.js';
 
 
@@ -29,7 +30,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Initialize Midtrans Clients
+// Initialize Midtrans & Biteship Clients
 const isMockMidtrans = !process.env.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY.includes('YOUR_SANDBOX');
 const isMockBiteship = !process.env.BITESHIP_API_KEY || process.env.BITESHIP_API_KEY.includes('YOUR_SANDBOX');
 
@@ -40,6 +41,23 @@ if (!isMockMidtrans) {
     serverKey: process.env.MIDTRANS_SERVER_KEY,
     clientKey: process.env.MIDTRANS_CLIENT_KEY
   });
+}
+
+// Initialize Supabase Client (if keys are provided)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+const isUseSupabase = supabaseUrl && supabaseKey && 
+                     !supabaseUrl.includes('placeholder') && 
+                     !supabaseKey.includes('placeholder') && 
+                     supabaseUrl !== '' && 
+                     supabaseKey !== '';
+
+let supabase = null;
+if (isUseSupabase) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+  console.log('[Supabase] Database connected. Transactions will be saved permanently.');
+} else {
+  console.log('[Supabase] No credentials found or incomplete. Falling back to local orders.json database.');
 }
 
 // Database Helpers (JSON-based order persistence)
@@ -62,6 +80,130 @@ const writeOrders = (orders) => {
     fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2));
   } catch (error) {
     console.error('Error writing orders file:', error);
+  }
+};
+
+// Database Helpers (Fallback JSON + Supabase PostgreSQL)
+const getOrderById = async (orderId) => {
+  if (isUseSupabase) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('order_id', orderId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (!data) return null;
+
+      return {
+        orderId: data.order_id,
+        customer: {
+          name: data.customer_name,
+          phone: data.customer_phone
+        },
+        items: data.items,
+        shipping: {
+          address: data.shipping_address,
+          latitude: parseFloat(data.shipping_latitude),
+          longitude: parseFloat(data.shipping_longitude),
+          courierCompany: data.courier_company,
+          courierService: data.courier_service
+        },
+        totalProductPrice: parseFloat(data.total_product_price),
+        shippingPrice: parseFloat(data.shipping_price),
+        grossAmount: parseFloat(data.gross_amount),
+        paymentStatus: data.payment_status,
+        shippingStatus: data.shipping_status,
+        shippingOrderInfo: data.shipping_order_info,
+        paymentQrUrl: data.payment_qr_url,
+        paymentExpiry: data.payment_expiry,
+        createdAt: data.created_at
+      };
+    } catch (error) {
+      console.error('[Supabase] Error getting order:', error.message);
+      return null;
+    }
+  } else {
+    const orders = readOrders();
+    return orders.find(o => o.orderId === orderId) || null;
+  }
+};
+
+const createOrder = async (order) => {
+  if (isUseSupabase) {
+    try {
+      const dbOrder = {
+        order_id: order.orderId,
+        customer_name: order.customer.name,
+        customer_phone: order.customer.phone,
+        items: order.items,
+        shipping_address: order.shipping.address,
+        shipping_latitude: order.shipping.latitude,
+        shipping_longitude: order.shipping.longitude,
+        courier_company: order.shipping.courierCompany,
+        courier_service: order.shipping.courierService,
+        total_product_price: order.totalProductPrice,
+        shipping_price: order.shippingPrice,
+        gross_amount: order.grossAmount,
+        payment_status: order.paymentStatus || 'pending',
+        shipping_status: order.shippingStatus || 'idle',
+        shipping_order_info: order.shippingOrderInfo,
+        payment_qr_url: order.paymentQrUrl,
+        payment_expiry: order.paymentExpiry,
+        created_at: order.createdAt || new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('orders')
+        .insert(dbOrder);
+      
+      if (error) throw error;
+      console.log(`[Supabase] Success inserting order: ${order.orderId}`);
+      return true;
+    } catch (error) {
+      console.error('[Supabase] Error inserting order:', error.message);
+      return false;
+    }
+  } else {
+    const orders = readOrders();
+    orders.push(order);
+    writeOrders(orders);
+    return true;
+  }
+};
+
+const updateOrderFields = async (orderId, fields) => {
+  if (isUseSupabase) {
+    try {
+      const dbUpdates = {};
+      if (fields.paymentStatus !== undefined) dbUpdates.payment_status = fields.paymentStatus;
+      if (fields.shippingStatus !== undefined) dbUpdates.shipping_status = fields.shippingStatus;
+      if (fields.shippingOrderInfo !== undefined) dbUpdates.shipping_order_info = fields.shippingOrderInfo;
+      if (fields.paymentQrUrl !== undefined) dbUpdates.payment_qr_url = fields.paymentQrUrl;
+      if (fields.paymentExpiry !== undefined) dbUpdates.payment_expiry = fields.paymentExpiry;
+      
+      const { error } = await supabase
+        .from('orders')
+        .update(dbUpdates)
+        .eq('order_id', orderId);
+      
+      if (error) throw error;
+      console.log(`[Supabase] Success updating order: ${orderId}`);
+      return true;
+    } catch (error) {
+      console.error('[Supabase] Error updating order:', error.message);
+      return false;
+    }
+  } else {
+    const orders = readOrders();
+    const idx = orders.findIndex(o => o.orderId === orderId);
+    if (idx !== -1) {
+      orders[idx] = { ...orders[idx], ...fields };
+      writeOrders(orders);
+      return true;
+    }
+    return false;
   }
 };
 
@@ -276,7 +418,7 @@ app.post('/api/checkout', async (req, res) => {
   const orderId = `CIZ-${Date.now()}`;
   const grossAmount = totalProductPrice + shippingPrice;
 
-  // 1. Buat pesanan di database lokal
+  // 1. Buat pesanan di database
   const newOrder = {
     orderId,
     customer,
@@ -291,9 +433,7 @@ app.post('/api/checkout', async (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  const orders = readOrders();
-  orders.push(newOrder);
-  writeOrders(orders);
+  await createOrder(newOrder);
 
   // 2. Buat pembayaran QRIS di Midtrans
   if (isMockMidtrans) {
@@ -305,9 +445,10 @@ app.post('/api/checkout', async (req, res) => {
     newOrder.paymentQrUrl = qrisUrl;
     newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 menit exp
     
-    const idx = orders.findIndex(o => o.orderId === orderId);
-    orders[idx] = newOrder;
-    writeOrders(orders);
+    await updateOrderFields(orderId, {
+      paymentQrUrl: qrisUrl,
+      paymentExpiry: newOrder.paymentExpiry
+    });
 
     return res.json({
       success: true,
@@ -346,9 +487,10 @@ app.post('/api/checkout', async (req, res) => {
     newOrder.paymentQrUrl = paymentQrUrl;
     newOrder.paymentExpiry = chargeResponse.expiry_time || new Date(Date.now() + 15 * 60 * 1000).toISOString();
     
-    const idx = orders.findIndex(o => o.orderId === orderId);
-    orders[idx] = newOrder;
-    writeOrders(orders);
+    await updateOrderFields(orderId, {
+      paymentQrUrl,
+      paymentExpiry: newOrder.paymentExpiry
+    });
 
     res.json({
       success: true,
@@ -366,11 +508,11 @@ app.post('/api/checkout', async (req, res) => {
     
     newOrder.paymentQrUrl = qrisUrl;
     newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    newOrder.paymentType = 'qris_mock_fallback';
     
-    const idx = orders.findIndex(o => o.orderId === orderId);
-    orders[idx] = newOrder;
-    writeOrders(orders);
+    await updateOrderFields(orderId, {
+      paymentQrUrl: qrisUrl,
+      paymentExpiry: newOrder.paymentExpiry
+    });
 
     res.json({
       success: true,
@@ -386,49 +528,34 @@ app.post('/api/checkout', async (req, res) => {
 
 // Helper untuk men-trigger booking kurir otomatis di BiteShip
 async function bookCourierAutomatically(order) {
-  const orders = readOrders();
-  const orderIdx = orders.findIndex(o => o.orderId === order.orderId);
-  if (orderIdx === -1) return;
-
   console.log(`[BiteShip] Memicu pemesanan kurir otomatis untuk order: ${order.orderId}`);
-  orders[orderIdx].shippingStatus = 'searching';
-  writeOrders(orders);
+  await updateOrderFields(order.orderId, { shippingStatus: 'searching' });
 
   if (isMockBiteship) {
     // Simulasi booking kurir berhasil setelah 3 detik
-    setTimeout(() => {
-      const updatedOrders = readOrders();
-      const idx = updatedOrders.findIndex(o => o.orderId === order.orderId);
-      if (idx !== -1) {
-        updatedOrders[idx].shippingStatus = 'driver_assigned';
-        updatedOrders[idx].shippingOrderInfo = {
-          courier_order_id: `BITESHIP-${Date.now()}`,
-          courier_driver_name: 'Budi Santoso (GoSend)',
-          courier_driver_phone: '085566778899',
-          courier_tracking_url: 'https://biteship.com/tracking/mock'
-        };
-        writeOrders(updatedOrders);
+    setTimeout(async () => {
+      const currentOrder = await getOrderById(order.orderId);
+      if (currentOrder) {
+        await updateOrderFields(order.orderId, {
+          shippingStatus: 'driver_assigned',
+          shippingOrderInfo: {
+            courier_order_id: `BITESHIP-${Date.now()}`,
+            courier_driver_name: 'Budi Santoso (GoSend)',
+            courier_driver_phone: '085566778899',
+            courier_tracking_url: 'https://biteship.com/tracking/mock'
+          }
+        });
         console.log(`[BiteShip Mock] Driver assigned untuk ${order.orderId}: Budi Santoso`);
 
         // Simulasikan status jalan dan selesai pengiriman bertahap
-        setTimeout(() => {
-          const runOrders = readOrders();
-          const rIdx = runOrders.findIndex(o => o.orderId === order.orderId);
-          if (rIdx !== -1) {
-            runOrders[rIdx].shippingStatus = 'on_the_way';
-            writeOrders(runOrders);
-            console.log(`[BiteShip Mock] Order ${order.orderId} sedang di perjalanan.`);
-          }
+        setTimeout(async () => {
+          await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
+          console.log(`[BiteShip Mock] Order ${order.orderId} sedang di perjalanan.`);
         }, 10000);
 
-        setTimeout(() => {
-          const runOrders = readOrders();
-          const rIdx = runOrders.findIndex(o => o.orderId === order.orderId);
-          if (rIdx !== -1) {
-            runOrders[rIdx].shippingStatus = 'delivered';
-            writeOrders(runOrders);
-            console.log(`[BiteShip Mock] Order ${order.orderId} telah sampai.`);
-          }
+        setTimeout(async () => {
+          await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
+          console.log(`[BiteShip Mock] Order ${order.orderId} telah sampai.`);
         }, 25000);
       }
     }, 3000);
@@ -481,55 +608,39 @@ async function bookCourierAutomatically(order) {
     });
 
     const biteshipOrder = response.data;
-    const updatedOrders = readOrders();
-    const idx = updatedOrders.findIndex(o => o.orderId === order.orderId);
-    if (idx !== -1) {
-      updatedOrders[idx].shippingStatus = 'driver_assigned';
-      updatedOrders[idx].shippingOrderInfo = {
+    await updateOrderFields(order.orderId, {
+      shippingStatus: 'driver_assigned',
+      shippingOrderInfo: {
         courier_order_id: biteshipOrder.id,
         courier_driver_name: biteshipOrder.courier?.driver_name || 'Mencari Kurir...',
         courier_driver_phone: biteshipOrder.courier?.driver_phone || '',
         courier_tracking_url: biteshipOrder.courier?.tracking_url || ''
-      };
-      writeOrders(updatedOrders);
-    }
+      }
+    });
   } catch (error) {
     console.warn('Real BiteShip courier booking failed. Falling back to Mock Booking. Reason:', error.message);
     
     // Fallback ke booking simulasi agar tracking tetap berjalan di UI
-    const updatedOrders = readOrders();
-    const idx = updatedOrders.findIndex(o => o.orderId === order.orderId);
-    if (idx !== -1) {
-      updatedOrders[idx].shippingStatus = 'driver_assigned';
-      updatedOrders[idx].shippingOrderInfo = {
+    await updateOrderFields(order.orderId, {
+      shippingStatus: 'driver_assigned',
+      shippingOrderInfo: {
         courier_order_id: `BITESHIP-FALLBACK-${Date.now()}`,
         courier_driver_name: 'Budi Santoso (GoSend - Mock)',
         courier_driver_phone: '085566778899',
         courier_tracking_url: 'https://biteship.com/tracking/mock'
-      };
-      writeOrders(updatedOrders);
-      
-      // Simulasikan status jalan dan selesai pengiriman bertahap
-      setTimeout(() => {
-        const runOrders = readOrders();
-        const rIdx = runOrders.findIndex(o => o.orderId === order.orderId);
-        if (rIdx !== -1) {
-          runOrders[rIdx].shippingStatus = 'on_the_way';
-          writeOrders(runOrders);
-          console.log(`[BiteShip Fallback Mock] Order ${order.orderId} sedang di perjalanan.`);
-        }
-      }, 10000);
+      }
+    });
+    
+    // Simulasikan status jalan dan selesai pengiriman bertahap
+    setTimeout(async () => {
+      await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
+      console.log(`[BiteShip Fallback Mock] Order ${order.orderId} sedang di perjalanan.`);
+    }, 10000);
 
-      setTimeout(() => {
-        const runOrders = readOrders();
-        const rIdx = runOrders.findIndex(o => o.orderId === order.orderId);
-        if (rIdx !== -1) {
-          runOrders[rIdx].shippingStatus = 'delivered';
-          writeOrders(runOrders);
-          console.log(`[BiteShip Fallback Mock] Order ${order.orderId} telah sampai.`);
-        }
-      }, 25000);
-    }
+    setTimeout(async () => {
+      await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
+      console.log(`[BiteShip Fallback Mock] Order ${order.orderId} telah sampai.`);
+    }, 25000);
   }
 }
 
@@ -548,10 +659,9 @@ app.post('/api/payment-callback', async (req, res) => {
   const transactionStatus = notification.transaction_status;
   const fraudStatus = notification.fraud_status;
 
-  const orders = readOrders();
-  const orderIdx = orders.findIndex(o => o.orderId === orderId);
+  const order = await getOrderById(orderId);
 
-  if (orderIdx === -1) {
+  if (!order) {
     console.log(`[Midtrans Webhook] Order ID ${orderId} not found (possibly a test request). Returning 200 to acknowledge.`);
     return res.status(200).json({ success: true, message: 'Notification received but order not found' });
   }
@@ -572,15 +682,15 @@ app.post('/api/payment-callback', async (req, res) => {
     paymentStatus = 'pending';
   }
 
-  orders[orderIdx].paymentStatus = paymentStatus;
-  writeOrders(orders);
+  await updateOrderFields(orderId, { paymentStatus });
+  order.paymentStatus = paymentStatus;
 
   // Jika status pembayaran sukses, jalankan booking kurir otomatis dan kirim WA
-  if (paymentStatus === 'paid' && orders[orderIdx].shippingStatus === 'idle') {
+  if (paymentStatus === 'paid' && order.shippingStatus === 'idle') {
     // Run async booking
-    bookCourierAutomatically(orders[orderIdx]);
+    bookCourierAutomatically(order);
     // Kirim notifikasi WA ke customer dan admin
-    sendOrderPaidNotifications(orders[orderIdx]);
+    sendOrderPaidNotifications(order);
   }
 
   res.json({ success: true });
@@ -589,10 +699,9 @@ app.post('/api/payment-callback', async (req, res) => {
 // -----------------
 // ENDPOINT 5: GET ORDER STATUS (TRACKING)
 // -----------------
-app.get('/api/order/:id', (req, res) => {
+app.get('/api/order/:id', async (req, res) => {
   const { id } = req.params;
-  const orders = readOrders();
-  const order = orders.find(o => o.orderId === id);
+  const order = await getOrderById(id);
 
   if (!order) {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
@@ -604,26 +713,25 @@ app.get('/api/order/:id', (req, res) => {
 // -----------------
 // ENDPOINT 6: SIMULATE PAYMENT (FOR TESTING SANDBOX & DEVELOPMENT)
 // -----------------
-app.post('/api/order/:id/simulate-pay', (req, res) => {
+app.post('/api/order/:id/simulate-pay', async (req, res) => {
   const { id } = req.params;
-  const orders = readOrders();
-  const orderIdx = orders.findIndex(o => o.orderId === id);
+  const order = await getOrderById(id);
 
-  if (orderIdx === -1) {
+  if (!order) {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
   }
 
   console.log(`[Developer Simulator] Simulating payment success for order: ${id}`);
-  orders[orderIdx].paymentStatus = 'paid';
-  writeOrders(orders);
+  await updateOrderFields(id, { paymentStatus: 'paid' });
+  order.paymentStatus = 'paid';
 
   // Trigger booking kurir otomatis dan kirim WA
-  if (orders[orderIdx].shippingStatus === 'idle') {
-    bookCourierAutomatically(orders[orderIdx]);
-    sendOrderPaidNotifications(orders[orderIdx]);
+  if (order.shippingStatus === 'idle') {
+    bookCourierAutomatically(order);
+    sendOrderPaidNotifications(order);
   }
 
-  res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order: orders[orderIdx] });
+  res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order });
 });
 
 // Start Server
