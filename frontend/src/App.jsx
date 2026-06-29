@@ -123,6 +123,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('catalog');
   
   // Catalog State
+  const [menu, setMenu] = useState(MENU_DATA);
   const [selectedCategory, setSelectedCategory] = useState('All Flavors');
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
@@ -155,6 +156,7 @@ export default function App() {
   const [adminOrders, setAdminOrders] = useState([]);
   const [isAdminLoadingOrders, setIsAdminLoadingOrders] = useState(false);
   const [adminFilter, setAdminFilter] = useState('all');
+  const [adminSubTab, setAdminSubTab] = useState('orders'); // 'orders' or 'stock'
 
   // Debouncing Address Search
   useEffect(() => {
@@ -175,6 +177,21 @@ export default function App() {
 
     return () => clearTimeout(delayDebounce);
   }, [addressSearch]);
+
+  // Load dynamic menu stock on mount / view changes
+  useEffect(() => {
+    const fetchMenu = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/menu`);
+        if (response.data.success) {
+          setMenu(response.data.menu);
+        }
+      } catch (err) {
+        console.error('Error fetching menu stock from backend:', err);
+      }
+    };
+    fetchMenu();
+  }, [currentView, activeTab]);
 
   // Fetch rates when area changes or cart changes
   useEffect(() => {
@@ -373,6 +390,19 @@ export default function App() {
     }
   };
 
+  const toggleMenuStock = async (id, currentStockStatus) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/menu/${id}/toggle-stock`, {
+        inStock: !currentStockStatus
+      });
+      if (response.data.success) {
+        setMenu(prev => prev.map(m => m.id === id ? { ...m, inStock: !currentStockStatus } : m));
+      }
+    } catch (err) {
+      alert('Gagal mengubah status stok kue.');
+    }
+  };
+
   // -----------------
   // CART ACTIONS
   // -----------------
@@ -403,7 +433,7 @@ export default function App() {
   const getCartSubtotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   // Dynamic enrichment of MENU_DATA with ratings and sales counts for Stitch design alignment
-  const ENRICHED_MENU_DATA = MENU_DATA.map(item => {
+  const ENRICHED_MENU_DATA = menu.map(item => {
     let rating = 4.8;
     let salesCount = item.sales ? item.sales.replace(' terjual', '') : '100+';
     if (item.name.toLowerCase().includes('basque') || item.name.toLowerCase().includes('medium')) {
@@ -971,208 +1001,278 @@ export default function App() {
               </header>
 
               <main className="mt-16 pt-6 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
-                {/* Sales Summary Card */}
-                <div className="bg-amber-100/50 rounded-2xl p-5 border border-amber-250 shadow-sm text-left">
-                  <h3 className="font-display font-bold text-sm text-amber-800 mb-3 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-md">analytics</span>
-                    Ringkasan Penjualan
-                  </h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
-                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Omzet</p>
-                      <p className="text-sm font-black text-primary mt-2">
-                        Rp {adminOrders
-                          .filter(o => o.paymentStatus === 'paid')
-                          .reduce((sum, o) => sum + o.grossAmount, 0)
-                          .toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
-                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Pesanan</p>
-                      <p className="text-sm font-black text-primary mt-2">
-                        {adminOrders.filter(o => o.paymentStatus === 'paid').length} Lunas
-                      </p>
-                    </div>
-                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
-                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Box Terjual</p>
-                      <p className="text-sm font-black text-primary mt-2">
-                        {adminOrders
-                          .filter(o => o.paymentStatus === 'paid')
-                          .reduce((sum, o) => sum + o.items.reduce((iSum, i) => iSum + i.quantity, 0), 0)} Box
-                      </p>
-                    </div>
-                  </div>
+                {/* Admin Sub-Tabs */}
+                <div className="flex gap-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/10">
+                  <button 
+                    onClick={() => setAdminSubTab('orders')}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                      adminSubTab === 'orders' 
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">list_alt</span>
+                    <span>Kelola Pesanan</span>
+                  </button>
+                  <button 
+                    onClick={() => setAdminSubTab('stock')}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                      adminSubTab === 'stock' 
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">inventory_2</span>
+                    <span>Stok Menu</span>
+                  </button>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="flex gap-2 border-b border-outline-variant/20 pb-1">
-                  {['all', 'pending', 'paid', 'delivered'].map(filter => (
-                    <button
-                      key={filter}
-                      onClick={() => setAdminFilter(filter)}
-                      className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
-                        adminFilter === filter
-                          ? 'bg-primary text-white shadow-sm'
-                          : 'text-on-surface-variant hover:bg-surface-container-low'
-                      }`}
-                    >
-                      {filter === 'all' && 'Semua'}
-                      {filter === 'pending' && 'Belum Bayar'}
-                      {filter === 'paid' && 'Siap Kirim'}
-                      {filter === 'delivered' && 'Selesai'}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Orders List */}
-                {isAdminLoadingOrders ? (
-                  <div className="text-center py-12 flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
-                    <span className="text-xs text-on-surface-variant font-semibold">Memuat daftar pesanan...</span>
-                  </div>
-                ) : adminOrders.length === 0 ? (
-                  <div className="text-center py-12 bg-surface-container-low rounded-xl border border-outline-variant/10">
-                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">shopping_basket</span>
-                    <p className="text-xs text-on-surface-variant font-semibold mt-2">Belum ada pesanan masuk.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {adminOrders
-                      .filter(order => {
-                        if (adminFilter === 'pending') return order.paymentStatus === 'pending';
-                        if (adminFilter === 'paid') return order.paymentStatus === 'paid' && order.shippingStatus !== 'delivered';
-                        if (adminFilter === 'delivered') return order.shippingStatus === 'delivered';
-                        return true;
-                      })
-                      .map(order => (
-                        <div 
-                          key={order.orderId}
-                          className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-5 shadow-sm text-left flex flex-col gap-3.5"
-                        >
-                          {/* Top row */}
-                          <div className="flex justify-between items-start border-b border-outline-variant/10 pb-3">
-                            <div>
-                              <p className="text-xs font-black text-on-surface">Order #{order.orderId}</p>
-                              <p className="text-[10px] text-on-surface-variant mt-1 font-semibold">
-                                {new Date(order.createdAt).toLocaleString('id-ID', {
-                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                                })}
-                              </p>
-                            </div>
-                            <div className="text-right flex flex-col gap-1.5 items-end">
-                              <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full border ${
-                                order.paymentStatus === 'paid'
-                                  ? 'bg-green-50 text-green-700 border-green-200'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
-                              }`}>
-                                {order.paymentStatus === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}
-                              </span>
-                              <span className={`text-[9px] font-semibold px-2.5 py-0.5 rounded-full ${
-                                order.shippingStatus === 'delivered'
-                                  ? 'bg-blue-50 text-blue-700'
-                                  : order.shippingStatus === 'on_the_way'
-                                  ? 'bg-orange-50 text-orange-700 animate-pulse'
-                                  : 'bg-surface-container text-on-surface-variant'
-                              }`}>
-                                status: {order.shippingStatus}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Customer & Shipping info */}
-                          <div className="text-xs space-y-2 text-on-surface-variant font-semibold">
-                            <div className="flex gap-1.5 items-start">
-                              <span className="material-symbols-outlined text-[14px] mt-0.5">person</span>
-                              <span>{order.customer.name} ({order.customer.phone})</span>
-                            </div>
-                            <div className="flex gap-1.5 items-start">
-                              <span className="material-symbols-outlined text-[14px] mt-0.5">location_on</span>
-                              <span className="line-clamp-2 leading-relaxed">{order.shipping.address}</span>
-                            </div>
-                            <div className="flex gap-1.5 items-start">
-                              <span className="material-symbols-outlined text-[14px] mt-0.5">local_shipping</span>
-                              <span>Kurir: <span className="uppercase text-primary font-bold">{order.shipping.courierCompany}</span> {order.shipping.courierService} (Rp {order.shippingPrice.toLocaleString('id-ID')})</span>
-                            </div>
-                          </div>
-
-                          {/* Items List */}
-                          <div className="bg-surface-container-low rounded-xl p-3 text-xs space-y-1.5 font-semibold">
-                            {order.items.map(item => (
-                              <div key={item.id} className="flex justify-between text-on-surface-variant">
-                                <span>• {item.name} <span className="text-primary font-black">x{item.quantity}</span></span>
-                                <span>Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
-                              </div>
-                            ))}
-                            <div className="pt-2 border-t border-outline-variant/10 flex justify-between font-bold text-on-surface text-xs">
-                              <span>Total Bayar:</span>
-                              <span className="text-primary font-extrabold">Rp {order.grossAmount.toLocaleString('id-ID')}</span>
-                            </div>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10 mt-1">
-                            {order.paymentStatus === 'pending' && (
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await axios.post(`${BACKEND_URL}/api/order/${order.orderId}/simulate-pay`);
-                                    alert('Simulasi pembayaran lunas berhasil dipicu!');
-                                    fetchAdminOrders();
-                                  } catch (e) {
-                                    alert('Gagal menyimulasikan pembayaran.');
-                                  }
-                                }}
-                                className="px-4 py-2 bg-green-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-green-700"
-                              >
-                                Simulasikan Lunas
-                              </button>
-                            )}
-
-                            {order.paymentStatus === 'paid' && order.shippingStatus === 'idle' && (
-                              <button
-                                onClick={() => updateOrderStatus(order.orderId, 'searching')}
-                                className="px-4 py-2 bg-primary text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-primary/95"
-                              >
-                                Kirim Pesanan (Pesan Kurir)
-                              </button>
-                            )}
-
-                            {order.shippingStatus === 'searching' && (
-                              <button
-                                onClick={() => updateOrderStatus(order.orderId, 'driver_assigned')}
-                                className="px-4 py-2 bg-amber-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-amber-700"
-                              >
-                                Driver Ditemukan
-                              </button>
-                            )}
-
-                            {order.shippingStatus === 'driver_assigned' && (
-                              <button
-                                onClick={() => updateOrderStatus(order.orderId, 'on_the_way')}
-                                className="px-4 py-2 bg-orange-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-orange-700"
-                              >
-                                Diantar Kurir (Dalam Perjalanan)
-                              </button>
-                            )}
-
-                            {order.shippingStatus === 'on_the_way' && (
-                              <button
-                                onClick={() => updateOrderStatus(order.orderId, 'delivered')}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-blue-700"
-                              >
-                                Tandai Telah Tiba di Lokasi
-                              </button>
-                            )}
-
-                            {order.shippingStatus === 'delivered' && (
-                              <span className="text-[11px] text-green-750 font-bold bg-green-50 px-4 py-2 rounded-full border border-green-200 flex items-center gap-1">
-                                <span className="material-symbols-outlined text-sm font-bold text-green-600">check_circle</span>
-                                Pesanan Selesai
-                              </span>
-                            )}
-                          </div>
+                {/* TAB CONTENT: ORDERS */}
+                {adminSubTab === 'orders' && (
+                  <>
+                    {/* Sales Summary Card */}
+                    <div className="bg-amber-100/50 rounded-2xl p-5 border border-amber-250 shadow-sm text-left">
+                      <h3 className="font-display font-bold text-sm text-amber-800 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-md">analytics</span>
+                        Ringkasan Penjualan
+                      </h3>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                          <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Omzet</p>
+                          <p className="text-sm font-black text-primary mt-2">
+                            Rp {adminOrders
+                              .filter(o => o.paymentStatus === 'paid')
+                              .reduce((sum, o) => sum + o.grossAmount, 0)
+                              .toLocaleString('id-ID')}
+                          </p>
                         </div>
+                        <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                          <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Pesanan</p>
+                          <p className="text-sm font-black text-primary mt-2">
+                            {adminOrders.filter(o => o.paymentStatus === 'paid').length} Lunas
+                          </p>
+                        </div>
+                        <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                          <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Box Terjual</p>
+                          <p className="text-sm font-black text-primary mt-2">
+                            {adminOrders
+                              .filter(o => o.paymentStatus === 'paid')
+                              .reduce((sum, o) => sum + o.items.reduce((iSum, i) => iSum + i.quantity, 0), 0)} Box
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex gap-2 border-b border-outline-variant/20 pb-1">
+                      {['all', 'pending', 'paid', 'delivered'].map(filter => (
+                        <button
+                          key={filter}
+                          onClick={() => setAdminFilter(filter)}
+                          className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                            adminFilter === filter
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'text-on-surface-variant hover:bg-surface-container-low'
+                          }`}
+                        >
+                          {filter === 'all' && 'Semua'}
+                          {filter === 'pending' && 'Belum Bayar'}
+                          {filter === 'paid' && 'Siap Kirim'}
+                          {filter === 'delivered' && 'Selesai'}
+                        </button>
                       ))}
+                    </div>
+
+                    {/* Orders List */}
+                    {isAdminLoadingOrders ? (
+                      <div className="text-center py-12 flex flex-col items-center gap-2">
+                        <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+                        <span className="text-xs text-on-surface-variant font-semibold">Memuat daftar pesanan...</span>
+                      </div>
+                    ) : adminOrders.length === 0 ? (
+                      <div className="text-center py-12 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                        <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">shopping_basket</span>
+                        <p className="text-xs text-on-surface-variant font-semibold mt-2">Belum ada pesanan masuk.</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {adminOrders
+                          .filter(order => {
+                            if (adminFilter === 'pending') return order.paymentStatus === 'pending';
+                            if (adminFilter === 'paid') return order.paymentStatus === 'paid' && order.shippingStatus !== 'delivered';
+                            if (adminFilter === 'delivered') return order.shippingStatus === 'delivered';
+                            return true;
+                          })
+                          .map(order => (
+                            <div 
+                              key={order.orderId}
+                              className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-5 shadow-sm text-left flex flex-col gap-3.5"
+                            >
+                              {/* Top row */}
+                              <div className="flex justify-between items-start border-b border-outline-variant/10 pb-3">
+                                <div>
+                                  <p className="text-xs font-black text-on-surface">Order #{order.orderId}</p>
+                                  <p className="text-[10px] text-on-surface-variant mt-1 font-semibold">
+                                    {new Date(order.createdAt).toLocaleString('id-ID', {
+                                      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                  </p>
+                                </div>
+                                <div className="text-right flex flex-col gap-1.5 items-end">
+                                  <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                    order.paymentStatus === 'paid'
+                                      ? 'bg-green-50 text-green-700 border-green-200'
+                                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                                  }`}>
+                                    {order.paymentStatus === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}
+                                  </span>
+                                  <span className={`text-[9px] font-semibold px-2.5 py-0.5 rounded-full ${
+                                    order.shippingStatus === 'delivered'
+                                      ? 'bg-blue-50 text-blue-700'
+                                      : order.shippingStatus === 'on_the_way'
+                                      ? 'bg-orange-50 text-orange-700 animate-pulse'
+                                      : 'bg-surface-container text-on-surface-variant'
+                                  }`}>
+                                    status: {order.shippingStatus}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Customer & Shipping info */}
+                              <div className="text-xs space-y-2 text-on-surface-variant font-semibold">
+                                <div className="flex gap-1.5 items-start">
+                                  <span className="material-symbols-outlined text-[14px] mt-0.5">person</span>
+                                  <span>{order.customer.name} ({order.customer.phone})</span>
+                                </div>
+                                <div className="flex gap-1.5 items-start">
+                                  <span className="material-symbols-outlined text-[14px] mt-0.5">location_on</span>
+                                  <span className="line-clamp-2 leading-relaxed">{order.shipping.address}</span>
+                                </div>
+                                <div className="flex gap-1.5 items-start">
+                                  <span className="material-symbols-outlined text-[14px] mt-0.5">local_shipping</span>
+                                  <span>Kurir: <span className="uppercase text-primary font-bold">{order.shipping.courierCompany}</span> {order.shipping.courierService} (Rp {order.shippingPrice.toLocaleString('id-ID')})</span>
+                                </div>
+                              </div>
+
+                              {/* Items List */}
+                              <div className="bg-surface-container-low rounded-xl p-3 text-xs space-y-1.5 font-semibold">
+                                {order.items.map(item => (
+                                  <div key={item.id} className="flex justify-between text-on-surface-variant">
+                                    <span>• {item.name} <span className="text-primary font-black">x{item.quantity}</span></span>
+                                    <span>Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                                  </div>
+                                ))}
+                                <div className="pt-2 border-t border-outline-variant/10 flex justify-between font-bold text-on-surface text-xs">
+                                  <span>Total Bayar:</span>
+                                  <span className="text-primary font-extrabold">Rp {order.grossAmount.toLocaleString('id-ID')}</span>
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10 mt-1">
+                                {order.paymentStatus === 'pending' && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await axios.post(`${BACKEND_URL}/api/order/${order.orderId}/simulate-pay`);
+                                        alert('Simulasi pembayaran lunas berhasil dipicu!');
+                                        fetchAdminOrders();
+                                      } catch (e) {
+                                        alert('Gagal menyimulasikan pembayaran.');
+                                      }
+                                    }}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-green-700"
+                                  >
+                                    Simulasikan Lunas
+                                  </button>
+                                )}
+
+                                {order.paymentStatus === 'paid' && order.shippingStatus === 'idle' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(order.orderId, 'searching')}
+                                    className="px-4 py-2 bg-primary text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-primary/95"
+                                  >
+                                    Kirim Pesanan (Pesan Kurir)
+                                  </button>
+                                )}
+
+                                {order.shippingStatus === 'searching' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(order.orderId, 'driver_assigned')}
+                                    className="px-4 py-2 bg-amber-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-amber-700"
+                                  >
+                                    Driver Ditemukan
+                                  </button>
+                                )}
+
+                                {order.shippingStatus === 'driver_assigned' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(order.orderId, 'on_the_way')}
+                                    className="px-4 py-2 bg-orange-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-orange-700"
+                                  >
+                                    Diantar Kurir (Dalam Perjalanan)
+                                  </button>
+                                )}
+
+                                {order.shippingStatus === 'on_the_way' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(order.orderId, 'delivered')}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-blue-700"
+                                  >
+                                    Tandai Telah Tiba di Lokasi
+                                  </button>
+                                )}
+
+                                {order.shippingStatus === 'delivered' && (
+                                  <span className="text-[11px] text-green-750 font-bold bg-green-50 px-4 py-2 rounded-full border border-green-200 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm font-bold text-green-600">check_circle</span>
+                                    Pesanan Selesai
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* TAB CONTENT: STOCK MANAGEMENT */}
+                {adminSubTab === 'stock' && (
+                  <div className="flex flex-col gap-4">
+                    <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm text-left">
+                      <h3 className="font-display font-bold text-sm text-primary mb-1">Status Ketersediaan Menu</h3>
+                      <p className="text-xs text-on-surface-variant/80 font-semibold mb-4 leading-relaxed">
+                        Pilih menu yang sedang kosong/habis untuk menyembunyikannya dari pilihan beli pelanggan secara real-time.
+                      </p>
+                      
+                      <div className="divide-y divide-outline-variant/10">
+                        {menu.map(item => (
+                          <div key={item.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-xl bg-surface-container overflow-hidden border border-outline-variant/10 flex-shrink-0">
+                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                              </div>
+                              <div>
+                                <p className="text-xs font-black text-on-surface leading-tight">{item.name}</p>
+                                <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => toggleMenuStock(item.id, item.inStock)}
+                              className={`px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all shadow-sm active:scale-95 ${
+                                item.inStock
+                                  ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
+                                  : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+                              }`}
+                            >
+                              {item.inStock ? 'Tersedia' : 'Habis'}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </main>

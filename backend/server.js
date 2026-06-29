@@ -76,6 +76,208 @@ if (isUseSupabase) {
   console.log('[Supabase] No credentials found or incomplete. Falling back to local orders.json database.');
 }
 
+const MENU_DATA = [
+  {
+    id: 'mini-blueberry',
+    name: 'Mini Box Blueberry',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '1.2RB terjual',
+    description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
+    image: '/img/Blueberry.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '1.2k'
+  },
+  {
+    id: 'mini-cheese',
+    name: 'Mini Box Double Cheese',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '2.5RB terjual',
+    description: 'Classic creamy mini cheesecake with a generous layer of grated cheddar cheese.',
+    image: '/img/cheese.jpeg',
+    inStock: true,
+    rating: 5.0,
+    salesCount: '2.5k'
+  },
+  {
+    id: 'mini-chocolate',
+    name: 'Mini Box Chocolate',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '1.8RB terjual',
+    description: 'Decadent mini cheesecake with a rich and smooth chocolate ganache topping.',
+    image: '/img/Coklat.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.8k'
+  },
+  {
+    id: 'mini-lotus',
+    name: 'Mini Box Lotus Biscoff',
+    category: 'Mini Dessert Box',
+    price: 12500,
+    sales: '940 terjual',
+    description: 'Creamy mini cheesecake layered with smooth Lotus Biscoff spread and biscuit crumbs.',
+    image: '/img/Lotus.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '940'
+  },
+  {
+    id: 'mini-matcha',
+    name: 'Mini Box Matcha',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '560 terjual',
+    description: 'Mini cheesecake infused with high-quality Uji Matcha for a perfect sweet-bitter balance.',
+    image: '/img/Matcha.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '560'
+  },
+  {
+    id: 'mini-oreo',
+    name: 'Mini Box Oreo',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '2.1RB terjual',
+    description: 'Delicious mini cheesecake with crushed Oreo cookies folded inside and on top.',
+    image: '/img/Oreo.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '2.1k'
+  },
+  {
+    id: 'mini-redvelvet',
+    name: 'Mini Box Red Velvet',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '870 terjual',
+    description: 'Elegant red velvet mini cheesecake topped with cream cheese frosting and cake crumbs.',
+    image: '/img/Redvelvet.jpeg',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '870'
+  },
+  {
+    id: 'mini-seasalt',
+    name: 'Mini Box Sea Salt Caramel',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '1.1RB terjual',
+    description: 'Indulgent mini cheesecake with a perfect blend of sweet caramel and a touch of sea salt.',
+    image: '/img/Seasalt.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.1k'
+  },
+  {
+    id: 'mini-tiramisu',
+    name: 'Mini Box Tiramisu',
+    category: 'Mini Dessert Box',
+    price: 10000,
+    sales: '1.5RB terjual',
+    description: 'Coffee-infused cream cheese layers on a soft ladyfinger biscuit base, dusted with cocoa powder.',
+    image: '/img/Tiramisu.jpeg',
+    inStock: true,
+    rating: 4.9,
+    salesCount: '1.5k'
+  }
+];
+
+const STOCK_FILE = path.join(__dirname, 'stock.json');
+
+const readStock = () => {
+  try {
+    if (!fs.existsSync(STOCK_FILE)) {
+      const defaultStock = {};
+      MENU_DATA.forEach(item => {
+        defaultStock[item.id] = true;
+      });
+      fs.writeFileSync(STOCK_FILE, JSON.stringify(defaultStock, null, 2));
+      return defaultStock;
+    }
+    const data = fs.readFileSync(STOCK_FILE, 'utf8');
+    return JSON.parse(data || '{}');
+  } catch (error) {
+    console.error('Error reading stock file:', error);
+    return {};
+  }
+};
+
+const writeStock = (stockData) => {
+  try {
+    fs.writeFileSync(STOCK_FILE, JSON.stringify(stockData, null, 2));
+  } catch (error) {
+    console.error('Error writing stock file:', error);
+  }
+};
+
+const getMenuData = async () => {
+  const menu = MENU_DATA.map(item => ({ ...item }));
+  if (isUseSupabase) {
+    try {
+      const { data, error } = await supabase
+        .from('menu_stock')
+        .select('*');
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        data.forEach(row => {
+          const item = menu.find(m => m.id === row.id);
+          if (item) {
+            item.inStock = row.in_stock;
+          }
+        });
+      }
+    } catch (err) {
+      console.error('[Supabase] Error getting menu stock, falling back to stock.json:', err.message);
+      const stock = readStock();
+      menu.forEach(item => {
+        if (stock[item.id] !== undefined) {
+          item.inStock = stock[item.id];
+        }
+      });
+    }
+  } else {
+    const stock = readStock();
+    menu.forEach(item => {
+      if (stock[item.id] !== undefined) {
+        item.inStock = stock[item.id];
+      }
+    });
+  }
+  return menu;
+};
+
+const updateMenuStock = async (id, inStock) => {
+  if (isUseSupabase) {
+    try {
+      const { error } = await supabase
+        .from('menu_stock')
+        .upsert({ id, in_stock: inStock });
+      
+      if (error) throw error;
+      console.log(`[Supabase] Success updating stock for ${id}: ${inStock}`);
+      return true;
+    } catch (err) {
+      console.error('[Supabase] Error updating menu stock, falling back to stock.json:', err.message);
+      const stock = readStock();
+      stock[id] = inStock;
+      writeStock(stock);
+      return true;
+    }
+  } else {
+    const stock = readStock();
+    stock[id] = inStock;
+    writeStock(stock);
+    return true;
+  }
+};
+
 // Database Helpers (JSON-based order persistence)
 const readOrders = () => {
   try {
@@ -801,6 +1003,30 @@ app.post('/api/order/:id/simulate-pay', async (req, res) => {
   }
 
   res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order });
+});
+
+// -----------------
+// ENDPOINT 6.5: MENU ENDPOINTS (PUBLIC & ADMIN)
+// -----------------
+app.get('/api/menu', async (req, res) => {
+  const menu = await getMenuData();
+  res.json({ success: true, menu });
+});
+
+app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {
+  const { id } = req.params;
+  const { inStock } = req.body;
+  
+  if (inStock === undefined) {
+    return res.status(400).json({ success: false, message: 'Status inStock diperlukan.' });
+  }
+
+  const success = await updateMenuStock(id, inStock);
+  if (success) {
+    res.json({ success: true, message: `Status stok ${id} berhasil diubah.` });
+  } else {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui status stok.' });
+  }
 });
 
 // -----------------
