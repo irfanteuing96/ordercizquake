@@ -150,6 +150,12 @@ export default function App() {
   // Tracking State
   const [trackingInfo, setTrackingInfo] = useState(null);
 
+  // Admin Panel State
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminOrders, setAdminOrders] = useState([]);
+  const [isAdminLoadingOrders, setIsAdminLoadingOrders] = useState(false);
+  const [adminFilter, setAdminFilter] = useState('all');
+
   // Debouncing Address Search
   useEffect(() => {
     if (addressSearch.length < 3) {
@@ -305,6 +311,61 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error simulating payment:', err);
+    }
+  };
+
+  // -----------------
+  // ADMIN ACTIONS
+  // -----------------
+  const handleAdminLoginPrompt = async () => {
+    const pin = prompt('Masukkan PIN Admin Cizquake:');
+    if (!pin) return;
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/login`, { pin });
+      if (response.data.success) {
+        setIsAdminLoggedIn(true);
+        setActiveTab('admin');
+        setIsAdminLoadingOrders(true);
+        try {
+          const res = await axios.get(`${BACKEND_URL}/api/admin/orders`);
+          if (res.data.success) {
+            setAdminOrders(res.data.orders);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsAdminLoadingOrders(false);
+        }
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal login. PIN salah.');
+    }
+  };
+
+  const fetchAdminOrders = async () => {
+    setIsAdminLoadingOrders(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/admin/orders`);
+      if (response.data.success) {
+        setAdminOrders(response.data.orders);
+      }
+    } catch (err) {
+      console.error('Error fetching admin orders:', err);
+    } finally {
+      setIsAdminLoadingOrders(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/order/${orderId}/status`, {
+        shippingStatus: newStatus
+      });
+      if (response.data.success) {
+        setAdminOrders(prev => prev.map(o => o.orderId === orderId ? { ...o, shippingStatus: newStatus } : o));
+      }
+    } catch (err) {
+      alert('Gagal memperbarui status pengiriman.');
     }
   };
 
@@ -861,6 +922,255 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* Admin Access Panel */}
+                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
+                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Portal Staf Restoran</h3>
+                  <button 
+                    onClick={handleAdminLoginPrompt}
+                    className="w-full py-3.5 bg-secondary-container text-on-secondary-container hover:bg-secondary-container/95 active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-2 border border-outline-variant/10"
+                  >
+                    <span className="material-symbols-outlined text-md">shield_person</span>
+                    <span>Masuk Panel Admin Cizquake</span>
+                  </button>
+                </div>
+              </main>
+            </div>
+          )}
+
+          {/* TAB 5: ADMIN PANEL */}
+          {activeTab === 'admin' && isAdminLoggedIn && (
+            <div className="pb-32 text-left">
+              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+                <span className="text-base font-bold text-primary font-display flex items-center gap-2">
+                  <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
+                  Cizquake Admin Hub
+                </span>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={fetchAdminOrders}
+                    disabled={isAdminLoadingOrders}
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary disabled:opacity-50"
+                  >
+                    <span className={`material-symbols-outlined text-xl ${isAdminLoadingOrders ? 'animate-spin' : ''}`}>refresh</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsAdminLoggedIn(false);
+                      setActiveTab('profile');
+                    }}
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-50 active:scale-95 transition-all text-red-650"
+                  >
+                    <span className="material-symbols-outlined text-xl">logout</span>
+                  </button>
+                </div>
+              </header>
+
+              <main className="mt-16 pt-6 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
+                {/* Sales Summary Card */}
+                <div className="bg-amber-100/50 rounded-2xl p-5 border border-amber-250 shadow-sm text-left">
+                  <h3 className="font-display font-bold text-sm text-amber-800 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-md">analytics</span>
+                    Ringkasan Penjualan
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Omzet</p>
+                      <p className="text-sm font-black text-primary mt-2">
+                        Rp {adminOrders
+                          .filter(o => o.paymentStatus === 'paid')
+                          .reduce((sum, o) => sum + o.grossAmount, 0)
+                          .toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Pesanan</p>
+                      <p className="text-sm font-black text-primary mt-2">
+                        {adminOrders.filter(o => o.paymentStatus === 'paid').length} Lunas
+                      </p>
+                    </div>
+                    <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10">
+                      <p className="text-[10px] text-on-surface-variant font-bold uppercase leading-none">Box Terjual</p>
+                      <p className="text-sm font-black text-primary mt-2">
+                        {adminOrders
+                          .filter(o => o.paymentStatus === 'paid')
+                          .reduce((sum, o) => sum + o.items.reduce((iSum, i) => iSum + i.quantity, 0), 0)} Box
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex gap-2 border-b border-outline-variant/20 pb-1">
+                  {['all', 'pending', 'paid', 'delivered'].map(filter => (
+                    <button
+                      key={filter}
+                      onClick={() => setAdminFilter(filter)}
+                      className={`px-4 py-2 text-xs font-bold rounded-full transition-all ${
+                        adminFilter === filter
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'text-on-surface-variant hover:bg-surface-container-low'
+                      }`}
+                    >
+                      {filter === 'all' && 'Semua'}
+                      {filter === 'pending' && 'Belum Bayar'}
+                      {filter === 'paid' && 'Siap Kirim'}
+                      {filter === 'delivered' && 'Selesai'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Orders List */}
+                {isAdminLoadingOrders ? (
+                  <div className="text-center py-12 flex flex-col items-center gap-2">
+                    <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+                    <span className="text-xs text-on-surface-variant font-semibold">Memuat daftar pesanan...</span>
+                  </div>
+                ) : adminOrders.length === 0 ? (
+                  <div className="text-center py-12 bg-surface-container-low rounded-xl border border-outline-variant/10">
+                    <span className="material-symbols-outlined text-4xl text-on-surface-variant/40">shopping_basket</span>
+                    <p className="text-xs text-on-surface-variant font-semibold mt-2">Belum ada pesanan masuk.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {adminOrders
+                      .filter(order => {
+                        if (adminFilter === 'pending') return order.paymentStatus === 'pending';
+                        if (adminFilter === 'paid') return order.paymentStatus === 'paid' && order.shippingStatus !== 'delivered';
+                        if (adminFilter === 'delivered') return order.shippingStatus === 'delivered';
+                        return true;
+                      })
+                      .map(order => (
+                        <div 
+                          key={order.orderId}
+                          className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-5 shadow-sm text-left flex flex-col gap-3.5"
+                        >
+                          {/* Top row */}
+                          <div className="flex justify-between items-start border-b border-outline-variant/10 pb-3">
+                            <div>
+                              <p className="text-xs font-black text-on-surface">Order #{order.orderId}</p>
+                              <p className="text-[10px] text-on-surface-variant mt-1 font-semibold">
+                                {new Date(order.createdAt).toLocaleString('id-ID', {
+                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <div className="text-right flex flex-col gap-1.5 items-end">
+                              <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full border ${
+                                order.paymentStatus === 'paid'
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                                {order.paymentStatus === 'paid' ? 'LUNAS' : 'BELUM BAYAR'}
+                              </span>
+                              <span className={`text-[9px] font-semibold px-2.5 py-0.5 rounded-full ${
+                                order.shippingStatus === 'delivered'
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : order.shippingStatus === 'on_the_way'
+                                  ? 'bg-orange-50 text-orange-700 animate-pulse'
+                                  : 'bg-surface-container text-on-surface-variant'
+                              }`}>
+                                status: {order.shippingStatus}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Customer & Shipping info */}
+                          <div className="text-xs space-y-2 text-on-surface-variant font-semibold">
+                            <div className="flex gap-1.5 items-start">
+                              <span className="material-symbols-outlined text-[14px] mt-0.5">person</span>
+                              <span>{order.customer.name} ({order.customer.phone})</span>
+                            </div>
+                            <div className="flex gap-1.5 items-start">
+                              <span className="material-symbols-outlined text-[14px] mt-0.5">location_on</span>
+                              <span className="line-clamp-2 leading-relaxed">{order.shipping.address}</span>
+                            </div>
+                            <div className="flex gap-1.5 items-start">
+                              <span className="material-symbols-outlined text-[14px] mt-0.5">local_shipping</span>
+                              <span>Kurir: <span className="uppercase text-primary font-bold">{order.shipping.courierCompany}</span> {order.shipping.courierService} (Rp {order.shippingPrice.toLocaleString('id-ID')})</span>
+                            </div>
+                          </div>
+
+                          {/* Items List */}
+                          <div className="bg-surface-container-low rounded-xl p-3 text-xs space-y-1.5 font-semibold">
+                            {order.items.map(item => (
+                              <div key={item.id} className="flex justify-between text-on-surface-variant">
+                                <span>• {item.name} <span className="text-primary font-black">x{item.quantity}</span></span>
+                                <span>Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                              </div>
+                            ))}
+                            <div className="pt-2 border-t border-outline-variant/10 flex justify-between font-bold text-on-surface text-xs">
+                              <span>Total Bayar:</span>
+                              <span className="text-primary font-extrabold">Rp {order.grossAmount.toLocaleString('id-ID')}</span>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10 mt-1">
+                            {order.paymentStatus === 'pending' && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await axios.post(`${BACKEND_URL}/api/order/${order.orderId}/simulate-pay`);
+                                    alert('Simulasi pembayaran lunas berhasil dipicu!');
+                                    fetchAdminOrders();
+                                  } catch (e) {
+                                    alert('Gagal menyimulasikan pembayaran.');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-green-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-green-700"
+                              >
+                                Simulasikan Lunas
+                              </button>
+                            )}
+
+                            {order.paymentStatus === 'paid' && order.shippingStatus === 'idle' && (
+                              <button
+                                onClick={() => updateOrderStatus(order.orderId, 'searching')}
+                                className="px-4 py-2 bg-primary text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-primary/95"
+                              >
+                                Kirim Pesanan (Pesan Kurir)
+                              </button>
+                            )}
+
+                            {order.shippingStatus === 'searching' && (
+                              <button
+                                onClick={() => updateOrderStatus(order.orderId, 'driver_assigned')}
+                                className="px-4 py-2 bg-amber-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-amber-700"
+                              >
+                                Driver Ditemukan
+                              </button>
+                            )}
+
+                            {order.shippingStatus === 'driver_assigned' && (
+                              <button
+                                onClick={() => updateOrderStatus(order.orderId, 'on_the_way')}
+                                className="px-4 py-2 bg-orange-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-orange-700"
+                              >
+                                Diantar Kurir (Dalam Perjalanan)
+                              </button>
+                            )}
+
+                            {order.shippingStatus === 'on_the_way' && (
+                              <button
+                                onClick={() => updateOrderStatus(order.orderId, 'delivered')}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-blue-700"
+                              >
+                                Tandai Telah Tiba di Lokasi
+                              </button>
+                            )}
+
+                            {order.shippingStatus === 'delivered' && (
+                              <span className="text-[11px] text-green-750 font-bold bg-green-50 px-4 py-2 rounded-full border border-green-200 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-sm font-bold text-green-600">check_circle</span>
+                                Pesanan Selesai
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </main>
             </div>
           )}
@@ -946,6 +1256,24 @@ export default function App() {
               <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}>person</span>
               <span className={`font-label-lg font-bold ${activeTab === 'profile' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Profile</span>
             </button>
+            
+            {/* Admin Tab (Only if logged in) */}
+            {isAdminLoggedIn && (
+              <button 
+                onClick={() => {
+                  setActiveTab('admin');
+                  fetchAdminOrders();
+                }}
+                className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                  activeTab === 'admin' 
+                    ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                    : 'flex-col text-[#785900]/70 px-3 py-1'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'admin' ? "'FILL' 1" : "'FILL' 0" }}>admin_panel_settings</span>
+                <span className={`font-label-lg font-bold ${activeTab === 'admin' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Admin</span>
+              </button>
+            )}
           </nav>
         </div>
       )}

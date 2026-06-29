@@ -27,7 +27,23 @@ const ORDERS_FILE = path.join(__dirname, 'orders.json');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://cizquakehub.netlify.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'Akses API ditolak oleh kebijakan CORS Cizquake.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
 app.use(express.json());
 
 // Initialize Midtrans & Biteship Clients
@@ -785,6 +801,107 @@ app.post('/api/order/:id/simulate-pay', async (req, res) => {
   }
 
   res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order });
+});
+
+// -----------------
+// ENDPOINT 7: ADMIN LOGIN (VERIFY PIN)
+// -----------------
+app.post('/api/admin/login', (req, res) => {
+  const { pin } = req.body;
+  const correctPin = process.env.ADMIN_PIN || '1234';
+  if (String(pin) === String(correctPin)) {
+    return res.json({ success: true, message: 'Login admin berhasil!' });
+  }
+  return res.status(401).json({ success: false, message: 'PIN Admin salah.' });
+});
+
+// -----------------
+// ENDPOINT 8: GET ALL ORDERS FOR ADMIN
+// -----------------
+app.get('/api/admin/orders', async (req, res) => {
+  if (isUseSupabase) {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      const mappedOrders = data.map(item => ({
+        orderId: item.order_id,
+        customer: {
+          name: item.customer_name,
+          phone: item.customer_phone
+        },
+        items: item.items,
+        shipping: {
+          address: item.shipping_address,
+          latitude: parseFloat(item.shipping_latitude),
+          longitude: parseFloat(item.shipping_longitude),
+          courierCompany: item.courier_company,
+          courierService: item.courier_service
+        },
+        totalProductPrice: parseFloat(item.total_product_price),
+        shippingPrice: parseFloat(item.shipping_price),
+        grossAmount: parseFloat(item.gross_amount),
+        paymentStatus: item.payment_status,
+        shippingStatus: item.shipping_status,
+        shippingOrderInfo: item.shipping_order_info,
+        paymentQrUrl: item.payment_qr_url,
+        paymentExpiry: item.payment_expiry,
+        createdAt: item.created_at
+      }));
+      
+      return res.json({ success: true, orders: mappedOrders });
+    } catch (err) {
+      console.error('[Supabase] Error fetching admin orders:', err.message);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  } else {
+    const orders = readOrders();
+    const sorted = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return res.json({ success: true, orders: sorted });
+  }
+});
+
+// -----------------
+// ENDPOINT 9: UPDATE SHIPPING STATUS FOR ADMIN
+// -----------------
+app.post('/api/admin/order/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { shippingStatus } = req.body;
+  
+  const order = await getOrderById(id);
+  if (!order) {
+    return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
+  }
+
+  const validStatuses = ['idle', 'searching', 'driver_assigned', 'on_the_way', 'delivered', 'booking_failed'];
+  if (!validStatuses.includes(shippingStatus)) {
+    return res.status(400).json({ success: false, message: 'Status pengiriman tidak valid.' });
+  }
+
+  await updateOrderFields(id, { shippingStatus });
+  order.shippingStatus = shippingStatus;
+
+  // Kirim notifikasi WA status pengiriman baru ke pelanggan
+  let statusText = '';
+  if (shippingStatus === 'on_the_way') {
+    statusText = `sedang dalam perjalanan menuju alamat Anda bersama kurir ${order.shipping.courierCompany.toUpperCase()}.`;
+  } else if (shippingStatus === 'delivered') {
+    statusText = `telah berhasil diantarkan dan sampai di tujuan. Terima kasih telah memesan di Cizquake! 🍰✨`;
+  }
+
+  if (statusText) {
+    const { sendWhatsAppMessage } = await import('./whatsappService.js');
+    const message = `Halo ${order.customer.name},\n\nKabar baik! Pesanan Anda #${order.orderId} ${statusText}`;
+    sendWhatsAppMessage(order.customer.phone, message).catch(err => {
+      console.error('[WhatsApp Service] Gagal mengirim update status:', err.message);
+    });
+  }
+
+  res.json({ success: true, message: `Status pengiriman berhasil diubah ke: ${shippingStatus}`, order });
 });
 
 // Start Server
