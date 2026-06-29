@@ -338,7 +338,11 @@ export default function App() {
         }
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Gagal login. PIN salah.');
+      if (err.response && err.response.status === 404) {
+        alert('Update server sedang dideploy (biasanya butuh 2-3 menit di Render). Silakan coba lagi sebentar lagi.');
+      } else {
+        alert(err.response?.data?.message || 'Gagal login. PIN salah.');
+      }
     }
   };
 
