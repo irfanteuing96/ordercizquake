@@ -44,7 +44,8 @@ app.use(cors({
     return callback(null, true);
   }
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Initialize Midtrans & Biteship Clients
 const isMockMidtrans = !process.env.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY.includes('YOUR_SANDBOX');
