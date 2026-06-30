@@ -576,14 +576,10 @@ export default function App() {
               {/* Header */}
               <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden">
-                    <img 
-                      className="w-full h-full object-contain filter brightness-0 invert" 
-                      alt="Cizquake Logo" 
-                      src="/logo.png"
-                    />
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center overflow-hidden">
+                    <span className="material-symbols-outlined text-white text-lg font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                   </div>
-                  <span className="font-display text-base font-black tracking-tight text-white">Cizquake</span>
+                  <span className="font-display text-base font-black tracking-tight text-white">Cizquake Express</span>
                 </div>
                 
                 <button 
