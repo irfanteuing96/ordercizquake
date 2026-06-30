@@ -705,7 +705,7 @@ export default function App() {
 
                 {/* Hero Section */}
                 <section className="mb-6">
-                  <div className="relative w-full h-[380px] rounded-none overflow-hidden group cursor-pointer transition-transform duration-500 shadow-lg">
+                  <div className="relative w-full aspect-square rounded-none overflow-hidden group cursor-pointer transition-transform duration-500 shadow-lg">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
                     <img 
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
