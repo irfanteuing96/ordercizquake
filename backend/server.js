@@ -92,110 +92,110 @@ const MENU_DATA = [
   {
     id: 'mini-blueberry',
     name: 'Mini Box Blueberry',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '1.2RB terjual',
+    sales: '1200 terjual',
     description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
     image: '/img/Blueberry.jpeg',
     inStock: true,
     rating: 4.8,
-    salesCount: '1.2k'
+    salesCount: 1200
   },
   {
     id: 'mini-cheese',
     name: 'Mini Box Double Cheese',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '2.5RB terjual',
+    sales: '2500 terjual',
     description: 'Classic creamy mini cheesecake with a generous layer of grated cheddar cheese.',
     image: '/img/cheese.jpeg',
     inStock: true,
     rating: 5.0,
-    salesCount: '2.5k'
+    salesCount: 2500
   },
   {
     id: 'mini-chocolate',
     name: 'Mini Box Chocolate',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '1.8RB terjual',
+    sales: '1800 terjual',
     description: 'Decadent mini cheesecake with a rich and smooth chocolate ganache topping.',
     image: '/img/Coklat.jpeg',
     inStock: true,
     rating: 4.9,
-    salesCount: '1.8k'
+    salesCount: 1800
   },
   {
     id: 'mini-lotus',
     name: 'Mini Box Lotus Biscoff',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 12500,
     sales: '940 terjual',
     description: 'Creamy mini cheesecake layered with smooth Lotus Biscoff spread and biscuit crumbs.',
     image: '/img/Lotus.jpeg',
     inStock: true,
     rating: 4.9,
-    salesCount: '940'
+    salesCount: 940
   },
   {
     id: 'mini-matcha',
     name: 'Mini Box Matcha',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
     sales: '560 terjual',
     description: 'Mini cheesecake infused with high-quality Uji Matcha for a perfect sweet-bitter balance.',
     image: '/img/Matcha.jpeg',
     inStock: true,
     rating: 4.8,
-    salesCount: '560'
+    salesCount: 560
   },
   {
     id: 'mini-oreo',
     name: 'Mini Box Oreo',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '2.1RB terjual',
+    sales: '2100 terjual',
     description: 'Delicious mini cheesecake with crushed Oreo cookies folded inside and on top.',
     image: '/img/Oreo.jpeg',
     inStock: true,
     rating: 4.9,
-    salesCount: '2.1k'
+    salesCount: 2100
   },
   {
     id: 'mini-redvelvet',
     name: 'Mini Box Red Velvet',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
     sales: '870 terjual',
     description: 'Elegant red velvet mini cheesecake topped with cream cheese frosting and cake crumbs.',
     image: '/img/Redvelvet.jpeg',
     inStock: true,
     rating: 4.8,
-    salesCount: '870'
+    salesCount: 870
   },
   {
     id: 'mini-seasalt',
     name: 'Mini Box Sea Salt Caramel',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '1.1RB terjual',
+    sales: '1100 terjual',
     description: 'Indulgent mini cheesecake with a perfect blend of sweet caramel and a touch of sea salt.',
     image: '/img/Seasalt.jpeg',
     inStock: true,
     rating: 4.9,
-    salesCount: '1.1k'
+    salesCount: 1100
   },
   {
     id: 'mini-tiramisu',
     name: 'Mini Box Tiramisu',
-    category: 'Mini Dessert Box',
+    category: 'Mini box',
     price: 10000,
-    sales: '1.5RB terjual',
+    sales: '1500 terjual',
     description: 'Coffee-infused cream cheese layers on a soft ladyfinger biscuit base, dusted with cocoa powder.',
     image: '/img/Tiramisu.jpeg',
     inStock: true,
     rating: 4.9,
-    salesCount: '1.5k'
+    salesCount: 1500
   }
 ];
 
@@ -249,6 +249,17 @@ const seedDefaultMenu = async () => {
   }
 };
 
+const normalizeCategory = (cat) => {
+  if (!cat) return 'Mini box';
+  const c = cat.toLowerCase().trim();
+  if (c.includes('mini')) return 'Mini box';
+  if (c.includes('medium')) return 'Medium box';
+  if (c.includes('beverage') || c.includes('drink')) return 'Beverages';
+  if (c.includes('bundle') || c.includes('paket')) return 'Bundling';
+  if (c.includes('gift') || c.includes('kado')) return 'Gift';
+  return cat;
+};
+
 const getMenuData = async () => {
   if (isUseSupabase) {
     try {
@@ -263,14 +274,14 @@ const getMenuData = async () => {
         return data.map(item => ({
           id: item.id,
           name: item.name,
-          category: item.category,
+          category: normalizeCategory(item.category),
           price: parseFloat(item.price),
           sales: item.sales || '0 terjual',
           description: item.description || '',
           image: item.image || '',
           inStock: item.in_stock,
           rating: parseFloat(item.rating || 4.8),
-          salesCount: item.sales_count || '0'
+          salesCount: parseInt(item.sales_count || 0)
         }));
       } else {
         console.log('[Supabase] menu_items is empty, seeding default menu...');
@@ -279,10 +290,10 @@ const getMenuData = async () => {
       }
     } catch (err) {
       console.error('[Supabase] Error getting menu items, falling back to local:', err.message);
-      return readMenuItems();
+      return readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
     }
   } else {
-    return readMenuItems();
+    return readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
   }
 };
 
@@ -323,8 +334,8 @@ const addMenuItem = async (item) => {
         description: item.description || '',
         image: item.image || '',
         in_stock: item.inStock !== false,
-        rating: item.rating || 4.8,
-        sales_count: item.salesCount || '0'
+        rating: parseFloat(item.rating || 4.8),
+        sales_count: parseInt(item.salesCount || 0)
       };
       const { error } = await supabaseWithTimeout(
         supabase.from('menu_items').insert(dbItem),
@@ -358,6 +369,8 @@ const editMenuItem = async (id, fields) => {
       if (fields.description !== undefined) dbUpdates.description = fields.description;
       if (fields.image !== undefined) dbUpdates.image = fields.image;
       if (fields.inStock !== undefined) dbUpdates.in_stock = fields.inStock;
+      if (fields.rating !== undefined) dbUpdates.rating = fields.rating;
+      if (fields.salesCount !== undefined) dbUpdates.sales_count = fields.salesCount;
 
       const { error } = await supabaseWithTimeout(
         supabase.from('menu_items').update(dbUpdates).eq('id', id),
@@ -409,6 +422,53 @@ const deleteMenuItem = async (id) => {
     const filtered = menu.filter(m => m.id !== id);
     writeMenuItems(filtered);
     return true;
+  }
+};
+
+const incrementMenuItemSales = async (items) => {
+  if (!items || !Array.isArray(items)) return;
+  for (const item of items) {
+    const itemId = item.id;
+    const qty = parseInt(item.quantity) || 1;
+    
+    if (isUseSupabase) {
+      try {
+        const { data, error } = await supabaseWithTimeout(
+          supabase.from('menu_items').select('sales_count, sales').eq('id', itemId).single(),
+          3000
+        );
+        if (!error && data) {
+          const currentCount = parseInt(data.sales_count) || 0;
+          const newCount = currentCount + qty;
+          await supabaseWithTimeout(
+            supabase.from('menu_items').update({
+              sales_count: newCount,
+              sales: `${newCount} terjual`
+            }).eq('id', itemId),
+            3000
+          );
+          console.log(`[Supabase] Incremented sales for ${itemId} by ${qty}. New total: ${newCount}`);
+        }
+      } catch (err) {
+        console.error(`[Supabase] Error incrementing sales for ${itemId} on Supabase:`, err.message);
+      }
+    }
+    
+    // Always update local file menu_items.json too
+    try {
+      const menuItems = readMenuItems();
+      const idx = menuItems.findIndex(m => m.id === itemId);
+      if (idx !== -1) {
+        const currentCount = parseInt(menuItems[idx].salesCount) || 0;
+        const newCount = currentCount + qty;
+        menuItems[idx].salesCount = newCount;
+        menuItems[idx].sales = `${newCount} terjual`;
+        writeMenuItems(menuItems);
+        console.log(`[Local] Incremented sales for ${itemId} by ${qty}. New total: ${newCount}`);
+      }
+    } catch (err) {
+      console.error(`[Local] Error incrementing sales for ${itemId}:`, err.message);
+    }
   }
 };
 
@@ -1097,6 +1157,8 @@ app.post('/api/payment-callback', async (req, res) => {
     bookCourierAutomatically(order);
     // Kirim notifikasi WA ke customer dan admin
     sendOrderPaidNotifications(order);
+    // Increment sales count
+    incrementMenuItemSales(order.items);
   }
 
   res.json({ success: true });
@@ -1135,6 +1197,7 @@ app.post('/api/order/:id/simulate-pay', async (req, res) => {
   if (order.shippingStatus === 'idle') {
     bookCourierAutomatically(order);
     sendOrderPaidNotifications(order);
+    incrementMenuItemSales(order.items);
   }
 
   res.json({ success: true, message: 'Simulasi pembayaran sukses berhasil dipicu!', order });
@@ -1165,25 +1228,26 @@ app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {
 });
 
 app.post('/api/admin/menu/add', async (req, res) => {
-  const { name, category, price, description, image } = req.body;
+  const { name, category, price, description, image, rating, salesCount } = req.body;
   if (!name || !category || !price) {
     return res.status(400).json({ success: false, message: 'Nama, kategori, dan harga wajib diisi.' });
   }
 
   const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const id = `${cleanName}-${Date.now()}`;
+  const countNum = parseInt(salesCount || 0);
 
   const newItem = {
     id,
     name,
     category,
     price: parseFloat(price),
-    sales: '0 terjual',
+    sales: `${countNum} terjual`,
     description: description || '',
     image: image || '',
     inStock: true,
-    rating: 4.8,
-    salesCount: '0'
+    rating: parseFloat(rating || 4.8),
+    salesCount: countNum
   };
 
   const success = await addMenuItem(newItem);
@@ -1196,7 +1260,7 @@ app.post('/api/admin/menu/add', async (req, res) => {
 
 app.post('/api/admin/menu/:id/edit', async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, description, image, inStock } = req.body;
+  const { name, category, price, description, image, inStock, rating, salesCount } = req.body;
 
   const fields = {};
   if (name !== undefined) fields.name = name;
@@ -1205,6 +1269,12 @@ app.post('/api/admin/menu/:id/edit', async (req, res) => {
   if (description !== undefined) fields.description = description;
   if (image !== undefined) fields.image = image;
   if (inStock !== undefined) fields.inStock = inStock;
+  if (rating !== undefined) fields.rating = parseFloat(rating);
+  if (salesCount !== undefined) {
+    const countNum = parseInt(salesCount || 0);
+    fields.salesCount = countNum;
+    fields.sales = `${countNum} terjual`;
+  }
 
   const success = await editMenuItem(id, fields);
   if (success) {

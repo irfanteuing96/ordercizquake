@@ -166,7 +166,27 @@ export default function App() {
   const [formPrice, setFormPrice] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formImage, setFormImage] = useState('');
+  const [formRating, setFormRating] = useState('4.8');
+  const [formSalesCount, setFormSalesCount] = useState('0');
   const [isSavingMenu, setIsSavingMenu] = useState(false);
+
+  // Favorites state
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cizquake_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem('cizquake_favorites', JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Debouncing Address Search
   useEffect(() => {
@@ -416,10 +436,12 @@ export default function App() {
   const openAddMenuModal = () => {
     setEditingMenuItem(null);
     setFormName('');
-    setFormCategory('Mini Dessert Box');
+    setFormCategory('Mini box');
     setFormPrice('');
     setFormDescription('');
     setFormImage('');
+    setFormRating('4.8');
+    setFormSalesCount('0');
     setIsMenuModalOpen(true);
   };
 
@@ -430,6 +452,8 @@ export default function App() {
     setFormPrice(item.price);
     setFormDescription(item.description);
     setFormImage(item.image);
+    setFormRating(String(item.rating || '4.8'));
+    setFormSalesCount(String(item.salesCount || '0'));
     setIsMenuModalOpen(true);
   };
 
@@ -459,7 +483,9 @@ export default function App() {
       category: formCategory,
       price: parseFloat(formPrice),
       description: formDescription,
-      image: formImage
+      image: formImage,
+      rating: parseFloat(formRating || 4.8),
+      salesCount: parseInt(formSalesCount || 0)
     };
 
     try {
@@ -529,39 +555,47 @@ export default function App() {
   const getCartCount = () => cart.reduce((sum, item) => sum + item.quantity, 0);
   const getCartSubtotal = () => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  // Dynamic enrichment of MENU_DATA with ratings and sales counts for Stitch design alignment
-  const ENRICHED_MENU_DATA = menu.map(item => {
-    let rating = 4.8;
-    let salesCount = item.sales ? item.sales.replace(' terjual', '') : '100+';
-    if (item.name.toLowerCase().includes('basque') || item.name.toLowerCase().includes('medium')) {
-      rating = 5.0;
-    } else if (item.name.toLowerCase().includes('double cheese') || item.name.toLowerCase().includes('coklat') || item.name.toLowerCase().includes('choco') || item.name.toLowerCase().includes('cokel')) {
-      rating = 4.9;
-    } else if (item.name.toLowerCase().includes('matcha') || item.name.toLowerCase().includes('strawberry')) {
-      rating = 4.8;
+  const formatSalesCount = (count) => {
+    const num = parseInt(count) || 0;
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace('.0', '') + 'RB';
     }
-    return { ...item, rating, salesCount };
-  });
+    return num.toString();
+  };
 
-  // Filtering menu items for Home tab
-  const filteredMenuItems = ENRICHED_MENU_DATA.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
+  const CATEGORY_ORDER = ['Mini box', 'Medium box', 'Beverages', 'Bundling', 'Gift'];
+  const getCategoryIndex = (cat) => {
+    const idx = CATEGORY_ORDER.findIndex(c => c.toLowerCase() === cat.toLowerCase());
+    return idx === -1 ? 99 : idx;
+  };
 
-    if (selectedCategory === 'All Flavors' || selectedCategory === 'All menu' || selectedCategory === 'All') return true;
+  // Filtering & sorting menu items for Home tab
+  const filteredMenuItems = menu
+    .filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+      if (selectedCategory === 'All Flavors' || selectedCategory === 'All menu' || selectedCategory === 'All') return true;
+      return item.category.toLowerCase() === selectedCategory.toLowerCase();
+    })
+    .sort((a, b) => {
+      const catDiff = getCategoryIndex(a.category) - getCategoryIndex(b.category);
+      if (catDiff !== 0) return catDiff;
+      return a.name.localeCompare(b.name);
+    });
 
-    return item.category.toLowerCase() === selectedCategory.toLowerCase();
-  });
-
-  // Filtering menu items for Menu tab
-  const filteredMenuTabItems = ENRICHED_MENU_DATA.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-
-    if (selectedMenuCategory === 'All' || selectedMenuCategory === 'All menu') return true;
-
-    return item.category.toLowerCase() === selectedMenuCategory.toLowerCase();
-  });
+  // Filtering & sorting menu items for Menu tab
+  const filteredMenuTabItems = menu
+    .filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      if (!matchesSearch) return false;
+      if (selectedMenuCategory === 'All' || selectedMenuCategory === 'All menu') return true;
+      return item.category.toLowerCase() === selectedMenuCategory.toLowerCase();
+    })
+    .sort((a, b) => {
+      const catDiff = getCategoryIndex(a.category) - getCategoryIndex(b.category);
+      if (catDiff !== 0) return catDiff;
+      return a.name.localeCompare(b.name);
+    });
 
   return (
     <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
@@ -672,8 +706,21 @@ export default function App() {
                       >
                         <div className="relative aspect-square overflow-hidden shrink-0">
                           <img className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={product.name} src={product.image} />
-                          <div className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-1.5 shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform">
-                            <span className="material-symbols-outlined text-[#785900] text-xs font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(product.id);
+                            }}
+                            className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-1.5 shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform z-10"
+                          >
+                            <span 
+                              className={`material-symbols-outlined text-xs font-bold transition-colors ${
+                                favorites.includes(product.id) ? 'text-red-500 font-bold' : 'text-outline-variant/60'
+                              }`} 
+                              style={{ fontVariationSettings: favorites.includes(product.id) ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              favorite
+                            </span>
                           </div>
                           {!product.inStock && (
                             <div className="absolute inset-0 bg-black/55 flex items-center justify-center">
@@ -685,7 +732,7 @@ export default function App() {
                         <div className="p-2.5 flex flex-col flex-grow text-left">
                           <div className="flex items-center gap-1 mb-0.5 text-[9px] text-on-surface-variant font-semibold">
                             <span className="text-[#fabd00] text-xs">★</span>
-                            <span>{product.rating ? product.rating.toFixed(1) : '4.8'} <span className="opacity-70">({product.salesCount || '100+'})</span></span>
+                            <span>{product.rating ? product.rating.toFixed(1) : '4.8'} <span className="opacity-70">({formatSalesCount(product.salesCount)})</span></span>
                           </div>
                           <h4 className="font-display text-[11px] font-extrabold text-[#2b1613] mb-1.5 leading-tight flex-grow line-clamp-2">{product.name}</h4>
                           <div className="flex items-center justify-between mt-auto pt-0.5">
@@ -818,7 +865,7 @@ export default function App() {
                           <div className="flex justify-between items-center mt-3">
                             <div className="flex items-center gap-1">
                               <span className="material-symbols-outlined text-[#fabd00] text-xs font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                              <span className="text-[10px] font-bold text-on-surface-variant/80">{product.rating || '4.8'} ({product.salesCount || '100+'})</span>
+                              <span className="text-[10px] font-bold text-on-surface-variant/80">{product.rating || '4.8'} ({formatSalesCount(product.salesCount)})</span>
                             </div>
                             {product.inStock ? (
                               <button 
@@ -1495,6 +1542,34 @@ export default function App() {
                         onChange={(e) => setFormImage(e.target.value)}
                         placeholder="https://contoh.com/gambar.jpg"
                         className="px-4 py-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Rating & Sales Count */}
+                  <div className="flex gap-4">
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Rating Bintang</label>
+                      <select
+                        value={formRating}
+                        onChange={(e) => setFormRating(e.target.value)}
+                        className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                      >
+                        {Array.from({ length: 11 }, (_, i) => (4.0 + i * 0.1).toFixed(1)).map(val => (
+                          <option key={val} value={val}>{val}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex-1 flex flex-col gap-1.5">
+                      <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Jumlah Order</label>
+                      <input 
+                        type="number"
+                        value={formSalesCount}
+                        onChange={(e) => setFormSalesCount(e.target.value)}
+                        placeholder="Contoh: 1500"
+                        min="0"
+                        className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
                       />
                     </div>
                   </div>
