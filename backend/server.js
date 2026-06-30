@@ -200,6 +200,38 @@ const MENU_DATA = [
 ];
 
 const MENU_ITEMS_FILE = path.join(__dirname, 'menu_items.json');
+const PROMO_FILE = path.join(__dirname, 'promo_banner.json');
+
+const readPromoBanner = () => {
+  try {
+    if (!fs.existsSync(PROMO_FILE)) {
+      const defaultPromo = {
+        image: '/img/cheese.jpeg',
+        title: 'Mini Box Double Cheese',
+        subtitle: 'Our premium double cheese bestseller'
+      };
+      fs.writeFileSync(PROMO_FILE, JSON.stringify(defaultPromo, null, 2));
+      return defaultPromo;
+    }
+    const data = fs.readFileSync(PROMO_FILE, 'utf8');
+    return JSON.parse(data || '{}');
+  } catch (error) {
+    console.error('Error reading promo file:', error);
+    return {
+      image: '/img/cheese.jpeg',
+      title: 'Mini Box Double Cheese',
+      subtitle: 'Our premium double cheese bestseller'
+    };
+  }
+};
+
+const writePromoBanner = (promo) => {
+  try {
+    fs.writeFileSync(PROMO_FILE, JSON.stringify(promo, null, 2));
+  } catch (error) {
+    console.error('Error writing promo file:', error);
+  }
+};
 
 const readMenuItems = () => {
   try {
@@ -1209,6 +1241,21 @@ app.post('/api/order/:id/simulate-pay', async (req, res) => {
 app.get('/api/menu', async (req, res) => {
   const menu = await getMenuData();
   res.json({ success: true, menu });
+});
+
+app.get('/api/promo', (req, res) => {
+  const promo = readPromoBanner();
+  res.json({ success: true, promo });
+});
+
+app.post('/api/admin/promo', (req, res) => {
+  const { title, subtitle, image } = req.body;
+  if (!title || !subtitle || !image) {
+    return res.status(400).json({ success: false, message: 'Judul, subjudul, dan gambar wajib diisi.' });
+  }
+  const updatedPromo = { title, subtitle, image };
+  writePromoBanner(updatedPromo);
+  res.json({ success: true, message: 'Banner promo berhasil diperbarui.', promo: updatedPromo });
 });
 
 app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {

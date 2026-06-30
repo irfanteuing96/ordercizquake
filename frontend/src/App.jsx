@@ -170,6 +170,17 @@ export default function App() {
   const [formSalesCount, setFormSalesCount] = useState('0');
   const [isSavingMenu, setIsSavingMenu] = useState(false);
 
+  // Promo Banner State
+  const [promoBanner, setPromoBanner] = useState({
+    image: '/img/cheese.jpeg',
+    title: 'Mini Box Double Cheese',
+    subtitle: 'Our premium double cheese bestseller'
+  });
+  const [promoTitle, setPromoTitle] = useState('');
+  const [promoSubtitle, setPromoSubtitle] = useState('');
+  const [promoImage, setPromoImage] = useState('');
+  const [isSavingPromo, setIsSavingPromo] = useState(false);
+
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -208,7 +219,7 @@ export default function App() {
     return () => clearTimeout(delayDebounce);
   }, [addressSearch]);
 
-  // Load dynamic menu stock on mount / view changes
+  // Load dynamic menu stock & promo banner on mount / view changes
   useEffect(() => {
     const fetchMenu = async () => {
       try {
@@ -220,7 +231,21 @@ export default function App() {
         console.error('Error fetching menu stock from backend:', err);
       }
     };
+    const fetchPromo = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/promo`);
+        if (response.data.success && response.data.promo) {
+          setPromoBanner(response.data.promo);
+          setPromoTitle(response.data.promo.title);
+          setPromoSubtitle(response.data.promo.subtitle);
+          setPromoImage(response.data.promo.image);
+        }
+      } catch (err) {
+        console.error('Error fetching promo banner:', err);
+      }
+    };
     fetchMenu();
+    fetchPromo();
   }, [currentView, activeTab]);
 
   // Fetch rates when area changes or cart changes
@@ -526,6 +551,45 @@ export default function App() {
     }
   };
 
+  const handleSavePromo = async (e) => {
+    e.preventDefault();
+    if (!promoTitle || !promoSubtitle || !promoImage) {
+      alert('Semua bidang wajib diisi!');
+      return;
+    }
+    setIsSavingPromo(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/promo`, {
+        title: promoTitle,
+        subtitle: promoSubtitle,
+        image: promoImage
+      });
+      if (response.data.success) {
+        alert('Banner promo berhasil diperbarui!');
+        setPromoBanner(response.data.promo);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menyimpan banner promo.');
+    } finally {
+      setIsSavingPromo(false);
+    }
+  };
+
+  const handlePromoFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file terlalu besar! Maksimal 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPromoImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // -----------------
   // CART ACTIONS
   // -----------------
@@ -645,19 +709,20 @@ export default function App() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
                     <img 
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      alt="Mini Box Double Cheese" 
-                      src="/img/cheese.jpeg"
+                      alt={promoBanner.title} 
+                      src={promoBanner.image} 
                     />
                     <div className="absolute bottom-0 left-0 p-6 z-20 w-full text-left">
                       <div className="flex flex-col gap-1">
                         <span className="cizquake-featured-badge w-fit mb-2">Featured Favorite</span>
-                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">Mini Box Double Cheese</h2>
+                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">{promoBanner.title}</h2>
+                        <p className="text-white/80 text-[10px] font-semibold leading-relaxed mb-2">{promoBanner.subtitle}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className="font-display text-[#fabd00] font-bold text-lg">Rp 10.000</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
-                              const item = ENRICHED_MENU_DATA.find(i => i.id === 'mini-cheese');
+                              const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
                               if (item) addToCart(item);
                             }}
                             className="cizquake-btn-order-now transition-all active:scale-90"
@@ -1122,10 +1187,10 @@ export default function App() {
 
               <main className="mt-16 pt-6 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
                 {/* Admin Sub-Tabs */}
-                <div className="flex gap-2 bg-surface-container-low p-1 rounded-xl border border-outline-variant/10">
+                <div className="flex gap-1.5 bg-surface-container-low p-1 rounded-xl border border-outline-variant/10 overflow-x-auto hide-scrollbar">
                   <button 
                     onClick={() => setAdminSubTab('orders')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 whitespace-nowrap ${
                       adminSubTab === 'orders' 
                         ? 'bg-primary text-white shadow-sm' 
                         : 'text-on-surface-variant hover:bg-surface-container-high'
@@ -1136,7 +1201,7 @@ export default function App() {
                   </button>
                   <button 
                     onClick={() => setAdminSubTab('stock')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 whitespace-nowrap ${
                       adminSubTab === 'stock' 
                         ? 'bg-primary text-white shadow-sm' 
                         : 'text-on-surface-variant hover:bg-surface-container-high'
@@ -1144,6 +1209,17 @@ export default function App() {
                   >
                     <span className="material-symbols-outlined text-sm">inventory_2</span>
                     <span>Stok Menu</span>
+                  </button>
+                  <button 
+                    onClick={() => setAdminSubTab('promo')}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 whitespace-nowrap ${
+                      adminSubTab === 'promo' 
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">featured_video</span>
+                    <span>Banner Promo</span>
                   </button>
                 </div>
 
@@ -1428,6 +1504,105 @@ export default function App() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: PROMO BANNER MANAGEMENT */}
+                {adminSubTab === 'promo' && (
+                  <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-5 shadow-sm text-left flex flex-col gap-4">
+                    <div>
+                      <h3 className="font-display font-bold text-sm text-[#2b1613] mb-1">Pengaturan Banner Promo Utama</h3>
+                      <p className="text-on-surface-variant text-[10px] leading-relaxed font-semibold">
+                        Ubah foto banner utama, judul, dan subjudul yang muncul di bagian paling atas halaman Beranda.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSavePromo} className="space-y-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Judul Promo</label>
+                        <input 
+                          type="text"
+                          value={promoTitle}
+                          onChange={(e) => setPromoTitle(e.target.value)}
+                          placeholder="Contoh: Mini Box Double Cheese"
+                          required
+                          className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Subjudul / Deskripsi Banner</label>
+                        <input 
+                          type="text"
+                          value={promoSubtitle}
+                          onChange={(e) => setPromoSubtitle(e.target.value)}
+                          placeholder="Contoh: Best seller double cheese premium kami"
+                          required
+                          className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Foto Banner Utama</label>
+                        <div className="flex gap-3 items-center">
+                          <div className="w-20 h-20 rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                            {promoImage ? (
+                              <img src={promoImage} alt="Preview Banner" className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="material-symbols-outlined text-on-surface-variant/40 text-2xl">image</span>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <input 
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePromoFileChange}
+                              id="promo-file-input"
+                              className="hidden"
+                            />
+                            <label 
+                              htmlFor="promo-file-input"
+                              className="inline-flex px-3.5 py-2 bg-secondary-container hover:bg-secondary-container/90 active:scale-95 transition-all text-[10px] font-bold rounded-lg cursor-pointer border border-outline-variant/10 text-on-secondary-container items-center gap-1.5"
+                            >
+                              <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                              <span>Pilih File Gambar</span>
+                            </label>
+                            <p className="text-[8px] text-on-surface-variant/70 leading-normal font-semibold">
+                              Format: JPEG/PNG. Maksimal 2MB.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 mt-2">
+                          <span className="text-[9px] text-on-surface-variant/60 font-bold uppercase text-center">- ATAU MASUKKAN URL GAMBAR -</span>
+                          <input 
+                            type="text"
+                            value={promoImage && promoImage.startsWith('data:') ? '' : promoImage}
+                            onChange={(e) => setPromoImage(e.target.value)}
+                            placeholder="https://contoh.com/gambar-banner.jpg"
+                            className="px-4 py-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSavingPromo}
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-white active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm disabled:opacity-50 mt-4"
+                      >
+                        {isSavingPromo ? (
+                          <>
+                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                            <span>Menyimpan Banner...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-sm">save</span>
+                            <span>Simpan Perubahan Banner</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
                   </div>
                 )}
               </main>
