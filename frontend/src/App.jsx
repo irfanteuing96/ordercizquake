@@ -573,9 +573,8 @@ export default function App() {
           {/* TAB 1: HOME */}
           {activeTab === 'home' && (
             <>
-              {/* Header */}
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile relative">
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
+                <div className="flex items-center gap-3 z-10">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
                     <img 
                       className="w-full h-full object-contain filter brightness-0 invert" 
@@ -583,11 +582,12 @@ export default function App() {
                       src="/logo.png"
                     />
                   </div>
-                  <span className="font-display text-sm font-black tracking-tight text-white flex items-center gap-0.5 whitespace-nowrap">
-                    Cizquake Express
-                    <span className="material-symbols-outlined text-white text-base font-black leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
-                  </span>
                 </div>
+                
+                <span className="font-display text-base font-black tracking-tight text-white flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+                  Cizquake Express
+                  <span className="material-symbols-outlined text-white text-base font-black leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
+                </span>
                 
                 <div className="flex-1"></div>
                 
@@ -730,8 +730,8 @@ export default function App() {
           {activeTab === 'menu' && (
             <>
               {/* Header */}
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile relative">
-                <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
+                <div className="flex items-center gap-3 z-10">
                   <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
                     <img 
                       className="w-full h-full object-contain filter brightness-0 invert" 
@@ -739,8 +739,9 @@ export default function App() {
                       src="/logo.png"
                     />
                   </div>
-                  <span className="font-display text-sm font-black tracking-tight text-white whitespace-nowrap">Menu Cizquake</span>
                 </div>
+                
+                <span className="font-display text-base font-black tracking-tight text-white whitespace-nowrap absolute left-1/2 -translate-x-1/2">Menu Cizquake</span>
                 
                 <div className="flex-1"></div>
                 
@@ -839,11 +840,11 @@ export default function App() {
           {/* TAB 3: CART */}
           {activeTab === 'cart' && (
             <div className="min-h-screen pb-40">
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile relative">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <button onClick={() => setActiveTab('home')} className="transition-transform active:scale-95 text-white p-2 flex items-center justify-center z-10">
                   <span className="material-symbols-outlined">arrow_back</span>
                 </button>
-                <h1 className="font-display text-sm font-extrabold text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Keranjang Saya</h1>
+                <h1 className="font-display text-base font-black tracking-tight text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Keranjang Saya</h1>
                 <div className="flex-1"></div>
                 <button 
                   onClick={() => setActiveTab('profile')}
@@ -959,8 +960,8 @@ export default function App() {
           {/* TAB 4: PROFILE */}
           {activeTab === 'profile' && (
             <div className="pb-32">
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile relative">
-                <h1 className="font-display text-sm font-extrabold text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Profil Saya</h1>
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
+                <h1 className="font-display text-base font-black tracking-tight text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Profil Saya</h1>
                 <div className="flex-1"></div>
                 <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white z-10">
                   <span className="material-symbols-outlined text-2xl">notifications</span>
@@ -1629,11 +1630,11 @@ export default function App() {
       {/* 3. CHECKOUT VIEW */}
       {currentView === 'checkout' && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="fixed top-0 left-0 right-0 z-50 bg-[#fabd00] flex items-center h-16 max-w-[480px] mx-auto border-b border-[#fabd00] text-white px-container-margin-mobile relative">
+          <header className="fixed top-0 left-0 right-0 z-50 bg-[#fabd00] flex items-center h-16 max-w-[480px] mx-auto border-b border-[#fabd00] text-white px-container-margin-mobile">
             <button onClick={() => setCurrentView('catalog')} className="p-2 transition-transform active:scale-95 text-white flex items-center justify-center z-10">
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
-            <h1 className="font-display text-sm font-extrabold text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Checkout</h1>
+            <h1 className="font-display text-base font-black tracking-tight text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Checkout</h1>
           </header>
 
           <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
@@ -1840,10 +1841,10 @@ export default function App() {
       {/* 4. PAYMENT VIEW (QRIS DISPLAY) */}
       {currentView === 'payment' && paymentInfo && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile relative">
+          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile">
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
               <span className="material-symbols-outlined text-lg text-white">payments</span>
-              <span className="text-sm font-bold text-white font-display">Pembayaran QRIS</span>
+              <span className="text-base font-black tracking-tight text-white font-display">Pembayaran QRIS</span>
             </div>
             <div className="flex-grow"></div>
             <span className="bg-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-10">
@@ -1917,10 +1918,10 @@ export default function App() {
       {/* 5. TRACKING VIEW */}
       {currentView === 'tracking' && trackingInfo && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile relative">
+          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile">
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
               <span className="material-symbols-outlined text-lg text-white">local_shipping</span>
-              <span className="text-sm font-bold text-white font-display">Status Pengiriman</span>
+              <span className="text-base font-black tracking-tight text-white font-display">Status Pengiriman</span>
             </div>
             <div className="flex-grow"></div>
             <span className="text-[10px] bg-white/20 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider z-10">
