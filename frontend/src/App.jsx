@@ -599,10 +599,10 @@ export default function App() {
 
               <main className="mt-16 pb-32">
                 {/* Neon Running Text (Marquee) */}
-                <div className="bg-black py-2.5 border-b border-[#fabd00]/30 shadow-lg overflow-hidden w-full">
-                  <marquee className="text-[#fabd00] font-display font-black text-xs uppercase tracking-wider block" scrollamount="4">
-                    🧀 Cizquake Dessert Creamy & Lembut - Sensasi Lumer di Mulut yang Bikin Ketagihan! ✨ Dapatkan Promo Spesial Khusus Hari Ini & Pengiriman Instant Cepat Sampai! 🚀 Pesan Sekarang Sebelum Kehabisan Varian Favoritmu! 🔥
-                  </marquee>
+                <div className="cizquake-marquee-container">
+                  <div className="cizquake-marquee-content">
+                    🧀 Cizquake Dessert Creamy & Lembut - Sensasi Lumer di Mulut yang Bikin Ketagihan! ✨ Pengiriman Instant Cepat Sampai! 🚀 Pesan Sekarang Sebelum Kehabisan Varian Favoritmu! 🔥
+                  </div>
                 </div>
 
                 {/* Hero Section */}
