@@ -1539,7 +1539,7 @@ export default function App() {
           )}
 
           {/* Shared Bottom Navigation Bar */}
-          <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] z-50 flex justify-around items-center px-4 py-3 pb-6 bg-surface-container-lowest shadow-[0_-4px_20px_0_rgba(0,0,0,0.06)] rounded-t-lg mx-auto">
+          <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] z-50 flex justify-around items-center px-4 py-2.5 pb-[max(10px,env(safe-area-inset-bottom))] bg-surface-container-lowest shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-none mx-auto border-t border-outline-variant/10">
             {/* Home Tab */}
             <button 
               onClick={() => setActiveTab('home')}
