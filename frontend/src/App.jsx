@@ -124,11 +124,11 @@ export default function App() {
   
   // Catalog State
   const [menu, setMenu] = useState(MENU_DATA);
-  const [selectedCategory, setSelectedCategory] = useState('All Flavors');
+  const [selectedCategory, setSelectedCategory] = useState('All menu');
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
-  const [selectedMenuCategory, setSelectedMenuCategory] = useState('All');
+  const [selectedMenuCategory, setSelectedMenuCategory] = useState('All menu');
 
   // Checkout State
   const [customerName, setCustomerName] = useState('');
@@ -548,29 +548,9 @@ export default function App() {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
-    if (selectedCategory === 'All Flavors' || selectedCategory === 'All') return true;
+    if (selectedCategory === 'All Flavors' || selectedCategory === 'All menu' || selectedCategory === 'All') return true;
 
-    if (selectedCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || 
-             item.name.toLowerCase().includes('tiramisu') || 
-             item.name.toLowerCase().includes('lotus') || 
-             item.name.toLowerCase().includes('biscoff') || 
-             item.name.toLowerCase().includes('matcha') || 
-             item.name.toLowerCase().includes('seasalt') || 
-             item.name.toLowerCase().includes('caramel');
-    }
-    if (selectedCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('chocolate') || 
-             item.name.toLowerCase().includes('coklat') || 
-             item.name.toLowerCase().includes('oreo');
-    }
-    if (selectedCategory === 'Fruit & Sweet') {
-      return item.name.toLowerCase().includes('blueberry') || 
-             item.name.toLowerCase().includes('red velvet') || 
-             item.name.toLowerCase().includes('velvet');
-    }
-
-    return item.category === selectedCategory;
+    return item.category.toLowerCase() === selectedCategory.toLowerCase();
   });
 
   // Filtering menu items for Menu tab
@@ -578,29 +558,9 @@ export default function App() {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
 
-    if (selectedMenuCategory === 'All') return true;
+    if (selectedMenuCategory === 'All' || selectedMenuCategory === 'All menu') return true;
 
-    if (selectedMenuCategory === 'Classic') {
-      return item.name.toLowerCase().includes('cheese') || 
-             item.name.toLowerCase().includes('tiramisu') || 
-             item.name.toLowerCase().includes('lotus') || 
-             item.name.toLowerCase().includes('biscoff') || 
-             item.name.toLowerCase().includes('matcha') || 
-             item.name.toLowerCase().includes('seasalt') || 
-             item.name.toLowerCase().includes('caramel');
-    }
-    if (selectedMenuCategory === 'Chocolate') {
-      return item.name.toLowerCase().includes('chocolate') || 
-             item.name.toLowerCase().includes('coklat') || 
-             item.name.toLowerCase().includes('oreo');
-    }
-    if (selectedMenuCategory === 'Fruit & Sweet') {
-      return item.name.toLowerCase().includes('blueberry') || 
-             item.name.toLowerCase().includes('red velvet') || 
-             item.name.toLowerCase().includes('velvet');
-    }
-
-    return item.category === selectedMenuCategory;
+    return item.category.toLowerCase() === selectedMenuCategory.toLowerCase();
   });
 
   return (
@@ -669,7 +629,7 @@ export default function App() {
 
                 {/* Categories scroll */}
                 <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-2.5">
-                  {['All Flavors', 'Classic', 'Chocolate', 'Fruit & Sweet'].map(cat => (
+                  {['All menu', 'Mini box', 'Medium box', 'Beverages', 'Bundling', 'Gift'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
@@ -797,7 +757,7 @@ export default function App() {
 
                 {/* Menu Category Chips */}
                 <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-3">
-                  {['All', 'Classic', 'Chocolate', 'Fruit & Sweet'].map(cat => (
+                  {['All menu', 'Mini box', 'Medium box', 'Beverages', 'Bundling', 'Gift'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedMenuCategory(cat)}
@@ -1449,10 +1409,11 @@ export default function App() {
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
                     >
-                      <option value="Mini Dessert Box">Mini Dessert Box</option>
-                      <option value="Medium Dessert Box">Medium Dessert Box</option>
-                      <option value="Drinks">Drinks</option>
-                      <option value="Other">Lainnya</option>
+                      <option value="Mini box">Mini box</option>
+                      <option value="Medium box">Medium box</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Bundling">Bundling</option>
+                      <option value="Gift">Gift</option>
                     </select>
                   </div>
 
