@@ -715,9 +715,9 @@ export default function App() {
                           >
                             <span 
                               className={`material-symbols-outlined text-xs font-bold transition-colors ${
-                                favorites.includes(product.id) ? 'text-red-500 font-bold' : 'text-outline-variant/60'
+                                favorites.includes(product.id) ? 'text-[#e11d48]' : 'text-[#785900]'
                               }`} 
-                              style={{ fontVariationSettings: favorites.includes(product.id) ? "'FILL' 1" : "'FILL' 0" }}
+                              style={{ fontVariationSettings: "'FILL' 1" }}
                             >
                               favorite
                             </span>
