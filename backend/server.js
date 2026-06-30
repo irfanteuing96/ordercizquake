@@ -37,11 +37,16 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'Akses API ditolak oleh kebijakan CORS Cizquake.';
-      return callback(new Error(msg), false);
+    
+    const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
+    const isNetlify = origin.endsWith('.netlify.app');
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || isLocal || isNetlify) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    
+    const msg = 'Akses API ditolak oleh kebijakan CORS Cizquake.';
+    return callback(new Error(msg), false);
   }
 }));
 app.use(express.json({ limit: '10mb' }));

@@ -1,0 +1,110 @@
+[
+  {
+    "id": "mini-blueberry",
+    "name": "Mini Box Blueberry",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "1200 terjual",
+    "description": "Premium Mini Cheesecake topped with sweet, rich blueberry compote.",
+    "image": "/img/Blueberry.jpeg",
+    "inStock": true,
+    "rating": 4.8,
+    "salesCount": 1200
+  },
+  {
+    "id": "mini-cheese",
+    "name": "Mini Box Double Cheese",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "2500 terjual",
+    "description": "Classic creamy mini cheesecake with a generous layer of grated cheddar cheese.",
+    "image": "/img/cheese.jpeg",
+    "inStock": true,
+    "rating": 5,
+    "salesCount": 2500
+  },
+  {
+    "id": "mini-chocolate",
+    "name": "Mini Box Chocolate",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "1800 terjual",
+    "description": "Decadent mini cheesecake with a rich and smooth chocolate ganache topping.",
+    "image": "/img/Coklat.jpeg",
+    "inStock": true,
+    "rating": 4.9,
+    "salesCount": 1800
+  },
+  {
+    "id": "mini-lotus",
+    "name": "Mini Box Lotus Biscoff",
+    "category": "Mini box",
+    "price": 12500,
+    "sales": "940 terjual",
+    "description": "Creamy mini cheesecake layered with smooth Lotus Biscoff spread and biscuit crumbs.",
+    "image": "/img/Lotus.jpeg",
+    "inStock": true,
+    "rating": 4.9,
+    "salesCount": 940
+  },
+  {
+    "id": "mini-matcha",
+    "name": "Mini Box Matcha",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "560 terjual",
+    "description": "Mini cheesecake infused with high-quality Uji Matcha for a perfect sweet-bitter balance.",
+    "image": "/img/Matcha.jpeg",
+    "inStock": true,
+    "rating": 4.8,
+    "salesCount": 560
+  },
+  {
+    "id": "mini-oreo",
+    "name": "Mini Box Oreo",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "2100 terjual",
+    "description": "Delicious mini cheesecake with crushed Oreo cookies folded inside and on top.",
+    "image": "/img/Oreo.jpeg",
+    "inStock": true,
+    "rating": 4.9,
+    "salesCount": 2100
+  },
+  {
+    "id": "mini-redvelvet",
+    "name": "Mini Box Red Velvet",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "870 terjual",
+    "description": "Elegant red velvet mini cheesecake topped with cream cheese frosting and cake crumbs.",
+    "image": "/img/Redvelvet.jpeg",
+    "inStock": true,
+    "rating": 4.8,
+    "salesCount": 870
+  },
+  {
+    "id": "mini-seasalt",
+    "name": "Mini Box Sea Salt Caramel",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "1100 terjual",
+    "description": "Indulgent mini cheesecake with a perfect blend of sweet caramel and a touch of sea salt.",
+    "image": "/img/Seasalt.jpeg",
+    "inStock": true,
+    "rating": 4.9,
+    "salesCount": 1100
+  },
+  {
+    "id": "mini-tiramisu",
+    "name": "Mini Box Tiramisu",
+    "category": "Mini box",
+    "price": 10000,
+    "sales": "1500 terjual",
+    "description": "Coffee-infused cream cheese layers on a soft ladyfinger biscuit base, dusted with cocoa powder.",
+    "image": "/img/Tiramisu.jpeg",
+    "inStock": true,
+    "rating": 4.9,
+    "salesCount": 1500
+  }
+]
