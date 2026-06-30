@@ -198,98 +198,219 @@ const MENU_DATA = [
   }
 ];
 
-const STOCK_FILE = path.join(__dirname, 'stock.json');
+const MENU_ITEMS_FILE = path.join(__dirname, 'menu_items.json');
 
-const readStock = () => {
+const readMenuItems = () => {
   try {
-    if (!fs.existsSync(STOCK_FILE)) {
-      const defaultStock = {};
-      MENU_DATA.forEach(item => {
-        defaultStock[item.id] = true;
-      });
-      fs.writeFileSync(STOCK_FILE, JSON.stringify(defaultStock, null, 2));
-      return defaultStock;
+    if (!fs.existsSync(MENU_ITEMS_FILE)) {
+      fs.writeFileSync(MENU_ITEMS_FILE, JSON.stringify(MENU_DATA, null, 2));
+      return MENU_DATA;
     }
-    const data = fs.readFileSync(STOCK_FILE, 'utf8');
-    return JSON.parse(data || '{}');
+    const data = fs.readFileSync(MENU_ITEMS_FILE, 'utf8');
+    return JSON.parse(data || '[]');
   } catch (error) {
-    console.error('Error reading stock file:', error);
-    return {};
+    console.error('Error reading menu_items file:', error);
+    return MENU_DATA;
   }
 };
 
-const writeStock = (stockData) => {
+const writeMenuItems = (items) => {
   try {
-    fs.writeFileSync(STOCK_FILE, JSON.stringify(stockData, null, 2));
+    fs.writeFileSync(MENU_ITEMS_FILE, JSON.stringify(items, null, 2));
   } catch (error) {
-    console.error('Error writing stock file:', error);
+    console.error('Error writing menu_items file:', error);
+  }
+};
+
+const seedDefaultMenu = async () => {
+  if (!isUseSupabase) return;
+  try {
+    const dbMenu = MENU_DATA.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      price: item.price,
+      sales: item.sales,
+      description: item.description,
+      image: item.image,
+      in_stock: item.inStock,
+      rating: item.rating,
+      sales_count: item.salesCount
+    }));
+    
+    await supabaseWithTimeout(
+      supabase.from('menu_items').insert(dbMenu),
+      5000
+    );
+    console.log('[Supabase] Successfully seeded 9 default menu items.');
+  } catch (err) {
+    console.error('[Supabase] Failed to seed default menu:', err.message);
   }
 };
 
 const getMenuData = async () => {
-  const menu = MENU_DATA.map(item => ({ ...item }));
   if (isUseSupabase) {
     try {
       const { data, error } = await supabaseWithTimeout(
-        supabase.from('menu_stock').select('*'),
+        supabase.from('menu_items').select('*').order('created_at', { ascending: true }),
         4000
       );
       
       if (error) throw error;
       
       if (data && data.length > 0) {
-        data.forEach(row => {
-          const item = menu.find(m => m.id === row.id);
-          if (item) {
-            item.inStock = row.in_stock;
-          }
-        });
+        return data.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          price: parseFloat(item.price),
+          sales: item.sales || '0 terjual',
+          description: item.description || '',
+          image: item.image || '',
+          inStock: item.in_stock,
+          rating: parseFloat(item.rating || 4.8),
+          salesCount: item.sales_count || '0'
+        }));
+      } else {
+        console.log('[Supabase] menu_items is empty, seeding default menu...');
+        await seedDefaultMenu();
+        return MENU_DATA;
       }
     } catch (err) {
-      console.error('[Supabase] Error getting menu stock, falling back to stock.json:', err.message);
-      const stock = readStock();
-      menu.forEach(item => {
-        if (stock[item.id] !== undefined) {
-          item.inStock = stock[item.id];
-        }
-      });
+      console.error('[Supabase] Error getting menu items, falling back to local:', err.message);
+      return readMenuItems();
     }
   } else {
-    const stock = readStock();
-    menu.forEach(item => {
-      if (stock[item.id] !== undefined) {
-        item.inStock = stock[item.id];
-      }
-    });
+    return readMenuItems();
   }
-  return menu;
 };
 
 const updateMenuStock = async (id, inStock) => {
   if (isUseSupabase) {
     try {
       const { error } = await supabaseWithTimeout(
-        supabase.from('menu_stock').upsert({ id, in_stock: inStock }),
+        supabase.from('menu_items').update({ in_stock: inStock }).eq('id', id),
         4000
       );
-      
       if (error) throw error;
       console.log(`[Supabase] Success updating stock for ${id}: ${inStock}`);
       return true;
     } catch (err) {
-      console.error('[Supabase] Error updating menu stock, falling back to stock.json:', err.message);
-      const stock = readStock();
-      stock[id] = inStock;
-      writeStock(stock);
+      console.error('[Supabase] Error updating menu stock, falling back to local:', err.message);
+      const menu = readMenuItems();
+      const updated = menu.map(m => m.id === id ? { ...m, inStock } : m);
+      writeMenuItems(updated);
       return true;
     }
   } else {
-    const stock = readStock();
-    stock[id] = inStock;
-    writeStock(stock);
+    const menu = readMenuItems();
+    const updated = menu.map(m => m.id === id ? { ...m, inStock } : m);
+    writeMenuItems(updated);
     return true;
   }
 };
+
+const addMenuItem = async (item) => {
+  if (isUseSupabase) {
+    try {
+      const dbItem = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        price: item.price,
+        sales: item.sales || '0 terjual',
+        description: item.description || '',
+        image: item.image || '',
+        in_stock: item.inStock !== false,
+        rating: item.rating || 4.8,
+        sales_count: item.salesCount || '0'
+      };
+      const { error } = await supabaseWithTimeout(
+        supabase.from('menu_items').insert(dbItem),
+        4000
+      );
+      if (error) throw error;
+      console.log(`[Supabase] Success adding menu item: ${item.id}`);
+      return true;
+    } catch (err) {
+      console.error('[Supabase] Error adding menu item, falling back to local:', err.message);
+      const menu = readMenuItems();
+      menu.push(item);
+      writeMenuItems(menu);
+      return true;
+    }
+  } else {
+    const menu = readMenuItems();
+    menu.push(item);
+    writeMenuItems(menu);
+    return true;
+  }
+};
+
+const editMenuItem = async (id, fields) => {
+  if (isUseSupabase) {
+    try {
+      const dbUpdates = {};
+      if (fields.name !== undefined) dbUpdates.name = fields.name;
+      if (fields.category !== undefined) dbUpdates.category = fields.category;
+      if (fields.price !== undefined) dbUpdates.price = fields.price;
+      if (fields.description !== undefined) dbUpdates.description = fields.description;
+      if (fields.image !== undefined) dbUpdates.image = fields.image;
+      if (fields.inStock !== undefined) dbUpdates.in_stock = fields.inStock;
+
+      const { error } = await supabaseWithTimeout(
+        supabase.from('menu_items').update(dbUpdates).eq('id', id),
+        4000
+      );
+      if (error) throw error;
+      console.log(`[Supabase] Success editing menu item: ${id}`);
+      return true;
+    } catch (err) {
+      console.error('[Supabase] Error editing menu item, falling back to local:', err.message);
+      const menu = readMenuItems();
+      const idx = menu.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        menu[idx] = { ...menu[idx], ...fields };
+        writeMenuItems(menu);
+      }
+      return true;
+    }
+  } else {
+    const menu = readMenuItems();
+    const idx = menu.findIndex(m => m.id === id);
+    if (idx !== -1) {
+      menu[idx] = { ...menu[idx], ...fields };
+      writeMenuItems(menu);
+    }
+    return true;
+  }
+};
+
+const deleteMenuItem = async (id) => {
+  if (isUseSupabase) {
+    try {
+      const { error } = await supabaseWithTimeout(
+        supabase.from('menu_items').delete().eq('id', id),
+        4000
+      );
+      if (error) throw error;
+      console.log(`[Supabase] Success deleting menu item: ${id}`);
+      return true;
+    } catch (err) {
+      console.error('[Supabase] Error deleting menu item, falling back to local:', err.message);
+      const menu = readMenuItems();
+      const filtered = menu.filter(m => m.id !== id);
+      writeMenuItems(filtered);
+      return true;
+    }
+  } else {
+    const menu = readMenuItems();
+    const filtered = menu.filter(m => m.id !== id);
+    writeMenuItems(filtered);
+    return true;
+  }
+};
+
 
 // Database Helpers (JSON-based order persistence)
 const readOrders = () => {
@@ -1039,6 +1160,66 @@ app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {
     res.json({ success: true, message: `Status stok ${id} berhasil diubah.` });
   } else {
     res.status(500).json({ success: false, message: 'Gagal memperbarui status stok.' });
+  }
+});
+
+app.post('/api/admin/menu/add', async (req, res) => {
+  const { name, category, price, description, image } = req.body;
+  if (!name || !category || !price) {
+    return res.status(400).json({ success: false, message: 'Nama, kategori, dan harga wajib diisi.' });
+  }
+
+  const cleanName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const id = `${cleanName}-${Date.now()}`;
+
+  const newItem = {
+    id,
+    name,
+    category,
+    price: parseFloat(price),
+    sales: '0 terjual',
+    description: description || '',
+    image: image || '',
+    inStock: true,
+    rating: 4.8,
+    salesCount: '0'
+  };
+
+  const success = await addMenuItem(newItem);
+  if (success) {
+    res.json({ success: true, message: 'Menu berhasil ditambahkan.', item: newItem });
+  } else {
+    res.status(500).json({ success: false, message: 'Gagal menambahkan menu.' });
+  }
+});
+
+app.post('/api/admin/menu/:id/edit', async (req, res) => {
+  const { id } = req.params;
+  const { name, category, price, description, image, inStock } = req.body;
+
+  const fields = {};
+  if (name !== undefined) fields.name = name;
+  if (category !== undefined) fields.category = category;
+  if (price !== undefined) fields.price = parseFloat(price);
+  if (description !== undefined) fields.description = description;
+  if (image !== undefined) fields.image = image;
+  if (inStock !== undefined) fields.inStock = inStock;
+
+  const success = await editMenuItem(id, fields);
+  if (success) {
+    res.json({ success: true, message: 'Menu berhasil diperbarui.' });
+  } else {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui menu.' });
+  }
+});
+
+app.delete('/api/admin/menu/:id', async (req, res) => {
+  const { id } = req.params;
+  const success = await deleteMenuItem(id);
+  if (success) {
+    res.json({ success: true, message: 'Menu berhasil dihapus.' });
+  } else {
+    res.status(500).json({ success: false, message: 'Gagal menghapus menu.' });
   }
 });
 

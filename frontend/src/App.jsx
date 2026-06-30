@@ -158,6 +158,16 @@ export default function App() {
   const [adminFilter, setAdminFilter] = useState('all');
   const [adminSubTab, setAdminSubTab] = useState('orders'); // 'orders' or 'stock'
 
+  // Menu Management CRUD State
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [editingMenuItem, setEditingMenuItem] = useState(null);
+  const [formName, setFormName] = useState('');
+  const [formCategory, setFormCategory] = useState('Mini Dessert Box');
+  const [formPrice, setFormPrice] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formImage, setFormImage] = useState('');
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
+
   // Debouncing Address Search
   useEffect(() => {
     if (addressSearch.length < 3) {
@@ -400,6 +410,93 @@ export default function App() {
       }
     } catch (err) {
       alert('Gagal mengubah status stok kue.');
+    }
+  };
+
+  const openAddMenuModal = () => {
+    setEditingMenuItem(null);
+    setFormName('');
+    setFormCategory('Mini Dessert Box');
+    setFormPrice('');
+    setFormDescription('');
+    setFormImage('');
+    setIsMenuModalOpen(true);
+  };
+
+  const openEditMenuModal = (item) => {
+    setEditingMenuItem(item);
+    setFormName(item.name);
+    setFormCategory(item.category);
+    setFormPrice(item.price);
+    setFormDescription(item.description);
+    setFormImage(item.image);
+    setIsMenuModalOpen(true);
+  };
+
+  const handleDeleteMenu = async (id) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus menu ini secara permanen?')) return;
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/admin/menu/${id}`);
+      if (response.data.success) {
+        alert('Menu berhasil dihapus!');
+        setMenu(prev => prev.filter(m => m.id !== id));
+      }
+    } catch (err) {
+      alert('Gagal menghapus menu.');
+    }
+  };
+
+  const handleSaveMenu = async (e) => {
+    e.preventDefault();
+    if (!formName || !formCategory || !formPrice) {
+      alert('Nama, kategori, dan harga wajib diisi!');
+      return;
+    }
+
+    setIsSavingMenu(true);
+    const payload = {
+      name: formName,
+      category: formCategory,
+      price: parseFloat(formPrice),
+      description: formDescription,
+      image: formImage
+    };
+
+    try {
+      if (editingMenuItem) {
+        const response = await axios.post(`${BACKEND_URL}/api/admin/menu/${editingMenuItem.id}/edit`, payload);
+        if (response.data.success) {
+          alert('Menu berhasil diperbarui!');
+          setMenu(prev => prev.map(m => m.id === editingMenuItem.id ? { ...m, ...payload } : m));
+          setIsMenuModalOpen(false);
+        }
+      } else {
+        const response = await axios.post(`${BACKEND_URL}/api/admin/menu/add`, payload);
+        if (response.data.success) {
+          alert('Menu baru berhasil ditambahkan!');
+          setMenu(prev => [...prev, response.data.item]);
+          setIsMenuModalOpen(false);
+        }
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menyimpan menu.');
+    } finally {
+      setIsSavingMenu(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Ukuran file terlalu besar! Maksimal 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImage(reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -1241,34 +1338,69 @@ export default function App() {
                 {adminSubTab === 'stock' && (
                   <div className="flex flex-col gap-4">
                     <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm text-left">
-                      <h3 className="font-display font-bold text-sm text-primary mb-1">Status Ketersediaan Menu</h3>
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-display font-bold text-sm text-primary">Daftar Menu Restoran</h3>
+                        <button
+                          onClick={openAddMenuModal}
+                          className="px-3.5 py-2 bg-primary text-white hover:bg-primary/95 active:scale-95 transition-all text-[11px] font-black rounded-lg flex items-center gap-1 shadow-sm"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">add</span>
+                          <span>Tambah Menu</span>
+                        </button>
+                      </div>
                       <p className="text-xs text-on-surface-variant/80 font-semibold mb-4 leading-relaxed">
-                        Pilih menu yang sedang kosong/habis untuk menyembunyikannya dari pilihan beli pelanggan secara real-time.
+                        Kelola data kue Cizquake, ubah info rasa/harga, nonaktifkan stok rasa yang kosong, atau hapus menu secara permanen.
                       </p>
                       
                       <div className="divide-y divide-outline-variant/10">
                         {menu.map(item => (
-                          <div key={item.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-                            <div className="flex items-center gap-3">
+                          <div key={item.id} className="flex items-center justify-between py-4 first:pt-0 last:pb-0 gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
                               <div className="w-12 h-12 rounded-xl bg-surface-container overflow-hidden border border-outline-variant/10 flex-shrink-0">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-secondary-container/30 text-secondary">
+                                    <span className="material-symbols-outlined text-lg">image</span>
+                                  </div>
+                                )}
                               </div>
-                              <div>
-                                <p className="text-xs font-black text-on-surface leading-tight">{item.name}</p>
-                                <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-1">Rp {item.price.toLocaleString('id-ID')}</p>
+                              <div className="min-w-0">
+                                <p className="text-xs font-black text-on-surface leading-tight truncate">{item.name}</p>
+                                <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-1">
+                                  Rp {item.price.toLocaleString('id-ID')} • <span className="text-[9px] uppercase font-bold text-primary-container bg-primary-container/20 px-1.5 py-0.5 rounded">{item.category}</span>
+                                </p>
                               </div>
                             </div>
 
-                            <button
-                              onClick={() => toggleMenuStock(item.id, item.inStock)}
-                              className={`px-4 py-2 rounded-full text-[10px] font-bold tracking-wider uppercase transition-all shadow-sm active:scale-95 ${
-                                item.inStock
-                                  ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'
-                                  : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
-                              }`}
-                            >
-                              {item.inStock ? 'Tersedia' : 'Habis'}
-                            </button>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => toggleMenuStock(item.id, item.inStock)}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-bold tracking-wider uppercase transition-all shadow-sm active:scale-95 border ${
+                                  item.inStock
+                                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                }`}
+                              >
+                                {item.inStock ? 'Tersedia' : 'Habis'}
+                              </button>
+
+                              <button
+                                onClick={() => openEditMenuModal(item)}
+                                className="w-8 h-8 rounded-lg border border-outline-variant/20 hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant active:scale-90 transition-all"
+                                title="Edit Menu"
+                              >
+                                <span className="material-symbols-outlined text-sm">edit</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteMenu(item.id)}
+                                className="w-8 h-8 rounded-lg border border-red-100 hover:bg-red-50 flex items-center justify-center text-red-650 active:scale-90 transition-all"
+                                title="Hapus Menu"
+                              >
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1276,6 +1408,145 @@ export default function App() {
                   </div>
                 )}
               </main>
+            </div>
+          )}
+
+          {/* MODAL: ADD / EDIT MENU ITEM */}
+          {isMenuModalOpen && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <div 
+                className="bg-background w-full max-w-md rounded-3xl p-6 custom-shadow border border-outline-variant/10 text-left max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-display font-black text-base text-primary">
+                    {editingMenuItem ? 'Edit Menu Kue' : 'Tambah Menu Baru'}
+                  </h3>
+                  <button 
+                    onClick={() => setIsMenuModalOpen(false)}
+                    className="w-8 h-8 rounded-full hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant"
+                  >
+                    <span className="material-symbols-outlined text-md">close</span>
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveMenu} className="space-y-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Nama Kue</label>
+                    <input 
+                      type="text"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
+                      placeholder="Contoh: Mini Box Blueberry"
+                      required
+                      className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Kategori</label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value)}
+                      className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                    >
+                      <option value="Mini Dessert Box">Mini Dessert Box</option>
+                      <option value="Medium Dessert Box">Medium Dessert Box</option>
+                      <option value="Drinks">Drinks</option>
+                      <option value="Other">Lainnya</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Harga (Rupiah)</label>
+                    <input 
+                      type="number"
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(e.target.value)}
+                      placeholder="Contoh: 10000"
+                      required
+                      className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Deskripsi</label>
+                    <textarea 
+                      value={formDescription}
+                      onChange={(e) => setFormDescription(e.target.value)}
+                      placeholder="Tulis deskripsi singkat premium mengenai rasa kue..."
+                      rows="3"
+                      className="px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface resize-none leading-relaxed"
+                    ></textarea>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider">Foto Menu</label>
+                    <div className="flex gap-3 items-center">
+                      <div className="w-16 h-16 rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {formImage ? (
+                          <img src={formImage} alt="Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="material-symbols-outlined text-on-surface-variant/40 text-xl">image</span>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <input 
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          id="menu-file-input"
+                          className="hidden"
+                        />
+                        <label 
+                          htmlFor="menu-file-input"
+                          className="inline-flex px-3.5 py-2 bg-secondary-container hover:bg-secondary-container/90 active:scale-95 transition-all text-[10px] font-bold rounded-lg cursor-pointer border border-outline-variant/10 text-on-secondary-container items-center gap-1.5"
+                        >
+                          <span className="material-symbols-outlined text-sm">cloud_upload</span>
+                          <span>Pilih File Gambar</span>
+                        </label>
+                        <p className="text-[8px] text-on-surface-variant/70 leading-normal font-semibold">
+                          Format: JPEG/PNG. Maksimal ukuran 2MB.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 mt-2">
+                      <span className="text-[9px] text-on-surface-variant/60 font-bold uppercase text-center">- ATAU MASUKKAN URL -</span>
+                      <input 
+                        type="text"
+                        value={formImage && formImage.startsWith('data:') ? '' : formImage}
+                        onChange={(e) => setFormImage(e.target.value)}
+                        placeholder="https://contoh.com/gambar.jpg"
+                        className="px-4 py-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-3 border-t border-outline-variant/10 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setIsMenuModalOpen(false)}
+                      className="flex-1 py-3 bg-surface-container-high hover:bg-surface-container-highest text-on-surface active:scale-95 transition-all text-xs rounded-xl font-bold border border-outline-variant/10 text-center"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSavingMenu}
+                      className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm disabled:opacity-50"
+                    >
+                      {isSavingMenu ? (
+                        <>
+                          <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                          <span>Menyimpan...</span>
+                        </>
+                      ) : (
+                        <span>Simpan Menu</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
