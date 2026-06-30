@@ -575,13 +575,11 @@ export default function App() {
             <>
               <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <div className="flex items-center gap-3 z-10">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
-                    <img 
-                      className="w-full h-full object-contain filter brightness-0 invert" 
-                      alt="Cizquake Logo" 
-                      src="/logo.png"
-                    />
-                  </div>
+                  <img 
+                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0" 
+                    alt="Cizquake Logo" 
+                    src="/logo.png"
+                  />
                 </div>
                 
                 <span className="font-display text-base font-black tracking-tight text-white flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
@@ -599,9 +597,16 @@ export default function App() {
                 </button>
               </header>
 
-              <main className="mt-16 pt-4 pb-32">
+              <main className="mt-16 pb-32">
+                {/* Neon Running Text (Marquee) */}
+                <div className="bg-black py-2.5 border-b border-[#fabd00]/30 shadow-lg overflow-hidden w-full">
+                  <marquee className="text-[#fabd00] font-display font-black text-xs uppercase tracking-wider block" scrollamount="4">
+                    🧀 Cizquake Dessert Creamy & Lembut - Sensasi Lumer di Mulut yang Bikin Ketagihan! ✨ Dapatkan Promo Spesial Khusus Hari Ini & Pengiriman Instant Cepat Sampai! 🚀 Pesan Sekarang Sebelum Kehabisan Varian Favoritmu! 🔥
+                  </marquee>
+                </div>
+
                 {/* Hero Section */}
-                <section className="-mt-4 mb-6">
+                <section className="mb-6">
                   <div className="relative w-full h-[380px] rounded-none overflow-hidden group cursor-pointer transition-transform duration-500 shadow-lg">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
                     <img 
@@ -732,13 +737,11 @@ export default function App() {
               {/* Header */}
               <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <div className="flex items-center gap-3 z-10">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
-                    <img 
-                      className="w-full h-full object-contain filter brightness-0 invert" 
-                      alt="Cizquake Logo" 
-                      src="/logo.png"
-                    />
-                  </div>
+                  <img 
+                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0" 
+                    alt="Cizquake Logo" 
+                    src="/logo.png"
+                  />
                 </div>
                 
                 <span className="font-display text-base font-black tracking-tight text-white whitespace-nowrap absolute left-1/2 -translate-x-1/2">Menu Cizquake</span>
