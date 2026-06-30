@@ -596,8 +596,8 @@ export default function App() {
 
               <main className="mt-16 pt-4 pb-32">
                 {/* Hero Section */}
-                <section className="px-container-margin-mobile mb-6">
-                  <div className="relative w-full h-[380px] rounded-[24px] overflow-hidden group cursor-pointer transition-transform duration-500 hover:scale-[1.01] shadow-lg">
+                <section className="-mt-4 mb-6">
+                  <div className="relative w-full h-[380px] rounded-none overflow-hidden group cursor-pointer transition-transform duration-500 shadow-lg">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
                     <img 
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
