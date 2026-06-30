@@ -711,10 +711,10 @@ export default function App() {
                               e.stopPropagation();
                               toggleFavorite(product.id);
                             }}
-                            className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full w-6 h-6 shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform z-10"
+                            className="absolute top-2 right-2 bg-white/95 backdrop-blur-sm rounded-full p-1.5 shadow-sm flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-transform z-10"
                           >
                             <span 
-                              className={`material-symbols-outlined text-xs font-bold transition-colors translate-y-[0.8px] ${
+                              className={`material-symbols-outlined text-[10px] font-bold transition-colors translate-y-[0.5px] ${
                                 favorites.includes(product.id) ? 'text-[#e11d48]' : 'text-[#785900]'
                               }`} 
                               style={{ fontVariationSettings: "'FILL' 1" }}
