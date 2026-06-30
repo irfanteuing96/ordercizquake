@@ -574,21 +574,21 @@ export default function App() {
           {activeTab === 'home' && (
             <>
               {/* Header */}
-              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden">
                     <img 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-contain filter brightness-0 invert" 
                       alt="Cizquake Logo" 
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkcPqBDl5zoA2WUVELEMVtvVecKe8zxLqSLK4G-o1ikzhy_mq-sqjFwOAYD6rDW8w_l4KjiCQbN3qv0bq7mMD3TxokY6gM_6eEmgVXa9E-oWOIOcbj8n6gUOlrqN-jLWRV-U5jfcQ--c3kHNgSrGDnzvv1RGXWU9S_K7zDzxUxDhMY-h5PuejayRXJIykU4HT6HPl5p_uOspuDFz_JiEaDs9XqBfZnuU7cC2H0vqSQ3E-ce6HZHWJXFDhwczk2bH8s2GEeF7gy7fH4"
+                      src="/logo.png"
                     />
                   </div>
-                  <h1 className="font-display text-lg font-bold text-[#785900]">Cizquake</h1>
+                  <span className="font-display text-base font-black tracking-tight text-white">Cizquake</span>
                 </div>
                 
                 <button 
                   onClick={() => setActiveTab('profile')}
-                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-[#785900]"
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white"
                 >
                   <span className="material-symbols-outlined text-xl">notifications</span>
                 </button>
@@ -725,16 +725,20 @@ export default function App() {
           {activeTab === 'menu' && (
             <>
               {/* Header */}
-              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
-                    <span className="material-symbols-outlined text-on-primary-container font-bold">restaurant</span>
+                  <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center p-1 overflow-hidden">
+                    <img 
+                      className="w-full h-full object-contain filter brightness-0 invert" 
+                      alt="Cizquake Logo" 
+                      src="/logo.png"
+                    />
                   </div>
-                  <h1 className="font-display text-headline-md font-extrabold text-primary font-bold">Menu Cizquake</h1>
+                  <span className="font-display text-base font-black tracking-tight text-white">Menu Cizquake</span>
                 </div>
                 <button 
                   onClick={() => setActiveTab('profile')}
-                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary"
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white"
                 >
                   <span className="material-symbols-outlined text-2xl">notifications</span>
                 </button>
@@ -827,16 +831,16 @@ export default function App() {
           {/* TAB 3: CART */}
           {activeTab === 'cart' && (
             <div className="min-h-screen pb-40">
-              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setActiveTab('home')} className="transition-transform active:scale-95 text-primary p-2">
+                  <button onClick={() => setActiveTab('home')} className="transition-transform active:scale-95 text-white p-2 flex items-center justify-center">
                     <span className="material-symbols-outlined">arrow_back</span>
                   </button>
-                  <h1 className="font-headline-md text-headline-md text-primary font-bold">Keranjang Saya</h1>
+                  <h1 className="font-display text-sm font-extrabold text-white">Keranjang Saya</h1>
                 </div>
                 <button 
                   onClick={() => setActiveTab('profile')}
-                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary"
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white"
                 >
                   <span className="material-symbols-outlined text-2xl">notifications</span>
                 </button>
@@ -948,9 +952,9 @@ export default function App() {
           {/* TAB 4: PROFILE */}
           {activeTab === 'profile' && (
             <div className="pb-32">
-              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
-                <h1 className="font-display text-headline-md font-extrabold text-primary font-bold">Profil Saya</h1>
-                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
+                <h1 className="font-display text-sm font-extrabold text-white">Profil Saya</h1>
+                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white">
                   <span className="material-symbols-outlined text-2xl">notifications</span>
                 </button>
               </header>
@@ -1032,8 +1036,8 @@ export default function App() {
           {/* TAB 5: ADMIN PANEL */}
           {activeTab === 'admin' && isAdminLoggedIn && (
             <div className="pb-32 text-left">
-              <header className="bg-background fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 mx-auto">
-                <span className="text-base font-bold text-primary font-display flex items-center gap-2">
+              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] mx-auto text-white">
+                <span className="text-sm font-bold text-white font-display flex items-center gap-2">
                   <span className="material-symbols-outlined text-lg">admin_panel_settings</span>
                   Cizquake Admin Hub
                 </span>
@@ -1041,7 +1045,7 @@ export default function App() {
                   <button 
                     onClick={fetchAdminOrders}
                     disabled={isAdminLoadingOrders}
-                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-secondary-container/30 active:scale-95 transition-all text-primary disabled:opacity-50"
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white disabled:opacity-50"
                   >
                     <span className={`material-symbols-outlined text-xl ${isAdminLoadingOrders ? 'animate-spin' : ''}`}>refresh</span>
                   </button>
@@ -1617,12 +1621,12 @@ export default function App() {
       {/* 3. CHECKOUT VIEW */}
       {currentView === 'checkout' && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="fixed top-0 left-0 right-0 z-50 bg-background flex items-center justify-between px-container-margin-mobile w-full h-16 max-w-[480px] mx-auto border-b border-outline-variant/20">
+          <header className="fixed top-0 left-0 right-0 z-50 bg-[#fabd00] flex items-center justify-between px-container-margin-mobile w-full h-16 max-w-[480px] mx-auto border-b border-[#fabd00] text-white">
             <div className="flex items-center gap-3">
-              <button onClick={() => setCurrentView('catalog')} className="p-2 transition-transform active:scale-95 text-primary">
+              <button onClick={() => setCurrentView('catalog')} className="p-2 transition-transform active:scale-95 text-white flex items-center justify-center">
                 <span className="material-symbols-outlined">arrow_back</span>
               </button>
-              <h1 className="font-display text-headline-md font-extrabold text-primary">Checkout</h1>
+              <h1 className="font-display text-sm font-extrabold text-white">Checkout</h1>
             </div>
           </header>
 
@@ -1830,12 +1834,12 @@ export default function App() {
       {/* 4. PAYMENT VIEW (QRIS DISPLAY) */}
       {currentView === 'payment' && paymentInfo && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="bg-background fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 max-w-[480px] mx-auto">
-            <span className="text-base font-bold text-primary flex items-center gap-2 font-display">
-              <span className="material-symbols-outlined text-lg animate-pulse text-amber-500">payments</span>
+          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white">
+            <span className="text-sm font-bold text-white flex items-center gap-2 font-display">
+              <span className="material-symbols-outlined text-lg text-white">payments</span>
               Pembayaran QRIS
             </span>
-            <span className="bg-primary-container text-on-primary-container px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
+            <span className="bg-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm">
               <span className="material-symbols-outlined text-xs">schedule</span>
               {paymentExpiryTimer}
             </span>
@@ -1906,12 +1910,12 @@ export default function App() {
       {/* 5. TRACKING VIEW */}
       {currentView === 'tracking' && trackingInfo && (
         <div className="bg-background min-h-screen pb-32">
-          <header className="bg-background fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-outline-variant/20 max-w-[480px] mx-auto">
-            <span className="text-base font-bold text-primary font-display flex items-center gap-2">
-              <span className="material-symbols-outlined text-lg animate-bounce text-amber-500">local_shipping</span>
+          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center justify-between px-container-margin-mobile h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white">
+            <span className="text-sm font-bold text-white font-display flex items-center gap-2">
+              <span className="material-symbols-outlined text-lg text-white">local_shipping</span>
               Status Pengiriman
             </span>
-            <span className="text-[11px] bg-green-100 text-green-700 border border-green-200 px-3 py-1 rounded-full font-bold uppercase tracking-wider font-bold">
+            <span className="text-[11px] bg-white/20 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider">
               Lunas / Paid
             </span>
           </header>

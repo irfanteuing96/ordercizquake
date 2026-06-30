@@ -184,3 +184,13 @@ body {
     padding: 8px 16px !important;
 }
 
+.chip-active {
+    background-color: #fabd00 !important;
+    color: #2b1613 !important;
+}
+
+.chip-inactive {
+    background-color: rgba(250, 189, 0, 0.15) !important;
+    color: #785900 !important;
+}
+
