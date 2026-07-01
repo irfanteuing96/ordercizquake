@@ -10,8 +10,11 @@ import { createClient } from '@supabase/supabase-js';
 import { sendOrderPaidNotifications } from './whatsappService.js';
 
 
-// Load Environment Variables
+// Load Environment Variables (Checks multiple paths for robustness on deployment platforms)
 dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '..', '.env') });
 
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
