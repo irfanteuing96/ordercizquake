@@ -2848,21 +2848,86 @@ export default function App() {
                   <p className="text-[11px] text-on-surface-variant/80 mt-2 font-semibold bg-surface-container-low px-3 py-2 rounded-lg border border-outline-variant/10 leading-relaxed">
                     Alamat: {trackingInfo.shipping.address}
                   </p>
-
-                  {trackingInfo.shippingOrderInfo?.courier_tracking_url && (
-                    <a 
-                      href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="mt-4 w-full py-3 bg-[#fabd00] hover:brightness-105 active:scale-95 transition-all text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-md shadow-yellow-100 text-white"
-                    >
-                      <span className="material-symbols-outlined text-sm">map</span>
-                      <span>Lacak Lokasi Kurir (Peta Real-Time)</span>
-                    </a>
-                  )}
                 </div>
               </div>
             </div>
+
+            {/* Courier Info & Live Map Card */}
+            {trackingInfo.shippingOrderInfo && (
+              <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm space-y-4 text-left animate-in fade-in duration-200">
+                <h3 className="text-xs uppercase font-bold text-primary tracking-wider flex items-center gap-1.5 font-bold">
+                  <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
+                  Informasi Pengiriman
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                  <div className="space-y-1">
+                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Nama Kurir / Driver</p>
+                    <p className="text-on-surface font-bold">
+                      {trackingInfo.shippingOrderInfo.courier_driver_name || 'Mencari Driver...'}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kontak Driver</p>
+                    {trackingInfo.shippingOrderInfo.courier_driver_phone ? (
+                      <a 
+                        href={`tel:${trackingInfo.shippingOrderInfo.courier_driver_phone}`}
+                        className="text-primary hover:underline font-bold flex items-center gap-1 w-fit"
+                      >
+                        <span className="material-symbols-outlined text-xs">call</span>
+                        {trackingInfo.shippingOrderInfo.courier_driver_phone}
+                      </a>
+                    ) : (
+                      <p className="text-on-surface/50 italic font-medium">Tidak tersedia</p>
+                    )}
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Nomor Resi / Order ID Biteship</p>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-surface-container-low px-2.5 py-1 rounded-md border border-outline-variant/15 text-[10px] font-bold text-primary select-all">
+                        {trackingInfo.shippingOrderInfo.courier_order_id}
+                      </code>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(trackingInfo.shippingOrderInfo.courier_order_id);
+                          alert('Nomor Resi berhasil disalin!');
+                        }}
+                        className="text-[10px] font-bold text-on-surface-variant hover:text-primary flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-xs">content_copy</span>
+                        <span>Salin</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inline Iframe Map Tracking */}
+                {trackingInfo.shippingOrderInfo.courier_tracking_url && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Peta Pelacakan Live</p>
+                    <div className="w-full h-[320px] rounded-2xl overflow-hidden border border-outline-variant/10 bg-slate-50 relative shadow-inner">
+                      <iframe 
+                        src={trackingInfo.shippingOrderInfo.courier_tracking_url} 
+                        className="w-full h-full border-none"
+                        title="Live Courier Tracking Map"
+                        allow="geolocation"
+                      ></iframe>
+                    </div>
+                    <div className="text-center pt-1">
+                      <a 
+                        href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-primary hover:underline font-bold flex items-center justify-center gap-1 w-fit mx-auto"
+                      >
+                        <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
+                        Buka Peta Pelacakan di Tab Baru
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Tracking Steps Timeline */}
             <h3 className="text-sm font-bold text-primary mb-1 text-left flex items-center gap-1.5 font-bold">
