@@ -1035,7 +1035,19 @@ app.post('/api/checkout', async (req, res) => {
   const { customer, items, shipping, totalProductPrice, shippingPrice } = req.body;
   
   const orderId = await getNextOrderId();
-  const grossAmount = totalProductPrice + shippingPrice;
+  
+  let finalShippingPrice = shippingPrice;
+  let finalTotalProductPrice = totalProductPrice;
+  
+  const hasTestItem = items.some(item => item.name.toLowerCase().includes('uji coba'));
+  if (hasTestItem) {
+    finalShippingPrice = 0; // Free shipping for test
+    if (finalTotalProductPrice < 1000) {
+      finalTotalProductPrice = 1000; // Minimum allowed by Midtrans API
+    }
+  }
+
+  const grossAmount = finalTotalProductPrice + finalShippingPrice;
 
   // 1. Buat pesanan di database
   const newOrder = {
@@ -1043,8 +1055,8 @@ app.post('/api/checkout', async (req, res) => {
     customer,
     items,
     shipping,
-    totalProductPrice,
-    shippingPrice,
+    totalProductPrice: finalTotalProductPrice,
+    shippingPrice: finalShippingPrice,
     grossAmount,
     paymentStatus: 'pending', // pending, paid, expired, failed
     shippingStatus: 'idle',  // idle, searching, booking_failed, driver_assigned, on_the_way, delivered
@@ -1148,6 +1160,22 @@ app.post('/api/checkout', async (req, res) => {
 // Helper untuk men-trigger booking kurir otomatis di BiteShip
 async function bookCourierAutomatically(order) {
   console.log(`[BiteShip] Memicu pemesanan kurir otomatis untuk order: ${order.orderId}`);
+  
+  const hasTestItem = order.items.some(item => item.name.toLowerCase().includes('uji coba'));
+  if (hasTestItem) {
+    console.log(`[BiteShip] Menghindari ojek booking asli untuk order uji coba: ${order.orderId}`);
+    await updateOrderFields(order.orderId, {
+      shippingStatus: 'delivered',
+      shippingOrderInfo: {
+        courier_order_id: `BITESHIP-TEST-${Date.now()}`,
+        courier_driver_name: 'Driver Uji Coba Cizquake',
+        courier_driver_phone: '085511223344',
+        courier_tracking_url: 'https://biteship.com/tracking/mock'
+      }
+    });
+    return;
+  }
+
   await updateOrderFields(order.orderId, { shippingStatus: 'searching' });
 
   if (isMockBiteship) {
