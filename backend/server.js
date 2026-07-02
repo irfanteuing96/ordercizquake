@@ -241,6 +241,119 @@ const writePromoBanner = (promo) => {
   }
 };
 
+const RESTO_SETTINGS_FILE = path.join(__dirname, 'resto_settings.json');
+
+const DEFAULT_RESTO_SETTINGS = {
+  manualStatus: 'auto', // 'auto', 'open', 'closed'
+  manualUntil: null, // ISO string or 'indefinite' or null
+  schedule: {
+    monday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    tuesday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    wednesday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    thursday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    friday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    saturday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    sunday: { isOpen: true, openTime: '08:00', closeTime: '21:30' }
+  }
+};
+
+const readRestoSettings = () => {
+  try {
+    if (!fs.existsSync(RESTO_SETTINGS_FILE)) {
+      fs.writeFileSync(RESTO_SETTINGS_FILE, JSON.stringify(DEFAULT_RESTO_SETTINGS, null, 2));
+      return DEFAULT_RESTO_SETTINGS;
+    }
+    const data = fs.readFileSync(RESTO_SETTINGS_FILE, 'utf8');
+    return JSON.parse(data || '{}');
+  } catch (error) {
+    console.error('Error reading resto settings file:', error);
+    return DEFAULT_RESTO_SETTINGS;
+  }
+};
+
+const writeRestoSettings = (settings) => {
+  try {
+    fs.writeFileSync(RESTO_SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  } catch (error) {
+    console.error('Error writing resto settings file:', error);
+  }
+};
+
+const getNextOpeningTime = (settings) => {
+  const now = new Date();
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayLabels = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  
+  for (let i = 0; i < 7; i++) {
+    const checkDate = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+    const dayName = days[checkDate.getDay()];
+    const daySchedule = settings.schedule[dayName];
+    
+    if (daySchedule && daySchedule.isOpen) {
+      const [openH, openM] = daySchedule.openTime.split(':').map(Number);
+      const openDateTime = new Date(checkDate);
+      openDateTime.setHours(openH, openM, 0, 0);
+      
+      if (openDateTime > now) {
+        return {
+          time: openDateTime.toISOString(),
+          label: i === 0 
+            ? `Hari ini pukul ${daySchedule.openTime}` 
+            : i === 1 
+            ? `Besok (${dayLabels[checkDate.getDay()]}) pukul ${daySchedule.openTime}`
+            : `${dayLabels[checkDate.getDay()]} pukul ${daySchedule.openTime}`
+        };
+      }
+    }
+  }
+  return null;
+};
+
+const checkIsRestoOpen = (settings) => {
+  const now = new Date();
+  
+  if (settings.manualStatus === 'open') {
+    return { isOpen: true, reason: 'manual_open' };
+  }
+  
+  if (settings.manualStatus === 'closed') {
+    if (settings.manualUntil === 'indefinite') {
+      return { isOpen: false, reason: 'manual_closed_indefinite', until: null };
+    }
+    
+    if (settings.manualUntil) {
+      const untilTime = new Date(settings.manualUntil);
+      if (now < untilTime) {
+        return { isOpen: false, reason: 'manual_closed_temporary', until: untilTime.toISOString() };
+      }
+    }
+  }
+  
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const currentDayName = days[now.getDay()];
+  const daySchedule = settings.schedule[currentDayName];
+  
+  if (!daySchedule || !daySchedule.isOpen) {
+    return { isOpen: false, reason: 'schedule_closed_day', until: getNextOpeningTime(settings) };
+  }
+  
+  const [openHour, openMin] = daySchedule.openTime.split(':').map(Number);
+  const [closeHour, closeMin] = daySchedule.closeTime.split(':').map(Number);
+  
+  const currentHour = now.getHours();
+  const currentMin = now.getMinutes();
+  
+  const currentTimeVal = currentHour * 60 + currentMin;
+  const openTimeVal = openHour * 60 + openMin;
+  const closeTimeVal = closeHour * 60 + closeMin;
+  
+  if (currentTimeVal >= openTimeVal && currentTimeVal < closeTimeVal) {
+    return { isOpen: true, reason: 'schedule_open' };
+  } else {
+    return { isOpen: false, reason: 'schedule_closed_hours', until: getNextOpeningTime(settings) };
+  }
+};
+
 const readMenuItems = () => {
   try {
     if (!fs.existsSync(MENU_ITEMS_FILE)) {
@@ -1264,6 +1377,25 @@ app.post('/api/admin/promo', (req, res) => {
   const updatedPromo = { title, subtitle, image };
   writePromoBanner(updatedPromo);
   res.json({ success: true, message: 'Banner promo berhasil diperbarui.', promo: updatedPromo });
+});
+
+app.get('/api/resto/status', (req, res) => {
+  const settings = readRestoSettings();
+  const state = checkIsRestoOpen(settings);
+  res.json({ success: true, settings, state });
+});
+
+app.post('/api/admin/resto/settings', (req, res) => {
+  const { manualStatus, manualUntil, schedule } = req.body;
+  const settings = readRestoSettings();
+  
+  if (manualStatus !== undefined) settings.manualStatus = manualStatus;
+  if (manualUntil !== undefined) settings.manualUntil = manualUntil;
+  if (schedule !== undefined) settings.schedule = schedule;
+  
+  writeRestoSettings(settings);
+  const state = checkIsRestoOpen(settings);
+  res.json({ success: true, message: 'Pengaturan operasional toko berhasil diperbarui.', settings, state });
 });
 
 app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {

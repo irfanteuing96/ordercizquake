@@ -183,6 +183,38 @@ export default function App() {
   const [promoImage, setPromoImage] = useState('');
   const [isSavingPromo, setIsSavingPromo] = useState(false);
 
+  // Resto Status & Schedule State
+  const [restoStatus, setRestoStatus] = useState({
+    isOpen: true,
+    reason: 'schedule_open',
+    until: null
+  });
+  const [restoSettings, setRestoSettings] = useState(null);
+  const [isSavingRestoSettings, setIsSavingRestoSettings] = useState(false);
+
+  const [manualStatus, setManualStatus] = useState('auto');
+  const [closeDuration, setCloseDuration] = useState('30m'); // '30m', '1h', 'fullday', 'indefinite', 'custom'
+  const [customCloseUntil, setCustomCloseUntil] = useState('');
+  
+  const [scheduleForm, setScheduleForm] = useState({
+    monday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    tuesday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    wednesday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    thursday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    friday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    saturday: { isOpen: true, openTime: '08:00', closeTime: '21:30' },
+    sunday: { isOpen: true, openTime: '08:00', closeTime: '21:30' }
+  });
+
+  useEffect(() => {
+    if (restoSettings) {
+      setManualStatus(restoSettings.manualStatus || 'auto');
+      if (restoSettings.schedule) {
+        setScheduleForm(restoSettings.schedule);
+      }
+    }
+  }, [restoSettings]);
+
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -246,9 +278,37 @@ export default function App() {
         console.error('Error fetching promo banner:', err);
       }
     };
+    const fetchRestoStatus = async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/resto/status`);
+        if (response.data.success) {
+          setRestoStatus(response.data.state);
+          setRestoSettings(response.data.settings);
+        }
+      } catch (err) {
+        console.error('Error fetching resto status:', err);
+      }
+    };
     fetchMenu();
     fetchPromo();
+    fetchRestoStatus();
   }, [currentView, activeTab]);
+
+  // Periodically poll resto status
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/resto/status`);
+        if (response.data.success) {
+          setRestoStatus(response.data.state);
+          setRestoSettings(response.data.settings);
+        }
+      } catch (err) {
+        console.error('Error polling resto status:', err);
+      }
+    }, 15000); // Check every 15 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch rates when area changes or cart changes
   useEffect(() => {
@@ -592,6 +652,51 @@ export default function App() {
     }
   };
 
+  const handleSaveOperationalSettings = async (e) => {
+    e.preventDefault();
+    
+    let manualUntil = null;
+    if (manualStatus === 'closed') {
+      if (closeDuration === '30m') {
+        manualUntil = new Date(Date.now() + 30 * 60000).toISOString();
+      } else if (closeDuration === '1h') {
+        manualUntil = new Date(Date.now() + 60 * 60000).toISOString();
+      } else if (closeDuration === 'fullday') {
+        const midnight = new Date();
+        midnight.setHours(24, 0, 0, 0);
+        manualUntil = midnight.toISOString();
+      } else if (closeDuration === 'indefinite') {
+        manualUntil = 'indefinite';
+      } else if (closeDuration === 'custom') {
+        if (!customCloseUntil) {
+          alert('Harap pilih waktu tutup kustom!');
+          return;
+        }
+        manualUntil = new Date(customCloseUntil).toISOString();
+      }
+    }
+
+    const payload = {
+      manualStatus,
+      manualUntil,
+      schedule: scheduleForm
+    };
+
+    setIsSavingRestoSettings(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/resto/settings`, payload);
+      if (response.data.success) {
+        alert('Pengaturan operasional toko berhasil diperbarui!');
+        setRestoStatus(response.data.state);
+        setRestoSettings(response.data.settings);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menyimpan pengaturan operasional.');
+    } finally {
+      setIsSavingRestoSettings(false);
+    }
+  };
+
   // -----------------
   // CART ACTIONS
   // -----------------
@@ -666,8 +771,65 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
       
-      {/* 1. CATALOG VIEW (TABS: HOME, MENU, CART, PROFILE) */}
-      {currentView === 'catalog' && (
+      {/* Closed Screen Cover */}
+      {!restoStatus.isOpen && currentView !== 'admin' && activeTab !== 'profile' && activeTab !== 'admin' ? (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#161616] text-white p-6 max-w-[480px] mx-auto text-center z-[9999] relative">
+          <div className="flex flex-col items-center gap-6 max-w-sm">
+            <img 
+              className="h-16 w-auto object-contain filter brightness-0 invert opacity-90" 
+              alt="Cizquake Logo" 
+              src="/logo.png"
+            />
+            
+            <div className="w-24 h-24 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/30 text-amber-500 animate-pulse">
+              <span className="material-symbols-outlined text-5xl">storefront</span>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="font-display text-lg font-black tracking-tight text-amber-500">Cizquake Express Sedang Tutup</h2>
+              <p className="text-xs text-white/70 leading-relaxed font-semibold">
+                Maaf, saat ini toko kami sedang tidak menerima pesanan baru. Kami akan segera kembali!
+              </p>
+            </div>
+
+            {/* Reopen Info */}
+            <div className="w-full bg-[#242424] border border-white/5 rounded-2xl p-4 text-xs font-semibold space-y-1">
+              <p className="text-white/40 uppercase text-[9px] tracking-wider font-bold">Waktu Buka Kembali</p>
+              <p className="text-sm font-bold text-amber-400">
+                {restoStatus.reason === 'manual_closed_temporary' && restoStatus.until ? (
+                  `Buka kembali: ${new Date(restoStatus.until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+                ) : restoStatus.until && restoStatus.until.label ? (
+                  restoStatus.until.label
+                ) : (
+                  "Tutup sementara (hubungi Admin untuk pemesanan khusus)"
+                )}
+              </p>
+            </div>
+
+            {/* Hubungi Whatsapp button */}
+            <a 
+              href="https://wa.me/6288218003440" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-600/90 active:scale-95 transition-all text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-white"
+            >
+              <span className="material-symbols-outlined text-sm">chat</span>
+              Hubungi Admin via WhatsApp
+            </a>
+
+            {/* Admin Login Link at the bottom of Closed page */}
+            <button 
+              onClick={handleAdminLoginPrompt}
+              className="text-[10px] text-white/40 font-bold hover:text-white/60 pt-4 cursor-pointer hover:underline"
+            >
+              Kelola Toko (Login Admin)
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* 1. CATALOG VIEW (TABS: HOME, MENU, CART, PROFILE) */}
+          {currentView === 'catalog' && (
         <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
           
           {/* TAB 1: HOME */}
@@ -1223,6 +1385,17 @@ export default function App() {
                     <span className="material-symbols-outlined text-sm">featured_video</span>
                     <span>Banner Promo</span>
                   </button>
+                  <button 
+                    onClick={() => setAdminSubTab('schedule')}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 whitespace-nowrap ${
+                      adminSubTab === 'schedule' 
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">schedule</span>
+                    <span>Operasional</span>
+                  </button>
                 </div>
 
                 {/* TAB CONTENT: ORDERS */}
@@ -1601,6 +1774,224 @@ export default function App() {
                           <>
                             <span className="material-symbols-outlined text-sm">save</span>
                             <span>Simpan Perubahan Banner</span>
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: OPERATIONAL SCHEDULE & MANUAL STATUS */}
+                {adminSubTab === 'schedule' && (
+                  <div className="bg-surface-container-lowest border border-outline-variant/20 rounded-2xl p-5 shadow-sm text-left flex flex-col gap-4">
+                    <div>
+                      <h3 className="font-display font-bold text-sm text-[#2b1613] mb-1">Pengaturan Buka / Tutup Restoran</h3>
+                      <p className="text-on-surface-variant text-[10px] leading-relaxed font-semibold">
+                        Atur status buka-tutup restoran secara manual atau otomatis mengikuti jadwal operasional harian.
+                      </p>
+                    </div>
+
+                    <form onSubmit={handleSaveOperationalSettings} className="space-y-6">
+                      
+                      {/* 1. Status Manual Overrides */}
+                      <div className="space-y-3 p-4 bg-surface-container-low rounded-2xl border border-outline-variant/10">
+                        <label className="text-[10px] uppercase font-bold text-primary tracking-wider flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">settings</span>
+                          Status Operasional Saat Ini
+                        </label>
+                        
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-outline-variant/5 cursor-pointer hover:bg-slate-50 transition-all">
+                            <input 
+                              type="radio" 
+                              name="manualStatus" 
+                              value="auto" 
+                              checked={manualStatus === 'auto'}
+                              onChange={(e) => setManualStatus(e.target.value)}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <div className="text-left">
+                              <p className="text-xs font-bold text-on-surface">Buka Otomatis (Sesuai Jadwal)</p>
+                              <p className="text-[10px] text-on-surface-variant/80 font-medium">Toko akan buka/tutup secara otomatis mengikuti jadwal mingguan di bawah.</p>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-outline-variant/5 cursor-pointer hover:bg-slate-50 transition-all">
+                            <input 
+                              type="radio" 
+                              name="manualStatus" 
+                              value="open" 
+                              checked={manualStatus === 'open'}
+                              onChange={(e) => setManualStatus(e.target.value)}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <div className="text-left">
+                              <p className="text-xs font-bold text-green-700">Paksa Buka (Buka Terus)</p>
+                              <p className="text-[10px] text-on-surface-variant/80 font-medium">Toko dipaksa buka terus 24 jam mengabaikan jadwal mingguan.</p>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-outline-variant/5 cursor-pointer hover:bg-slate-50 transition-all">
+                            <input 
+                              type="radio" 
+                              name="manualStatus" 
+                              value="closed" 
+                              checked={manualStatus === 'closed'}
+                              onChange={(e) => setManualStatus(e.target.value)}
+                              className="w-4 h-4 accent-primary"
+                            />
+                            <div className="text-left">
+                              <p className="text-xs font-bold text-red-650">Tutup Toko Sementara</p>
+                              <p className="text-[10px] text-on-surface-variant/80 font-medium">Paksa tutup toko sementara dengan opsi waktu di bawah ini.</p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Opsi Durasi Tutup Sementara */}
+                        {manualStatus === 'closed' && (
+                          <div className="mt-3 p-3 bg-red-50/50 rounded-xl border border-red-200/40 space-y-3 text-left animate-in fade-in slide-in-from-top-1 duration-200">
+                            <label className="text-[9px] uppercase font-black text-red-800 tracking-wider">Durasi Tutup Toko</label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {[
+                                { val: '30m', label: '30 Menit' },
+                                { val: '1h', label: '1 Jam' },
+                                { val: 'fullday', label: 'Seharian Penuh' },
+                                { val: 'indefinite', label: 'Tutup Permanen (Tekan Buka)' },
+                                { val: 'custom', label: 'Kustom Waktu...' }
+                              ].map(opt => (
+                                <label 
+                                  key={opt.val} 
+                                  className={`flex items-center gap-1.5 p-2 rounded-lg border text-[10px] font-bold cursor-pointer transition-all ${
+                                    opt.val === 'indefinite' ? 'col-span-2' : ''
+                                  } ${
+                                    closeDuration === opt.val 
+                                      ? 'bg-red-600 text-white border-red-600' 
+                                      : 'bg-white border-outline-variant/20 text-on-surface hover:bg-red-50/40'
+                                  }`}
+                                >
+                                  <input 
+                                    type="radio" 
+                                    name="closeDuration" 
+                                    value={opt.val}
+                                    checked={closeDuration === opt.val}
+                                    onChange={(e) => setCloseDuration(e.target.value)}
+                                    className="hidden"
+                                  />
+                                  <span>{opt.label}</span>
+                                </label>
+                              ))}
+                            </div>
+
+                            {closeDuration === 'custom' && (
+                              <div className="flex flex-col gap-1 mt-2 animate-in fade-in duration-200">
+                                <label className="text-[8px] uppercase font-bold text-red-750">Pilih Waktu Buka Kembali</label>
+                                <input 
+                                  type="datetime-local" 
+                                  value={customCloseUntil}
+                                  onChange={(e) => setCustomCloseUntil(e.target.value)}
+                                  className="w-full px-3 py-2 bg-white rounded-lg border border-red-200 text-xs font-semibold focus:outline-none"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 2. Weekly Schedule Hours */}
+                      <div className="space-y-4 p-4 bg-surface-container-low rounded-2xl border border-outline-variant/10">
+                        <label className="text-[10px] uppercase font-bold text-primary tracking-wider flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm">calendar_month</span>
+                          Jadwal Operasional Mingguan
+                        </label>
+                        <p className="text-[9px] text-on-surface-variant/70 font-semibold leading-relaxed">
+                          Jadwal default: 08:00 - 21:30. Hilangkan centang jika ingin toko tutup total pada hari tersebut.
+                        </p>
+
+                        <div className="space-y-3 divide-y divide-outline-variant/5">
+                          {[
+                            { key: 'monday', label: 'Senin' },
+                            { key: 'tuesday', label: 'Selasa' },
+                            { key: 'wednesday', label: 'Rabu' },
+                            { key: 'thursday', label: 'Kamis' },
+                            { key: 'friday', label: 'Jumat' },
+                            { key: 'saturday', label: 'Sabtu' },
+                            { key: 'sunday', label: 'Minggu' }
+                          ].map(day => (
+                            <div key={day.key} className="flex items-center justify-between pt-3 first:pt-0 gap-2">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                  type="checkbox"
+                                  checked={scheduleForm[day.key]?.isOpen ?? true}
+                                  onChange={(e) => {
+                                    setScheduleForm(prev => ({
+                                      ...prev,
+                                      [day.key]: {
+                                        ...prev[day.key],
+                                        isOpen: e.target.checked
+                                      }
+                                    }));
+                                  }}
+                                  className="w-4 h-4 accent-primary rounded"
+                                />
+                                <span className="text-xs font-bold text-on-surface">{day.label}</span>
+                              </label>
+
+                              {(scheduleForm[day.key]?.isOpen ?? true) && (
+                                <div className="flex items-center gap-2 animate-in fade-in duration-200">
+                                  <input 
+                                    type="time" 
+                                    value={scheduleForm[day.key]?.openTime || '08:00'}
+                                    onChange={(e) => {
+                                      setScheduleForm(prev => ({
+                                        ...prev,
+                                        [day.key]: {
+                                          ...prev[day.key],
+                                          openTime: e.target.value
+                                        }
+                                      }));
+                                    }}
+                                    className="px-2 py-1 bg-white rounded-lg border border-outline-variant/20 text-xs font-bold focus:outline-none focus:border-primary"
+                                  />
+                                  <span className="text-[10px] font-bold text-on-surface-variant">s/d</span>
+                                  <input 
+                                    type="time" 
+                                    value={scheduleForm[day.key]?.closeTime || '21:30'}
+                                    onChange={(e) => {
+                                      setScheduleForm(prev => ({
+                                        ...prev,
+                                        [day.key]: {
+                                          ...prev[day.key],
+                                          closeTime: e.target.value
+                                        }
+                                      }));
+                                    }}
+                                    className="px-2 py-1 bg-white rounded-lg border border-outline-variant/20 text-xs font-bold focus:outline-none focus:border-primary"
+                                  />
+                                </div>
+                              )}
+                              {!(scheduleForm[day.key]?.isOpen ?? true) && (
+                                <span className="text-[10px] font-extrabold text-red-650 bg-red-55 px-2 py-1 rounded">TUTUP SEHARIAN</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        type="submit"
+                        disabled={isSavingRestoSettings}
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-white active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm disabled:opacity-50 mt-4"
+                      >
+                        {isSavingRestoSettings ? (
+                          <>
+                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                            <span>Menyimpan Pengaturan...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-sm">save</span>
+                            <span>Simpan Pengaturan Operasional</span>
                           </>
                         )}
                       </button>
@@ -2283,6 +2674,9 @@ export default function App() {
             </button>
           </main>
         </div>
+      )}
+
+      </>
       )}
 
     </div>
