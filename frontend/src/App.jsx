@@ -775,14 +775,12 @@ export default function App() {
       {!restoStatus.isOpen && currentView !== 'admin' && activeTab !== 'profile' && activeTab !== 'admin' ? (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[#161616] text-white p-6 max-w-[480px] mx-auto text-center z-[9999] relative">
           <div className="flex flex-col items-center gap-6 max-w-sm">
-            <img 
-              className="h-16 w-auto object-contain filter brightness-0 invert opacity-90" 
-              alt="Cizquake Logo" 
-              src="/logo.png"
-            />
-            
-            <div className="w-24 h-24 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/30 text-amber-500 animate-pulse">
-              <span className="material-symbols-outlined text-5xl">storefront</span>
+            <div className="w-28 h-28 rounded-full bg-[#fabd00] flex items-center justify-center border-4 border-white/20 shadow-lg shadow-[#fabd00]/20 animate-pulse p-4">
+              <img 
+                className="w-full h-auto object-contain" 
+                alt="Cizquake Logo" 
+                src="/logo.png"
+              />
             </div>
 
             <div className="space-y-2">
