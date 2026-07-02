@@ -1346,6 +1346,68 @@ app.post('/api/payment-callback', async (req, res) => {
 });
 
 // -----------------
+// ENDPOINT 5: SECURE MIDTRANS DIAGNOSTIC
+// -----------------
+app.get('/api/admin/midtrans-diagnostic', async (req, res) => {
+  const serverKey = process.env.MIDTRANS_SERVER_KEY || '';
+  const clientKey = process.env.MIDTRANS_CLIENT_KEY || '';
+  const isProduction = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+  const maskKey = (key) => {
+    if (!key) return 'KOSONG / TIDAK ADA';
+    if (key.length <= 12) return 'FORMAT KUNCI SALAH (TERLALU PENDEK)';
+    return `${key.substring(0, 10)}...${key.substring(key.length - 4)}`;
+  };
+
+  const diagnosticInfo = {
+    isMockMidtrans,
+    MIDTRANS_IS_PRODUCTION: isProduction,
+    MIDTRANS_SERVER_KEY_MASKED: maskKey(serverKey),
+    MIDTRANS_CLIENT_KEY_MASKED: maskKey(clientKey),
+    serverKeyLength: serverKey.length,
+    clientKeyLength: clientKey.length,
+    serverKeyPrefix: serverKey.substring(0, 14),
+    clientKeyPrefix: clientKey.substring(0, 14),
+    hasArrowSymbol: serverKey.includes('rightarrow') || serverKey.includes('→') || clientKey.includes('rightarrow') || clientKey.includes('→')
+  };
+
+  try {
+    const authString = Buffer.from(serverKey + ':').toString('base64');
+    const midtransUrl = isProduction 
+      ? 'https://api.midtrans.com/v2/charge' 
+      : 'https://api.sandbox.midtrans.com/v2/charge';
+
+    const testResponse = await axios.post(midtransUrl, {
+      payment_type: 'qris',
+      transaction_details: {
+        order_id: `DIAGNOSTIC-${Date.now()}`,
+        gross_amount: 1000
+      },
+      qris: { acquirer: 'gopay' }
+    }, {
+      headers: {
+        'Authorization': `Basic ${authString}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      validateStatus: () => true
+    });
+
+    diagnosticInfo.testApiCall = {
+      url: midtransUrl,
+      httpStatus: testResponse.status,
+      responseBody: testResponse.data
+    };
+  } catch (err) {
+    diagnosticInfo.testApiCall = {
+      error: err.message
+    };
+  }
+
+  res.json({ success: true, diagnosticInfo });
+});
+
+// -----------------
 // ENDPOINT 5: GET ORDER STATUS (TRACKING)
 // -----------------
 app.get('/api/order/:id', async (req, res) => {
