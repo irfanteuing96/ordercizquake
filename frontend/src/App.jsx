@@ -2848,6 +2848,18 @@ export default function App() {
                   <p className="text-[11px] text-on-surface-variant/80 mt-2 font-semibold bg-surface-container-low px-3 py-2 rounded-lg border border-outline-variant/10 leading-relaxed">
                     Alamat: {trackingInfo.shipping.address}
                   </p>
+
+                  {trackingInfo.shippingOrderInfo?.courier_tracking_url && (
+                    <a 
+                      href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="mt-4 w-full py-3 bg-[#fabd00] hover:brightness-105 active:scale-95 transition-all text-xs font-black rounded-xl flex items-center justify-center gap-2 shadow-md shadow-yellow-100 text-white"
+                    >
+                      <span className="material-symbols-outlined text-sm">map</span>
+                      <span>Lacak Lokasi Kurir (Peta Real-Time)</span>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
