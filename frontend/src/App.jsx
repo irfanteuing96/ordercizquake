@@ -827,6 +827,105 @@ export default function App() {
       return a.name.localeCompare(b.name);
     });
 
+  // Initialize Leaflet map if tracking view is active, and it is a mock order
+  useEffect(() => {
+    if (currentView === 'tracking' && trackingInfo && (!trackingInfo.shippingOrderInfo?.courier_tracking_url || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('mock') || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('fallback'))) {
+      
+      const mapContainer = document.getElementById('leaflet-mock-map');
+      if (!mapContainer) return;
+      
+      // Clear previous map instance if exists
+      if (window.leafletMapInstance) {
+        window.leafletMapInstance.remove();
+        window.leafletMapInstance = null;
+      }
+
+      const initMap = () => {
+        const L = window.L;
+        if (!L) return;
+
+        const originLat = -6.9554;
+        const originLng = 107.6588;
+        const destLat = parseFloat(trackingInfo.shipping.latitude) || -6.9554;
+        const destLng = parseFloat(trackingInfo.shipping.longitude) || 107.6588;
+
+        const map = L.map('leaflet-mock-map', {
+          zoomControl: true,
+          scrollWheelZoom: false
+        }).setView([originLat, originLng], 13);
+        
+        window.leafletMapInstance = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // Customize markers
+        const originIcon = L.divIcon({
+          html: `<div style="background-color: #fabd00; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:white;"><span class="material-symbols-outlined" style="font-size: 11px; font-weight: bold;">store</span></div>`,
+          className: 'custom-pin-origin',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        const destIcon = L.divIcon({
+          html: `<div style="background-color: #3b82f6; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; color:white;"><span class="material-symbols-outlined" style="font-size: 11px; font-weight: bold;">home</span></div>`,
+          className: 'custom-pin-dest',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        // Add Markers
+        L.marker([originLat, originLng], { icon: originIcon }).addTo(map).bindPopup('<b>Cizquake Bandung (Toko)</b>').openPopup();
+        L.marker([destLat, destLng], { icon: destIcon }).addTo(map).bindPopup('<b>Alamat Anda (Tujuan)</b>');
+
+        // Draw dotted route line
+        const polyline = L.polyline([
+          [originLat, originLng],
+          [destLat, destLng]
+        ], {
+          color: '#fabd00',
+          weight: 4,
+          dashArray: '5, 10',
+          opacity: 0.8
+        }).addTo(map);
+
+        // Zoom fit bounds
+        map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+
+        // Add a mock moving driver marker if shippingStatus is 'on_the_way'
+        if (trackingInfo.shippingStatus === 'on_the_way') {
+          const driverIcon = L.divIcon({
+            html: `<div style="background-color: #10b981; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 8px rgba(0,0,0,0.5);"><span class="material-symbols-outlined" style="font-size: 13px; font-weight: bold; transform: rotate(45deg);">navigation</span></div>`,
+            className: 'custom-pin-driver',
+            iconSize: [24, 24],
+            iconAnchor: [12, 12]
+          });
+
+          // Place driver halfway
+          const midLat = (originLat + destLat) / 2;
+          const midLng = (originLng + destLng) / 2;
+          L.marker([midLat, midLng], { icon: driverIcon }).addTo(map).bindPopup('<b>Kurir GoSend (Sedang Diantar)</b>').openPopup();
+        }
+      };
+
+      if (!window.L) {
+        // Load Leaflet JS & CSS dynamically
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = initMap;
+        document.body.appendChild(script);
+      } else {
+        initMap();
+      }
+    }
+  }, [currentView, trackingInfo]);
+
   return (
     <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
       
@@ -2901,29 +3000,36 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Inline Iframe Map Tracking */}
+                {/* Inline Map or Iframe Tracking */}
                 {trackingInfo.shippingOrderInfo.courier_tracking_url && (
                   <div className="mt-4 space-y-2">
                     <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Peta Pelacakan Live</p>
                     <div className="w-full h-[320px] rounded-2xl overflow-hidden border border-outline-variant/10 bg-slate-50 relative shadow-inner">
-                      <iframe 
-                        src={trackingInfo.shippingOrderInfo.courier_tracking_url} 
-                        className="w-full h-full border-none"
-                        title="Live Courier Tracking Map"
-                        allow="geolocation"
-                      ></iframe>
+                      {trackingInfo.shippingOrderInfo.courier_tracking_url.includes('mock') || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('fallback') ? (
+                        <div id="leaflet-mock-map" className="w-full h-full z-10"></div>
+                      ) : (
+                        <iframe 
+                          src={trackingInfo.shippingOrderInfo.courier_tracking_url} 
+                          className="w-full h-full border-none"
+                          title="Live Courier Tracking Map"
+                          allow="geolocation"
+                        ></iframe>
+                      )}
                     </div>
-                    <div className="text-center pt-1">
-                      <a 
-                        href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-primary hover:underline font-bold flex items-center justify-center gap-1 w-fit mx-auto"
-                      >
-                        <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
-                        Buka Peta Pelacakan di Tab Baru
-                      </a>
-                    </div>
+                    
+                    {!(trackingInfo.shippingOrderInfo.courier_tracking_url.includes('mock') || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('fallback')) && (
+                      <div className="text-center pt-1">
+                        <a 
+                          href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-primary hover:underline font-bold flex items-center justify-center gap-1 w-fit mx-auto"
+                        >
+                          <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
+                          Buka Peta Pelacakan di Tab Baru
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
