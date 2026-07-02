@@ -1544,6 +1544,72 @@ app.get('/api/admin/orders', async (req, res) => {
 });
 
 // -----------------
+// ENDPOINT 9: GET CUSTOMER ORDERS BY PHONE
+// -----------------
+app.get('/api/customer/orders/:phone', async (req, res) => {
+  const { phone } = req.params;
+  if (!phone) {
+    return res.status(400).json({ success: false, message: 'Nomor telepon diperlukan.' });
+  }
+
+  const cleanPhone = phone.replace(/\D/g, '');
+
+  if (isUseSupabase) {
+    try {
+      const { data, error } = await supabaseWithTimeout(
+        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+        4000
+      );
+
+      if (error) throw error;
+
+      const filteredOrders = data
+        .filter(item => {
+          const itemPhoneClean = String(item.customer_phone || '').replace(/\D/g, '');
+          return itemPhoneClean.endsWith(cleanPhone) || cleanPhone.endsWith(itemPhoneClean);
+        })
+        .map(item => ({
+          orderId: item.order_id,
+          customer: {
+            name: item.customer_name,
+            phone: item.customer_phone
+          },
+          items: item.items,
+          shipping: {
+            address: item.shipping_address,
+            latitude: parseFloat(item.shipping_latitude),
+            longitude: parseFloat(item.shipping_longitude),
+            courierCompany: item.courier_company,
+            courierService: item.courier_service
+          },
+          totalProductPrice: parseFloat(item.total_product_price),
+          shippingPrice: parseFloat(item.shipping_price),
+          grossAmount: parseFloat(item.gross_amount),
+          paymentStatus: item.payment_status,
+          shippingStatus: item.shipping_status,
+          createdAt: item.created_at
+        }));
+
+      return res.json({ success: true, orders: filteredOrders });
+    } catch (err) {
+      console.error('[Supabase] Error fetching customer orders:', err.message);
+    }
+  }
+
+  try {
+    const orders = readOrders();
+    const sorted = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const filteredOrders = sorted.filter(item => {
+      const itemPhoneClean = String(item.customer?.phone || '').replace(/\D/g, '');
+      return itemPhoneClean.endsWith(cleanPhone) || cleanPhone.endsWith(itemPhoneClean);
+    });
+    res.json({ success: true, orders: filteredOrders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Gagal mengambil riwayat pesanan.' });
+  }
+});
+
+// -----------------
 // ENDPOINT 9: UPDATE SHIPPING STATUS FOR ADMIN
 // -----------------
 app.post('/api/admin/order/:id/status', async (req, res) => {

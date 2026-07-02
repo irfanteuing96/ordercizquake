@@ -133,17 +133,30 @@ export default function App() {
   const [selectedMenuCategory, setSelectedMenuCategory] = useState('All menu');
 
   // Checkout State
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem('cizquake_customer_name') || '');
+  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('cizquake_customer_phone') || '');
   const [addressSearch, setAddressSearch] = useState('');
   const [areaResults, setAreaResults] = useState([]);
-  const [selectedArea, setSelectedArea] = useState(null);
-  const [detailedAddress, setDetailedAddress] = useState('');
+  const [selectedArea, setSelectedArea] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cizquake_customer_selected_area');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [detailedAddress, setDetailedAddress] = useState(() => localStorage.getItem('cizquake_customer_detailed_address') || '');
   const [couriers, setCouriers] = useState([]);
   const [selectedCourier, setSelectedCourier] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ewallet');
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
+  useEffect(() => {
+    if (selectedArea && !addressSearch) {
+      setAddressSearch(selectedArea.name);
+    }
+  }, [selectedArea]);
 
   // Payment State
   const [activeOrderId, setActiveOrderId] = useState(null);
@@ -214,6 +227,46 @@ export default function App() {
       }
     }
   }, [restoSettings]);
+
+  // Profile Orders State
+  const [profileOrders, setProfileOrders] = useState([]);
+  const [isLoadingProfileOrders, setIsLoadingProfileOrders] = useState(false);
+  const [profileSearchPhone, setProfileSearchPhone] = useState(() => localStorage.getItem('cizquake_customer_phone') || '');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editProfileName, setEditProfileName] = useState('');
+  const [editProfileAddress, setEditProfileAddress] = useState('');
+
+  const fetchProfileOrders = async (phone) => {
+    if (!phone) return;
+    setIsLoadingProfileOrders(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/customer/orders/${phone}`);
+      if (response.data.success) {
+        setProfileOrders(response.data.orders);
+        if (response.data.orders.length > 0) {
+          const latestOrder = response.data.orders[0];
+          if (!localStorage.getItem('cizquake_customer_name') && latestOrder.customer?.name) {
+            setCustomerName(latestOrder.customer.name);
+            localStorage.setItem('cizquake_customer_name', latestOrder.customer.name);
+          }
+          if (!localStorage.getItem('cizquake_customer_detailed_address') && latestOrder.shipping?.address) {
+            setDetailedAddress(latestOrder.shipping.address);
+            localStorage.setItem('cizquake_customer_detailed_address', latestOrder.shipping.address);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching profile orders:', err);
+    } finally {
+      setIsLoadingProfileOrders(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'profile' && customerPhone) {
+      fetchProfileOrders(customerPhone);
+    }
+  }, [activeTab, customerPhone]);
 
   // Favorites state
   const [favorites, setFavorites] = useState(() => {
@@ -414,6 +467,12 @@ export default function App() {
 
       const response = await axios.post(`${BACKEND_URL}/api/checkout`, payload);
       if (response.data.success) {
+        // Persist profile values in local storage
+        localStorage.setItem('cizquake_customer_phone', customerPhone);
+        localStorage.setItem('cizquake_customer_name', customerName);
+        localStorage.setItem('cizquake_customer_detailed_address', detailedAddress);
+        localStorage.setItem('cizquake_customer_selected_area', JSON.stringify(selectedArea));
+        
         setActiveOrderId(response.data.orderId);
         setPaymentInfo(response.data);
         setCurrentView('payment');
@@ -1240,76 +1299,278 @@ export default function App() {
               <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <h1 className="font-display text-base font-black tracking-tight text-white absolute left-1/2 -translate-x-1/2 whitespace-nowrap">Profil Saya</h1>
                 <div className="flex-1"></div>
-                <button className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white z-10">
-                  <span className="material-symbols-outlined text-2xl">notifications</span>
+                <button 
+                  onClick={() => customerPhone && fetchProfileOrders(customerPhone)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white z-10"
+                >
+                  <span className="material-symbols-outlined text-2xl">sync</span>
                 </button>
               </header>
 
               <main className="mt-16 pt-6 px-container-margin-mobile flex flex-col gap-6 max-w-2xl mx-auto">
-                {/* User Card */}
-                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 flex items-center gap-4 text-left">
-                  <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-2xl font-bold font-display shadow-md">
-                    JD
-                  </div>
-                  <div>
-                    <h2 className="font-display font-bold text-headline-md text-on-surface font-bold">Jane Doe</h2>
-                    <p className="text-on-surface-variant text-xs font-semibold">customer@cizquake.com</p>
-                    <p className="text-on-surface-variant text-[11px] font-semibold mt-1 bg-secondary-container/45 px-2.5 py-0.5 rounded-full w-fit text-secondary">Member Gold</p>
-                  </div>
-                </div>
+                {!customerPhone ? (
+                  <div className="bg-surface-container-lowest rounded-2xl p-6 custom-shadow border border-on-surface/5 text-center flex flex-col items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined text-3xl">account_circle</span>
+                    </div>
+                    <div>
+                      <h3 className="font-display font-bold text-sm text-on-surface">Lihat Profil & Riwayat Pesanan</h3>
+                      <p className="text-[10px] text-on-surface-variant/80 font-semibold leading-relaxed mt-1">
+                        Masukkan nomor WhatsApp Anda untuk memuat profil dan memantau seluruh riwayat transaksi Anda.
+                      </p>
+                    </div>
 
-                {/* Account Details */}
-                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
-                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Informasi Akun</h3>
-                  <div className="space-y-3 text-xs">
-                    <div className="flex justify-between py-1 border-b border-outline-variant/10">
-                      <span className="text-on-surface-variant font-semibold">Nomor Telepon</span>
-                      <span className="text-on-surface font-bold">081234567890</span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-outline-variant/10">
-                      <span className="text-on-surface-variant font-semibold">Alamat Utama</span>
-                      <span className="text-on-surface font-bold truncate max-w-[200px]">Jalan Melati No. 42, Bandung</span>
-                    </div>
-                    <div className="flex justify-between py-1">
-                      <span className="text-on-surface-variant font-semibold">Rasa Favorit</span>
-                      <span className="text-on-surface font-bold text-primary font-bold">Mini Box Double Cheese</span>
-                    </div>
-                  </div>
-                </div>
+                    <form onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!profileSearchPhone) {
+                        alert('Harap masukkan nomor WhatsApp!');
+                        return;
+                      }
+                      setCustomerPhone(profileSearchPhone);
+                      localStorage.setItem('cizquake_customer_phone', profileSearchPhone);
+                      fetchProfileOrders(profileSearchPhone);
+                    }} className="w-full space-y-3 mt-2">
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[9px] uppercase font-bold text-on-surface-variant tracking-wider">Nomor WhatsApp</label>
+                        <input 
+                          type="tel"
+                          value={profileSearchPhone}
+                          onChange={(e) => setProfileSearchPhone(e.target.value)}
+                          placeholder="Contoh: 088218003440"
+                          required
+                          className="w-full px-4 py-3 bg-surface-container-low rounded-xl border border-outline-variant/20 focus:outline-none focus:border-primary text-xs font-semibold text-on-surface"
+                        />
+                      </div>
 
-                {/* Order History */}
-                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
-                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Riwayat Pesanan</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-2 border-b border-outline-variant/10">
-                      <div>
-                        <p className="text-xs font-bold text-on-surface">Pesanan #CZ-99104</p>
-                        <p className="text-[10px] text-on-surface-variant font-semibold">24 Juni 2026 • 2 item</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-primary font-bold">Rp 20.000</p>
-                        <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <div>
-                        <p className="text-xs font-bold text-on-surface">Pesanan #CZ-98711</p>
-                        <p className="text-[10px] text-on-surface-variant font-semibold">18 Juni 2026 • 1 item</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-bold text-primary font-bold">Rp 12.500</p>
-                        <span className="text-[9px] bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-bold">Selesai</span>
-                      </div>
-                    </div>
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-primary hover:bg-primary/95 text-white active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-1 shadow-sm text-white"
+                      >
+                        <span className="material-symbols-outlined text-sm">login</span>
+                        <span>Masuk Profil</span>
+                      </button>
+                    </form>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    {/* Profile Card */}
+                    <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-on-surface/5 flex items-center justify-between text-left">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary text-lg font-black font-display shadow-sm">
+                          {customerName ? customerName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'CZ'}
+                        </div>
+                        <div>
+                          <h2 className="font-display font-bold text-sm text-on-surface">
+                            {customerName || 'Pelanggan Cizquake'}
+                          </h2>
+                          <p className="text-on-surface-variant text-[10px] font-semibold mt-0.5">{customerPhone}</p>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => {
+                          setEditProfileName(customerName);
+                          setEditProfileAddress(detailedAddress);
+                          setIsEditingProfile(true);
+                        }}
+                        className="px-3 py-1.5 border border-outline-variant/30 text-on-surface-variant hover:bg-slate-50 rounded-lg text-[10px] font-bold transition flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-xs">edit</span>
+                        <span>Ubah</span>
+                      </button>
+                    </div>
+
+                    {/* Edit Profile Modal / Form Inline */}
+                    {isEditingProfile && (
+                      <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-primary/20 text-left animate-in fade-in slide-in-from-top-1 duration-200">
+                        <h3 className="font-display font-bold text-xs text-primary mb-3">Ubah Info Profil</h3>
+                        <div className="space-y-3">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[8px] uppercase font-bold text-on-surface-variant">Nama Anda</label>
+                            <input 
+                              type="text" 
+                              value={editProfileName} 
+                              onChange={(e) => setEditProfileName(e.target.value)}
+                              className="px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/20 text-xs font-semibold focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[8px] uppercase font-bold text-on-surface-variant">Alamat Detail Utama</label>
+                            <textarea 
+                              value={editProfileAddress} 
+                              onChange={(e) => setEditProfileAddress(e.target.value)}
+                              rows="2"
+                              className="px-3 py-2 bg-surface-container-low rounded-lg border border-outline-variant/20 text-xs font-semibold focus:outline-none focus:border-primary resize-none"
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2 pt-1">
+                            <button 
+                              onClick={() => setIsEditingProfile(false)}
+                              className="px-3 py-1.5 text-[10px] font-bold text-on-surface-variant"
+                            >
+                              Batal
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setCustomerName(editProfileName);
+                                setDetailedAddress(editProfileAddress);
+                                localStorage.setItem('cizquake_customer_name', editProfileName);
+                                localStorage.setItem('cizquake_customer_detailed_address', editProfileAddress);
+                                setIsEditingProfile(false);
+                                alert('Profil berhasil diperbarui!');
+                              }}
+                              className="px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg"
+                            >
+                              Simpan
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Details info */}
+                    <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-on-surface/5 text-left">
+                      <h3 className="font-display font-bold text-xs text-primary mb-3 flex items-center justify-between">
+                        <span>Informasi Pengantaran</span>
+                      </h3>
+                      <div className="space-y-2.5 text-[11px] font-semibold text-on-surface-variant">
+                        <div className="flex flex-col border-b border-outline-variant/5 pb-2">
+                          <span className="text-[9px] text-on-surface-variant/60 uppercase">Alamat Pengiriman Default</span>
+                          <span className="text-on-surface mt-0.5 font-bold">
+                            {detailedAddress ? (
+                              selectedArea ? `${detailedAddress}, ${selectedArea.name}` : detailedAddress
+                            ) : (
+                              <span className="text-red-500 font-semibold italic">Belum diatur (diatur otomatis saat checkout)</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Purchase history track record */}
+                    <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-on-surface/5 text-left">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-display font-bold text-xs text-primary">Riwayat Pembelian</h3>
+                        <button 
+                          onClick={() => fetchProfileOrders(customerPhone)}
+                          disabled={isLoadingProfileOrders}
+                          className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-slate-100 text-on-surface-variant"
+                        >
+                          <span className={`material-symbols-outlined text-sm ${isLoadingProfileOrders ? 'animate-spin' : ''}`}>refresh</span>
+                        </button>
+                      </div>
+
+                      {isLoadingProfileOrders ? (
+                        <div className="flex flex-col items-center justify-center py-8 gap-2">
+                          <span className="material-symbols-outlined text-2xl text-primary animate-spin">progress_activity</span>
+                          <span className="text-[10px] font-semibold text-on-surface-variant">Memuat transaksi Anda...</span>
+                        </div>
+                      ) : profileOrders.length === 0 ? (
+                        <div className="text-center py-6 text-on-surface-variant/80 font-semibold text-[11px] leading-relaxed">
+                          <span className="material-symbols-outlined text-2xl text-on-surface-variant/40 block mb-1">shopping_bag</span>
+                          Belum ada riwayat pesanan untuk nomor ini.<br />Yuk, mulai rasakan lezatnya Cizquake!
+                        </div>
+                      ) : (
+                        <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                          {profileOrders.map(order => (
+                            <div 
+                              key={order.orderId} 
+                              onClick={() => {
+                                setActiveOrderId(order.orderId);
+                                if (order.paymentStatus === 'paid') {
+                                  setTrackingInfo({
+                                    orderId: order.orderId,
+                                    customer: order.customer,
+                                    items: order.items,
+                                    shipping: order.shipping,
+                                    grossAmount: order.grossAmount,
+                                    shippingStatus: order.shippingStatus,
+                                    paymentStatus: order.paymentStatus,
+                                  });
+                                  setCurrentView('tracking');
+                                } else {
+                                  setPaymentInfo({
+                                    orderId: order.orderId,
+                                    grossAmount: order.grossAmount,
+                                    paymentQrUrl: order.paymentQrUrl,
+                                    paymentExpiry: order.paymentExpiry,
+                                  });
+                                  setCurrentView('payment');
+                                }
+                              }}
+                              className="p-3 bg-surface-container-low rounded-xl border border-outline-variant/10 cursor-pointer hover:bg-surface-container-high transition-all flex items-center justify-between gap-3 text-left animate-in fade-in duration-200"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <p className="text-[11px] font-black text-on-surface truncate">#{order.orderId.substring(0, 8).toUpperCase()}</p>
+                                  <span className={`text-[8px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                                    order.paymentStatus === 'paid' 
+                                      ? 'bg-green-50 text-green-700 border border-green-200' 
+                                      : 'bg-amber-55 text-amber-750 border border-amber-200/50'
+                                  }`}>
+                                    {order.paymentStatus === 'paid' ? 'Lunas' : 'Belum Lunas'}
+                                  </span>
+                                </div>
+                                
+                                <p className="text-[9px] text-on-surface-variant mt-1 truncate">
+                                  {order.items.map(i => `${i.name} (${i.quantity}x)`).join(', ')}
+                                </p>
+                                
+                                <p className="text-[8px] text-on-surface-variant/60 font-bold mt-1.5">
+                                  {new Date(order.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                              
+                              <div className="text-right flex flex-col items-end gap-1.5 flex-shrink-0">
+                                <p className="text-xs font-black text-primary">Rp {order.grossAmount.toLocaleString('id-ID')}</p>
+                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
+                                  order.shippingStatus === 'delivered' 
+                                    ? 'bg-blue-50 text-blue-700' 
+                                    : order.shippingStatus === 'on_the_way' 
+                                    ? 'bg-orange-50 text-orange-700' 
+                                    : 'bg-slate-150 text-slate-700'
+                                }`}>
+                                  {order.shippingStatus === 'delivered' 
+                                    ? 'Tiba' 
+                                    : order.shippingStatus === 'on_the_way' 
+                                    ? 'Diantar' 
+                                    : 'Diproses'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                      onClick={() => {
+                        if (confirm('Apakah Anda yakin ingin keluar dari profil?')) {
+                          setCustomerPhone('');
+                          setCustomerName('');
+                          setDetailedAddress('');
+                          localStorage.removeItem('cizquake_customer_phone');
+                          localStorage.removeItem('cizquake_customer_name');
+                          localStorage.removeItem('cizquake_customer_detailed_address');
+                          localStorage.removeItem('cizquake_customer_selected_area');
+                          setProfileOrders([]);
+                        }
+                      }}
+                      className="w-full py-3 border border-red-200 text-red-650 hover:bg-red-50 active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-sm">logout</span>
+                      <span>Keluar Akun Profil</span>
+                    </button>
+                  </>
+                )}
 
                 {/* Admin Access Panel */}
-                <div className="bg-surface-container-lowest rounded-lg p-5 custom-shadow border border-on-surface/5 text-left">
-                  <h3 className="font-display font-bold text-sm text-primary mb-3 font-bold">Portal Staf Restoran</h3>
+                <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-on-surface/5 text-left">
+                  <h3 className="font-display font-bold text-xs text-primary mb-3">Portal Staf Restoran</h3>
                   <button 
                     onClick={handleAdminLoginPrompt}
-                    className="w-full py-3.5 bg-secondary-container text-on-secondary-container hover:bg-secondary-container/95 active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-2 border border-outline-variant/10"
+                    className="w-full py-3 bg-secondary-container text-on-secondary-container hover:bg-secondary-container/95 active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-2 border border-outline-variant/10"
                   >
                     <span className="material-symbols-outlined text-md">shield_person</span>
                     <span>Masuk Panel Admin Cizquake</span>
