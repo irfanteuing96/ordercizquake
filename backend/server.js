@@ -838,6 +838,20 @@ app.get('/api/shipping/areas', async (req, res) => {
     return res.json({ success: true, areas: [] });
   }
 
+  // Utility to only permit areas in Bandung Raya, Cimahi, or Jatinangor (Sumedang)
+  const filterBandungRaya = (areasList) => {
+    if (!areasList || !Array.isArray(areasList)) return [];
+    return areasList.filter(area => {
+      const nameLower = (area.name || '').toLowerCase();
+      // Explicitly reject distant locations that might sneak in
+      if (nameLower.includes('garut') || nameLower.includes('tasikmalaya') || nameLower.includes('cirebon') || nameLower.includes('jakarta')) {
+        return false;
+      }
+      // Must contain Bandung, Cimahi, or Jatinangor (nangor)
+      return nameLower.includes('bandung') || nameLower.includes('cimahi') || nameLower.includes('jatinangor') || nameLower.includes('nangor');
+    });
+  };
+
   if (isMockBiteship) {
     console.log(`[BiteShip Mock] Searching area for: "${query}"`);
     // Mock standard districts/areas in Bandung
@@ -848,7 +862,7 @@ app.get('/api/shipping/areas', async (req, res) => {
       { id: 'ID_AREA_4', name: 'Cicadas, Cibeunying Kidul, Kota Bandung', postal_code: '40121', latitude: -6.9042, longitude: 107.6432 },
       { id: 'ID_AREA_5', name: 'Coblong, Kota Bandung', postal_code: '40135', latitude: -6.8872, longitude: 107.6152 }
     ].filter(a => a.name.toLowerCase().includes(query.toLowerCase()));
-    return res.json({ success: true, areas: mockAreas });
+    return res.json({ success: true, areas: filterBandungRaya(mockAreas) });
   }
 
   try {
@@ -884,7 +898,7 @@ app.get('/api/shipping/areas', async (req, res) => {
       };
     });
 
-    res.json({ success: true, areas });
+    res.json({ success: true, areas: filterBandungRaya(areas) });
   } catch (error) {
     console.warn('Photon autocomplete failed, falling back to Biteship Areas. Reason:', error.message);
     try {
@@ -892,7 +906,7 @@ app.get('/api/shipping/areas', async (req, res) => {
         params: { countries: 'ID', input: query },
         headers: { 'Authorization': `Bearer ${process.env.BITESHIP_API_KEY}` }
       });
-      res.json({ success: true, areas: response.data.areas });
+      res.json({ success: true, areas: filterBandungRaya(response.data.areas) });
     } catch (err) {
       console.error('Error searching areas from BiteShip fallback:', err.message);
       res.status(500).json({ success: false, error: 'Gagal mencari area alamat' });
