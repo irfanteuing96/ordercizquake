@@ -4,12 +4,12 @@
     "name": "Mini Box Blueberry",
     "category": "Mini box",
     "price": 10000,
-    "sales": "1200 terjual",
+    "sales": "1201 terjual",
     "description": "Premium Mini Cheesecake topped with sweet, rich blueberry compote.",
     "image": "/img/Blueberry.jpeg",
     "inStock": true,
     "rating": 4.8,
-    "salesCount": 1200
+    "salesCount": 1201
   },
   {
     "id": "mini-cheese",

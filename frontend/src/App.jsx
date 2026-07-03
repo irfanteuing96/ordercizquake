@@ -1918,28 +1918,28 @@ export default function App() {
 
                                 {order.paymentStatus === 'paid' && order.shippingStatus === 'idle' && (
                                   <button
-                                    onClick={() => updateOrderStatus(order.orderId, 'searching')}
-                                    className="px-4 py-2 bg-primary text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-primary/95"
+                                    onClick={() => updateOrderStatus(order.orderId, 'preparing')}
+                                    className="px-4 py-2 bg-[#fabd00] text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-[#fabd00]/95"
                                   >
-                                    Kirim Pesanan (Pesan Kurir)
+                                    Terima & Siapkan Pesanan
                                   </button>
                                 )}
 
-                                {order.shippingStatus === 'searching' && (
+                                {order.shippingStatus === 'preparing' && (
                                   <button
-                                    onClick={() => updateOrderStatus(order.orderId, 'driver_assigned')}
+                                    onClick={() => updateOrderStatus(order.orderId, 'ready')}
                                     className="px-4 py-2 bg-amber-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-amber-700"
                                   >
-                                    Driver Ditemukan
+                                    Tandai Pesanan Siap
                                   </button>
                                 )}
 
-                                {order.shippingStatus === 'driver_assigned' && (
+                                {order.shippingStatus === 'ready' && (
                                   <button
                                     onClick={() => updateOrderStatus(order.orderId, 'on_the_way')}
                                     className="px-4 py-2 bg-orange-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-orange-700"
                                   >
-                                    Diantar Kurir (Dalam Perjalanan)
+                                    Kirim Pesanan (Mulai Pengantaran)
                                   </button>
                                 )}
 
@@ -3052,30 +3052,26 @@ export default function App() {
                 <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Dana sebesar Rp {trackingInfo.grossAmount.toLocaleString('id-ID')} berhasil dikonfirmasi secara aman.</p>
               </div>
 
-              {/* Step 2: Mencari Driver */}
+              {/* Step 2: Pesanan Dipersiapkan */}
               <div className="relative">
                 <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  ['searching', 'driver_assigned', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
+                  ['preparing', 'ready', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
                     ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
                     : 'bg-background border-outline-variant'
                 }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Menghubungi Kurir</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Mempersiapkan pengiriman instan via {trackingInfo.shipping.courierCompany} dari Buahbatu.</p>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Sedang Dipersiapkan</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Tim Cizquake sedang menyiapkan dan mengemas pesanan premium Anda.</p>
               </div>
 
-              {/* Step 3: Kurir ditugaskan */}
+              {/* Step 3: Siap Dikirim */}
               <div className="relative">
                 <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  ['driver_assigned', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
+                  ['ready', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
                     ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
                     : 'bg-background border-outline-variant'
                 }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Driver Ditemukan</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">
-                  {trackingInfo.shippingOrderInfo?.courier_driver_name 
-                    ? `Kurir: ${trackingInfo.shippingOrderInfo.courier_driver_name} (${trackingInfo.shippingOrderInfo.courier_driver_phone})`
-                    : 'Menghubungi/menugaskan driver ke restoran...'}
-                </p>
+                <h4 className="font-bold text-sm text-on-surface leading-none">Siap Dikirim</h4>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Pesanan selesai dibuat dan siap diserahkan kepada Kurir Cizquake.</p>
               </div>
 
               {/* Step 4: Dalam Perjalanan */}
@@ -3086,7 +3082,7 @@ export default function App() {
                     : 'bg-background border-outline-variant'
                 }`}></div>
                 <h4 className="font-bold text-sm text-on-surface leading-none">Dalam Pengantaran</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Cizquake sedang dibawa kurir dan dalam perjalanan ke tempat Anda.</p>
+                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Kurir Cizquake sedang dalam perjalanan membawa paket lezat ke lokasi Anda.</p>
               </div>
 
               {/* Step 5: Selesai */}

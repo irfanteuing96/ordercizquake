@@ -1067,149 +1067,18 @@ app.post('/api/checkout', async (req, res) => {
 
 // Helper untuk men-trigger booking kurir otomatis di BiteShip
 async function bookCourierAutomatically(order) {
-  console.log(`[BiteShip] Memicu pemesanan kurir otomatis untuk order: ${order.orderId}`);
-
-  const isCizquakeDriver = order.shipping.courierCompany === 'cizquake';
-  const hasTestItem = order.items.some(item => item.name.toLowerCase().includes('uji coba'));
-  if (isCizquakeDriver || hasTestItem) {
-    console.log(`[BiteShip] Menghindari ojek booking asli untuk Cizquake Driver / Order Uji Coba: ${order.orderId}`);
-    await updateOrderFields(order.orderId, {
-      shippingStatus: 'driver_assigned',
-      shippingOrderInfo: {
-        courier_order_id: isCizquakeDriver ? `CIZDRIVER-${Date.now()}` : `BITESHIP-TEST-${Date.now()}`,
-        courier_driver_name: isCizquakeDriver ? 'Kurir Cizquake (Armada Sendiri)' : 'Driver Uji Coba Cizquake',
-        courier_driver_phone: isCizquakeDriver ? '088218003440' : '085511223344',
-        courier_tracking_url: 'https://biteship.com/tracking/mock'
-      }
-    });
-
-    // Jalankan simulasi transit & delivery untuk Cizquake Driver agar peta / status berubah bertahap
-    setTimeout(async () => {
-      await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
-      console.log(`[Cizquake Driver Mock] Order ${order.orderId} sedang di perjalanan.`);
-    }, 10000);
-
-    setTimeout(async () => {
-      await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
-      console.log(`[Cizquake Driver Mock] Order ${order.orderId} telah sampai.`);
-    }, 25000);
-
-    return;
-  }
-
-  await updateOrderFields(order.orderId, { shippingStatus: 'searching' });
-
-  if (isMockBiteship) {
-    // Simulasi booking kurir berhasil setelah 3 detik
-    setTimeout(async () => {
-      const currentOrder = await getOrderById(order.orderId);
-      if (currentOrder) {
-        await updateOrderFields(order.orderId, {
-          shippingStatus: 'driver_assigned',
-          shippingOrderInfo: {
-            courier_order_id: `BITESHIP-${Date.now()}`,
-            courier_driver_name: 'Budi Santoso (GoSend)',
-            courier_driver_phone: '085566778899',
-            courier_tracking_url: 'https://biteship.com/tracking/mock'
-          }
-        });
-        console.log(`[BiteShip Mock] Driver assigned untuk ${order.orderId}: Budi Santoso`);
-
-        // Simulasikan status jalan dan selesai pengiriman bertahap
-        setTimeout(async () => {
-          await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
-          console.log(`[BiteShip Mock] Order ${order.orderId} sedang di perjalanan.`);
-        }, 10000);
-
-        setTimeout(async () => {
-          await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
-          console.log(`[BiteShip Mock] Order ${order.orderId} telah sampai.`);
-        }, 25000);
-      }
-    }, 3000);
-    return;
-  }
-
-  try {
-    // Panggil API BiteShip untuk booking
-    const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
-    const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
-
-    const payload = {
-      shipper: {
-        name: process.env.ORIGIN_CONTACT_NAME || "Cizquake Bandung",
-        phone: process.env.ORIGIN_CONTACT_PHONE || "08123456789",
-        email: "cizquake@gmail.com",
-        organization: "Cizquake"
-      },
-      origin: {
-        name: process.env.ORIGIN_CONTACT_NAME || "Cizquake Bandung",
-        phone: process.env.ORIGIN_CONTACT_PHONE || "08123456789",
-        address: process.env.ORIGIN_ADDRESS,
-        latitude: originLat,
-        longitude: originLng
-      },
-      destination: {
-        name: order.customer.name,
-        phone: order.customer.phone,
-        address: order.shipping.address,
-        latitude: parseFloat(order.shipping.latitude),
-        longitude: parseFloat(order.shipping.longitude)
-      },
-      courier: {
-        company: order.shipping.courierCompany, // e.g. 'gosend'
-        type: order.shipping.courierService    // e.g. 'instant'
-      },
-      items: order.items.map(item => ({
-        name: item.name,
-        value: item.price * item.quantity,
-        weight: item.weight || 200,
-        quantity: item.quantity
-      }))
-    };
-
-    const response = await axios.post('https://api.biteship.com/v1/orders', payload, {
-      headers: {
-        'Authorization': `Bearer ${process.env.BITESHIP_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    const biteshipOrder = response.data;
-    await updateOrderFields(order.orderId, {
-      shippingStatus: 'driver_assigned',
-      shippingOrderInfo: {
-        courier_order_id: biteshipOrder.id,
-        courier_driver_name: biteshipOrder.courier?.driver_name || 'Mencari Kurir...',
-        courier_driver_phone: biteshipOrder.courier?.driver_phone || '',
-        courier_tracking_url: biteshipOrder.courier?.tracking_url || ''
-      }
-    });
-  } catch (error) {
-    console.warn('Real BiteShip courier booking failed. Falling back to Mock Booking. Reason:', error.message);
-
-    // Fallback ke booking simulasi agar tracking tetap berjalan di UI
-    await updateOrderFields(order.orderId, {
-      shippingStatus: 'driver_assigned',
-      shippingOrderInfo: {
-        courier_order_id: `BITESHIP-FALLBACK-${Date.now()}`,
-        courier_driver_name: 'Budi Santoso (GoSend - Mock)',
-        courier_driver_phone: '085566778899',
-        courier_tracking_url: 'https://biteship.com/tracking/mock'
-      }
-    });
-
-    // Simulasikan status jalan dan selesai pengiriman bertahap
-    setTimeout(async () => {
-      await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
-      console.log(`[BiteShip Fallback Mock] Order ${order.orderId} sedang di perjalanan.`);
-    }, 10000);
-
-    setTimeout(async () => {
-      await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
-      console.log(`[BiteShip Fallback Mock] Order ${order.orderId} telah sampai.`);
-    }, 25000);
-  }
+  console.log(`[Cizquake] Pelacakan otomatis dinonaktifkan sementara. Status pengiriman menunggu aksi manual Admin.`);
+  
+  // Set status awal ke 'idle' dan isi info Driver Cizquake agar siap diantar oleh Admin secara manual
+  await updateOrderFields(order.orderId, {
+    shippingStatus: 'idle',
+    shippingOrderInfo: {
+      courier_order_id: `CIZDRIVER-${Date.now()}`,
+      courier_driver_name: 'Kurir Cizquake',
+      courier_driver_phone: '088218003440',
+      courier_tracking_url: 'https://biteship.com/tracking/mock'
+    }
+  });
 }
 
 // -----------------
