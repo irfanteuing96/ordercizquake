@@ -40,14 +40,14 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    
+
     const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
     const isNetlify = origin.endsWith('.netlify.app');
-    
+
     if (allowedOrigins.indexOf(origin) !== -1 || isLocal || isNetlify) {
       return callback(null, true);
     }
-    
+
     const msg = 'Akses API ditolak oleh kebijakan CORS Cizquake.';
     return callback(new Error(msg), false);
   }
@@ -71,11 +71,11 @@ if (!isMockMidtrans) {
 // Initialize Supabase Client (if keys are provided)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const isUseSupabase = supabaseUrl && supabaseKey && 
-                     !supabaseUrl.includes('placeholder') && 
-                     !supabaseKey.includes('placeholder') && 
-                     supabaseUrl !== '' && 
-                     supabaseKey !== '';
+const isUseSupabase = supabaseUrl && supabaseKey &&
+  !supabaseUrl.includes('placeholder') &&
+  !supabaseKey.includes('placeholder') &&
+  supabaseUrl !== '' &&
+  supabaseKey !== '';
 
 let supabase = null;
 if (isUseSupabase) {
@@ -283,25 +283,25 @@ const getNextOpeningTime = (settings) => {
   const now = new Date();
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayLabels = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  
+
   for (let i = 0; i < 7; i++) {
     const checkDate = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
     const dayName = days[checkDate.getDay()];
     const daySchedule = settings.schedule[dayName];
-    
+
     if (daySchedule && daySchedule.isOpen) {
       const [openH, openM] = daySchedule.openTime.split(':').map(Number);
       const openDateTime = new Date(checkDate);
       openDateTime.setHours(openH, openM, 0, 0);
-      
+
       if (openDateTime > now) {
         return {
           time: openDateTime.toISOString(),
-          label: i === 0 
-            ? `Hari ini pukul ${daySchedule.openTime}` 
-            : i === 1 
-            ? `Besok (${dayLabels[checkDate.getDay()]}) pukul ${daySchedule.openTime}`
-            : `${dayLabels[checkDate.getDay()]} pukul ${daySchedule.openTime}`
+          label: i === 0
+            ? `Hari ini pukul ${daySchedule.openTime}`
+            : i === 1
+              ? `Besok (${dayLabels[checkDate.getDay()]}) pukul ${daySchedule.openTime}`
+              : `${dayLabels[checkDate.getDay()]} pukul ${daySchedule.openTime}`
         };
       }
     }
@@ -311,16 +311,16 @@ const getNextOpeningTime = (settings) => {
 
 const checkIsRestoOpen = (settings) => {
   const now = new Date();
-  
+
   if (settings.manualStatus === 'open') {
     return { isOpen: true, reason: 'manual_open' };
   }
-  
+
   if (settings.manualStatus === 'closed') {
     if (settings.manualUntil === 'indefinite') {
       return { isOpen: false, reason: 'manual_closed_indefinite', until: null };
     }
-    
+
     if (settings.manualUntil) {
       const untilTime = new Date(settings.manualUntil);
       if (now < untilTime) {
@@ -328,25 +328,25 @@ const checkIsRestoOpen = (settings) => {
       }
     }
   }
-  
+
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const currentDayName = days[now.getDay()];
   const daySchedule = settings.schedule[currentDayName];
-  
+
   if (!daySchedule || !daySchedule.isOpen) {
     return { isOpen: false, reason: 'schedule_closed_day', until: getNextOpeningTime(settings) };
   }
-  
+
   const [openHour, openMin] = daySchedule.openTime.split(':').map(Number);
   const [closeHour, closeMin] = daySchedule.closeTime.split(':').map(Number);
-  
+
   const currentHour = now.getHours();
   const currentMin = now.getMinutes();
-  
+
   const currentTimeVal = currentHour * 60 + currentMin;
   const openTimeVal = openHour * 60 + openMin;
   const closeTimeVal = closeHour * 60 + closeMin;
-  
+
   if (currentTimeVal >= openTimeVal && currentTimeVal < closeTimeVal) {
     return { isOpen: true, reason: 'schedule_open' };
   } else {
@@ -391,7 +391,7 @@ const seedDefaultMenu = async () => {
       rating: item.rating,
       sales_count: item.salesCount
     }));
-    
+
     await supabaseWithTimeout(
       supabase.from('menu_items').insert(dbMenu),
       5000
@@ -420,9 +420,9 @@ const getMenuData = async () => {
         supabase.from('menu_items').select('*').order('created_at', { ascending: true }),
         4000
       );
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         return data.map(item => ({
           id: item.id,
@@ -583,7 +583,7 @@ const incrementMenuItemSales = async (items) => {
   for (const item of items) {
     const itemId = item.id;
     const qty = parseInt(item.quantity) || 1;
-    
+
     if (isUseSupabase) {
       try {
         const { data, error } = await supabaseWithTimeout(
@@ -606,7 +606,7 @@ const incrementMenuItemSales = async (items) => {
         console.error(`[Supabase] Error incrementing sales for ${itemId} on Supabase:`, err.message);
       }
     }
-    
+
     // Always update local file menu_items.json too
     try {
       const menuItems = readMenuItems();
@@ -657,7 +657,7 @@ const getOrderById = async (orderId) => {
         supabase.from('orders').select('*').eq('order_id', orderId).maybeSingle(),
         4000
       );
-      
+
       if (error) throw error;
       if (!data) return null;
 
@@ -723,7 +723,7 @@ const createOrder = async (order) => {
         supabase.from('orders').insert(dbOrder),
         4000
       );
-      
+
       if (error) throw error;
       console.log(`[Supabase] Success inserting order: ${order.orderId}`);
       return true;
@@ -748,12 +748,12 @@ const updateOrderFields = async (orderId, fields) => {
       if (fields.shippingOrderInfo !== undefined) dbUpdates.shipping_order_info = fields.shippingOrderInfo;
       if (fields.paymentQrUrl !== undefined) dbUpdates.payment_qr_url = fields.paymentQrUrl;
       if (fields.paymentExpiry !== undefined) dbUpdates.payment_expiry = fields.paymentExpiry;
-      
+
       const { error } = await supabaseWithTimeout(
         supabase.from('orders').update(dbUpdates).eq('order_id', orderId),
         4000
       );
-      
+
       if (error) throw error;
       console.log(`[Supabase] Success updating order: ${orderId}`);
       return true;
@@ -782,9 +782,9 @@ const getNextOrderId = async () => {
         supabase.from('orders').select('order_id').order('created_at', { ascending: false }).limit(1),
         4000
       );
-      
+
       if (error) throw error;
-      
+
       if (data && data.length > 0) {
         const lastId = data[0].order_id;
         const match = lastId.match(/^CIZ-(\d+)$/);
@@ -796,7 +796,7 @@ const getNextOrderId = async () => {
           }
         }
       }
-      
+
       // Fallback: count table rows
       const { count } = await supabaseWithTimeout(
         supabase.from('orders').select('*', { count: 'exact', head: true }),
@@ -901,18 +901,39 @@ app.get('/api/shipping/areas', async (req, res) => {
 // ENDPOINT 2: CALCULATE RATES
 // -----------------
 app.post('/api/shipping/rates', async (req, res) => {
-  // Hanya tampilkan Cizquake Driver dengan ongkir flat Rp 5.000 kemanapun se-Bandung Raya
+  const { destination_latitude, destination_longitude } = req.body;
+
+  const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
+  const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
+
+  let distance = 5.0; // default 5km jika koordinat tidak ada
+  if (destination_latitude && destination_longitude) {
+    const latDiff = parseFloat(destination_latitude) - originLat;
+    const lngDiff = parseFloat(destination_longitude) - originLng;
+    distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111;
+    if (distance < 0.1) distance = 0.1;
+  }
+
+  const prepTime = 15; // Waktu persiapan 15 menit
+  const travelTime = distance * 5; // Waktu perjalanan 5 menit per 1 km
+  const totalTime = prepTime + travelTime;
+
+  // Rentang estimasi +/- 5 menit dari total waktu kalkulasi
+  const minTime = Math.max(15, Math.round(totalTime - 5));
+  const maxTime = Math.round(totalTime + 5);
+  const durationLabel = `${minTime}-${maxTime} menit (${distance.toFixed(1)} km)`;
+
   const rates = [
     {
       company: 'cizquake',
-      courier_name: 'Cizquake Driver (Armada Sendiri)',
+      courier_name: 'Cizquake Driver',
       courier_code: 'cizquake',
       courier_service_name: 'Armada Sendiri',
-      duration: '1 - 3 Jam',
+      duration: durationLabel,
       price: 5000
     }
   ];
-  return res.json({ success: true, rates, distance: 0 });
+  return res.json({ success: true, rates, distance: parseFloat(distance.toFixed(1)) });
 });
 
 // -----------------
@@ -920,12 +941,12 @@ app.post('/api/shipping/rates', async (req, res) => {
 // -----------------
 app.post('/api/checkout', async (req, res) => {
   const { customer, items, shipping, totalProductPrice, shippingPrice } = req.body;
-  
+
   const orderId = await getNextOrderId();
-  
+
   let finalShippingPrice = shippingPrice;
   let finalTotalProductPrice = totalProductPrice;
-  
+
   const hasTestItem = items.some(item => item.name.toLowerCase().includes('uji coba'));
   if (hasTestItem) {
     finalShippingPrice = 0; // Free shipping for test
@@ -958,11 +979,11 @@ app.post('/api/checkout', async (req, res) => {
     console.log(`[Midtrans Mock] Generating QRIS for Order ID: ${orderId}, Amount: Rp ${grossAmount}`);
     // Simulasikan kembalian QRIS. Kita gunakan QR Code URL simulator
     const qrisUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-${orderId}-${grossAmount}`;
-    
+
     // update order dengan QR info
     newOrder.paymentQrUrl = qrisUrl;
     newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 menit exp
-    
+
     await updateOrderFields(orderId, {
       paymentQrUrl: qrisUrl,
       paymentExpiry: newOrder.paymentExpiry
@@ -996,7 +1017,7 @@ app.post('/api/checkout', async (req, res) => {
     };
 
     const chargeResponse = await midtransCoreApi.charge(transactionDetails);
-    
+
     // QRIS URL ada di actions[0] atau actions[1] yang namanya "generate-qr-code"
     const qrAction = chargeResponse.actions.find(act => act.name === 'generate-qr-code');
     const paymentQrUrl = qrAction ? qrAction.url : '';
@@ -1004,7 +1025,7 @@ app.post('/api/checkout', async (req, res) => {
     // Update order dengan data Midtrans
     newOrder.paymentQrUrl = paymentQrUrl;
     newOrder.paymentExpiry = chargeResponse.expiry_time || new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    
+
     await updateOrderFields(orderId, {
       paymentQrUrl,
       paymentExpiry: newOrder.paymentExpiry
@@ -1020,13 +1041,13 @@ app.post('/api/checkout', async (req, res) => {
     });
   } catch (error) {
     console.warn('Real Midtrans API failed. Falling back to Mock QRIS. Reason:', error.message);
-    
+
     // Fallback ke Mock QRIS agar aplikasi tidak macet saat testing
     const qrisUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-${orderId}-${grossAmount}`;
-    
+
     newOrder.paymentQrUrl = qrisUrl;
     newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    
+
     await updateOrderFields(orderId, {
       paymentQrUrl: qrisUrl,
       paymentExpiry: newOrder.paymentExpiry
@@ -1047,7 +1068,7 @@ app.post('/api/checkout', async (req, res) => {
 // Helper untuk men-trigger booking kurir otomatis di BiteShip
 async function bookCourierAutomatically(order) {
   console.log(`[BiteShip] Memicu pemesanan kurir otomatis untuk order: ${order.orderId}`);
-  
+
   const isCizquakeDriver = order.shipping.courierCompany === 'cizquake';
   const hasTestItem = order.items.some(item => item.name.toLowerCase().includes('uji coba'));
   if (isCizquakeDriver || hasTestItem) {
@@ -1166,7 +1187,7 @@ async function bookCourierAutomatically(order) {
     });
   } catch (error) {
     console.warn('Real BiteShip courier booking failed. Falling back to Mock Booking. Reason:', error.message);
-    
+
     // Fallback ke booking simulasi agar tracking tetap berjalan di UI
     await updateOrderFields(order.orderId, {
       shippingStatus: 'driver_assigned',
@@ -1177,7 +1198,7 @@ async function bookCourierAutomatically(order) {
         courier_tracking_url: 'https://biteship.com/tracking/mock'
       }
     });
-    
+
     // Simulasikan status jalan dan selesai pengiriman bertahap
     setTimeout(async () => {
       await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
@@ -1273,8 +1294,8 @@ app.get('/api/admin/midtrans-diagnostic', async (req, res) => {
 
   try {
     const authString = Buffer.from(serverKey + ':').toString('base64');
-    const midtransUrl = isProduction 
-      ? 'https://api.midtrans.com/v2/charge' 
+    const midtransUrl = isProduction
+      ? 'https://api.midtrans.com/v2/charge'
       : 'https://api.sandbox.midtrans.com/v2/charge';
 
     const testResponse = await axios.post(midtransUrl, {
@@ -1378,11 +1399,11 @@ app.get('/api/resto/status', (req, res) => {
 app.post('/api/admin/resto/settings', (req, res) => {
   const { manualStatus, manualUntil, schedule } = req.body;
   const settings = readRestoSettings();
-  
+
   if (manualStatus !== undefined) settings.manualStatus = manualStatus;
   if (manualUntil !== undefined) settings.manualUntil = manualUntil;
   if (schedule !== undefined) settings.schedule = schedule;
-  
+
   writeRestoSettings(settings);
   const state = checkIsRestoOpen(settings);
   res.json({ success: true, message: 'Pengaturan operasional toko berhasil diperbarui.', settings, state });
@@ -1391,7 +1412,7 @@ app.post('/api/admin/resto/settings', (req, res) => {
 app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {
   const { id } = req.params;
   const { inStock } = req.body;
-  
+
   if (inStock === undefined) {
     return res.status(400).json({ success: false, message: 'Status inStock diperlukan.' });
   }
@@ -1493,9 +1514,9 @@ app.get('/api/admin/orders', async (req, res) => {
         supabase.from('orders').select('*').order('created_at', { ascending: false }),
         4000
       );
-      
+
       if (error) throw error;
-      
+
       const mappedOrders = data.map(item => ({
         orderId: item.order_id,
         customer: {
@@ -1520,7 +1541,7 @@ app.get('/api/admin/orders', async (req, res) => {
         paymentExpiry: item.payment_expiry,
         createdAt: item.created_at
       }));
-      
+
       return res.json({ success: true, orders: mappedOrders });
     } catch (err) {
       console.error('[Supabase] Error fetching admin orders:', err.message);
@@ -1605,7 +1626,7 @@ app.get('/api/customer/orders/:phone', async (req, res) => {
 app.post('/api/admin/order/:id/status', async (req, res) => {
   const { id } = req.params;
   const { shippingStatus } = req.body;
-  
+
   const order = await getOrderById(id);
   if (!order) {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
