@@ -34,7 +34,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'https://cizquakehub.netlify.app'
+  'https://cizquakehub.netlify.app',
+  'https://cizquake.store',
+  'https://www.cizquake.store'
 ];
 
 app.use(cors({
@@ -43,8 +45,9 @@ app.use(cors({
 
     const isLocal = origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
     const isNetlify = origin.endsWith('.netlify.app');
+    const isCustomDomain = origin.endsWith('cizquake.store');
 
-    if (allowedOrigins.indexOf(origin) !== -1 || isLocal || isNetlify) {
+    if (allowedOrigins.indexOf(origin) !== -1 || isLocal || isNetlify || isCustomDomain) {
       return callback(null, true);
     }
 
