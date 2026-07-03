@@ -107,7 +107,7 @@ const MENU_DATA = [
     price: 10000,
     sales: '1200 terjual',
     description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
-    image: '/img/Blueberry.jpeg?v=2',
+    image: '/img/Blueberry.png?v=3',
     inStock: true,
     rating: 4.8,
     salesCount: 1200
@@ -434,7 +434,7 @@ const getMenuData = async () => {
           price: parseFloat(item.price),
           sales: item.sales || '0 terjual',
           description: item.description || '',
-          image: item.id === 'mini-blueberry' ? '/img/Blueberry.jpeg?v=2' : (item.image || ''),
+          image: item.id === 'mini-blueberry' ? '/img/Blueberry.png?v=3' : (item.image || ''),
           inStock: item.in_stock,
           rating: parseFloat(item.rating || 4.8),
           salesCount: parseInt(item.sales_count || 0)
