@@ -901,157 +901,18 @@ app.get('/api/shipping/areas', async (req, res) => {
 // ENDPOINT 2: CALCULATE RATES
 // -----------------
 app.post('/api/shipping/rates', async (req, res) => {
-  const { destination_latitude, destination_longitude, destination_area_id, items } = req.body;
-
-  // Origin info from env
-  const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
-  const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
-
-  if (isMockBiteship) {
-    console.log('[BiteShip Mock] Calculating shipping rates...');
-    // Hitung jarak sederhana antara origin dan destinasi
-    let distance = 5.0; // default 5km
-    if (destination_latitude && destination_longitude) {
-      const latDiff = destination_latitude - originLat;
-      const lngDiff = destination_longitude - originLng;
-      // Formula jarak Euclidean kasar (dalam derajat, konversi ke km dgn kali 111)
-      distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111;
-      if (distance < 1) distance = 1.0;
-    }
-
-    // Hitung tarif instan kasar: Rp 2.500 per km + Rp 10.000 minimum
-    const rateInstant = Math.round(10000 + distance * 2500);
-    const rateSameDay = Math.round(7000 + distance * 1200);
-
-    const mockRates = [
-      {
-        company: 'cizquake',
-        courier_name: 'Cizquake Driver (Armada Sendiri)',
-        courier_code: 'cizquake',
-        courier_service_name: 'Armada Sendiri',
-        duration: '1 - 3 Jam',
-        price: 5000
-      },
-      {
-        company: 'gosend',
-        courier_name: 'GoSend Instant',
-        courier_code: 'gosend',
-        courier_service_name: 'Instant',
-        duration: '1 - 2 Jam',
-        price: rateInstant
-      },
-      {
-        company: 'grab',
-        courier_name: 'GrabExpress Instant',
-        courier_code: 'grab',
-        courier_service_name: 'Instant',
-        duration: '1 - 2 Jam',
-        price: rateInstant + 500 // sedikit beda
-      },
-      {
-        company: 'gosend',
-        courier_name: 'GoSend Same Day',
-        courier_code: 'gosend',
-        courier_service_name: 'Same Day',
-        duration: '6 - 8 Jam',
-        price: Math.max(15000, rateSameDay)
-      }
-    ];
-
-    return res.json({ success: true, rates: mockRates, distance: parseFloat(distance.toFixed(2)) });
-  }
-
-  try {
-    // Biteship API rates
-    const payload = {
-      origin_latitude: originLat,
-      origin_longitude: originLng,
-      destination_latitude: parseFloat(destination_latitude),
-      destination_longitude: parseFloat(destination_longitude),
-      couriers: 'gosend,grab',
-      items: items.map(item => ({
-        name: item.name,
-        value: item.price * item.quantity,
-        weight: item.weight || 200,
-        quantity: item.quantity
-      }))
-    };
-
-    const response = await axios.post(`https://api.biteship.com/v1/rates/couriers`, payload, {
-      headers: { 
-        'Authorization': `Bearer ${process.env.BITESHIP_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // Format output Biteship ke struktur sederhana
-    const rates = response.data.pricing.map(price => ({
-      company: price.company,
-      courier_name: `${price.courier_name} (${price.courier_service})`,
-      courier_code: price.courier_code,
-      courier_service_name: price.courier_service,
-      duration: price.duration,
-      price: price.price
-    }));
-
-    // Inject Cizquake Driver
-    rates.unshift({
+  // Hanya tampilkan Cizquake Driver dengan ongkir flat Rp 5.000 kemanapun se-Bandung Raya
+  const rates = [
+    {
       company: 'cizquake',
       courier_name: 'Cizquake Driver (Armada Sendiri)',
       courier_code: 'cizquake',
       courier_service_name: 'Armada Sendiri',
       duration: '1 - 3 Jam',
       price: 5000
-    });
-
-    res.json({ success: true, rates });
-  } catch (error) {
-    console.warn('Real BiteShip rates calculation failed. Falling back to Mock Rates. Reason:', error.message);
-    
-    // Fallback hitung jarak sederhana antara origin dan destinasi
-    let distance = 5.0; 
-    if (destination_latitude && destination_longitude) {
-      const latDiff = destination_latitude - originLat;
-      const lngDiff = destination_longitude - originLng;
-      distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111;
-      if (distance < 1) distance = 1.0;
     }
-
-    const rateInstant = Math.round(10000 + distance * 2500);
-    const mockRates = [
-      {
-        company: 'cizquake',
-        courier_name: 'Cizquake Driver (Armada Sendiri)',
-        courier_code: 'cizquake',
-        courier_service_name: 'Armada Sendiri',
-        duration: '1 - 3 Jam',
-        price: 5000
-      },
-      {
-        company: 'gosend',
-        courier_name: 'GoSend Instant (Mock)',
-        courier_code: 'gosend',
-        courier_service_name: 'Instant',
-        duration: '1 - 2 Jam',
-        price: rateInstant
-      },
-      {
-        company: 'grab',
-        courier_name: 'GrabExpress Instant (Mock)',
-        courier_code: 'grab',
-        courier_service_name: 'Instant',
-        duration: '1 - 2 Jam',
-        price: rateInstant + 500
-      }
-    ];
-
-    res.json({ 
-      success: true, 
-      rates: mockRates, 
-      distance: parseFloat(distance.toFixed(2)),
-      warning: 'BiteShip API error. Menggunakan estimasi tarif lokal.' 
-    });
-  }
+  ];
+  return res.json({ success: true, rates, distance: 0 });
 });
 
 // -----------------
