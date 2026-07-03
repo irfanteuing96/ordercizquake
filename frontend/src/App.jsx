@@ -7,6 +7,8 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
     : 'https://cizquake-backend.onrender.com'
 );
 
+const isAdminDomain = window.location.hostname === 'portal.cizquake.store' || window.location.hostname.startsWith('portal.');
+
 
 // Menu data as parsed from ShopeeFood screenshots, enriched with premium descriptions
 const MENU_DATA = [
@@ -168,6 +170,8 @@ export default function App() {
 
   // Admin Panel State
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminPinInput, setAdminPinInput] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [adminOrders, setAdminOrders] = useState([]);
   const [isAdminLoadingOrders, setIsAdminLoadingOrders] = useState(false);
   const [adminFilter, setAdminFilter] = useState('all');
@@ -227,6 +231,22 @@ export default function App() {
       }
     }
   }, [restoSettings]);
+
+  useEffect(() => {
+    if (isAdminDomain) {
+      setActiveTab('admin');
+      const savedAdminLogin = localStorage.getItem('cizquake_admin_logged_in');
+      if (savedAdminLogin === 'true') {
+        setIsAdminLoggedIn(true);
+        fetchAdminOrders();
+      }
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') === 'masuk') {
+        window.location.href = 'https://portal.cizquake.store';
+      }
+    }
+  }, []);
 
   // Profile Orders State
   const [profileOrders, setProfileOrders] = useState([]);
@@ -517,6 +537,7 @@ export default function App() {
       const response = await axios.post(`${BACKEND_URL}/api/admin/login`, { pin });
       if (response.data.success) {
         setIsAdminLoggedIn(true);
+        localStorage.setItem('cizquake_admin_logged_in', 'true');
         setActiveTab('admin');
         setIsAdminLoadingOrders(true);
         try {
@@ -536,6 +557,39 @@ export default function App() {
       } else {
         alert(err.response?.data?.message || 'Gagal login. PIN salah.');
       }
+    }
+  };
+
+  const handleAdminCustomLogin = async (e) => {
+    e.preventDefault();
+    if (!adminPinInput) return;
+    setIsLoggingIn(true);
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/login`, { pin: adminPinInput });
+      if (response.data.success) {
+        setIsAdminLoggedIn(true);
+        localStorage.setItem('cizquake_admin_logged_in', 'true');
+        setActiveTab('admin');
+        setIsAdminLoadingOrders(true);
+        try {
+          const res = await axios.get(`${BACKEND_URL}/api/admin/orders`);
+          if (res.data.success) {
+            setAdminOrders(res.data.orders);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setIsAdminLoadingOrders(false);
+        }
+      }
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        alert('Update server sedang dideploy (biasanya butuh 2-3 menit di Render). Silakan coba lagi sebentar lagi.');
+      } else {
+        alert(err.response?.data?.message || 'Gagal login. PIN salah.');
+      }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -929,64 +983,100 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
       
-      {/* Closed Screen Cover */}
-      {!restoStatus.isOpen && currentView !== 'admin' && activeTab !== 'profile' && activeTab !== 'admin' ? (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#161616] text-white p-6 max-w-[480px] mx-auto text-center z-[9999] relative">
-          <div className="flex flex-col items-center gap-6 max-w-sm">
-            <div className="w-28 h-28 rounded-full bg-[#fabd00] flex items-center justify-center border-4 border-white/20 shadow-lg shadow-[#fabd00]/20 animate-pulse p-4">
+      {/* Admin Domain Login Screen */}
+      {isAdminDomain && !isAdminLoggedIn ? (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[#161616] text-white p-6 max-w-[480px] mx-auto text-center relative font-sans">
+          <div className="flex flex-col items-center gap-6 max-w-sm w-full bg-[#1e1e1e] p-8 rounded-3xl border border-white/5 shadow-xl">
+            <div className="w-24 h-24 rounded-full bg-[#fabd00] flex items-center justify-center border-4 border-white/10 shadow-lg shadow-[#fabd00]/20 p-4">
               <img 
-                className="w-full h-auto object-contain" 
+                className="w-full h-auto object-contain animate-pulse" 
                 alt="Cizquake Logo" 
                 src="/logo.png"
               />
             </div>
-
+            
             <div className="space-y-2">
-              <h2 className="font-display text-lg font-black tracking-tight text-amber-500">Cizquake Express Sedang Tutup</h2>
+              <h2 className="font-display text-lg font-black tracking-tight text-amber-500">Cizquake Admin Portal</h2>
               <p className="text-xs text-white/70 leading-relaxed font-semibold">
-                Maaf, saat ini toko kami sedang tidak menerima pesanan baru. Kami akan segera kembali!
+                Masukkan PIN Admin Anda untuk mengakses panel manajemen toko.
               </p>
             </div>
 
-            {/* Reopen Info */}
-            <div className="w-full bg-[#242424] border border-white/5 rounded-2xl p-4 text-xs font-semibold space-y-1">
-              <p className="text-white/40 uppercase text-[9px] tracking-wider font-bold">Waktu Buka Kembali</p>
-              <p className="text-sm font-bold text-amber-400">
-                {restoStatus.reason === 'manual_closed_temporary' && restoStatus.until ? (
-                  `Buka kembali: ${new Date(restoStatus.until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
-                ) : restoStatus.until && restoStatus.until.label ? (
-                  restoStatus.until.label
+            <form onSubmit={handleAdminCustomLogin} className="space-y-4 w-full">
+              <input
+                type="password"
+                placeholder="Masukkan PIN Admin"
+                value={adminPinInput}
+                onChange={e => setAdminPinInput(e.target.value)}
+                className="w-full px-4 py-3 bg-[#2a2a2a] rounded-xl border border-white/10 text-center text-md font-bold tracking-widest focus:outline-none focus:border-[#fabd00] text-white outline-none"
+              />
+              <button
+                type="submit"
+                disabled={isLoggingIn}
+                className="w-full py-3.5 bg-[#fabd00] hover:bg-[#e0a900] active:scale-95 transition-all text-black font-display font-extrabold text-sm rounded-xl flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none shadow-md shadow-[#fabd00]/10"
+              >
+                {isLoggingIn ? (
+                  <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
                 ) : (
-                  "Tutup sementara (hubungi Admin untuk pemesanan khusus)"
+                  <span className="material-symbols-outlined text-sm">lock_open</span>
                 )}
-              </p>
-            </div>
-
-            {/* Hubungi Whatsapp button */}
-            <a 
-              href="https://wa.me/6288218003440" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-600/90 active:scale-95 transition-all text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-white"
-            >
-              <span className="material-symbols-outlined text-sm">chat</span>
-              Hubungi Admin via WhatsApp
-            </a>
-
-            {/* Admin Login Link at the bottom of Closed page */}
-            <button 
-              onClick={handleAdminLoginPrompt}
-              className="text-[10px] text-white/40 font-bold hover:text-white/60 pt-4 cursor-pointer hover:underline"
-            >
-              Kelola Toko (Login Admin)
-            </button>
+                <span>Masuk Admin Panel</span>
+              </button>
+            </form>
           </div>
         </div>
       ) : (
         <>
-          {/* 1. CATALOG VIEW (TABS: HOME, MENU, CART, PROFILE) */}
-          {currentView === 'catalog' && (
-        <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
+          {/* Closed Screen Cover */}
+          {!restoStatus.isOpen && currentView !== 'admin' && activeTab !== 'profile' && activeTab !== 'admin' ? (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#161616] text-white p-6 max-w-[480px] mx-auto text-center z-[9999] relative">
+              <div className="flex flex-col items-center gap-6 max-w-sm">
+                <div className="w-28 h-28 rounded-full bg-[#fabd00] flex items-center justify-center border-4 border-white/20 shadow-lg shadow-[#fabd00]/20 animate-pulse p-4">
+                  <img 
+                    className="w-full h-auto object-contain" 
+                    alt="Cizquake Logo" 
+                    src="/logo.png"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="font-display text-lg font-black tracking-tight text-amber-500">Cizquake Express Sedang Tutup</h2>
+                  <p className="text-xs text-white/70 leading-relaxed font-semibold">
+                    Maaf, saat ini toko kami sedang tidak menerima pesanan baru. Kami akan segera kembali!
+                  </p>
+                </div>
+
+                {/* Reopen Info */}
+                <div className="w-full bg-[#242424] border border-white/5 rounded-2xl p-4 text-xs font-semibold space-y-1">
+                  <p className="text-white/40 uppercase text-[9px] tracking-wider font-bold">Waktu Buka Kembali</p>
+                  <p className="text-sm font-bold text-amber-400">
+                    {restoStatus.reason === 'manual_closed_temporary' && restoStatus.until ? (
+                      `Buka kembali: ${new Date(restoStatus.until).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+                    ) : restoStatus.until && restoStatus.until.label ? (
+                      restoStatus.until.label
+                    ) : (
+                      "Tutup sementara (hubungi Admin untuk pemesanan khusus)"
+                    )}
+                  </p>
+                </div>
+
+                {/* Hubungi Whatsapp button */}
+                <a 
+                  href="https://wa.me/6288218003440" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-600/90 active:scale-95 transition-all text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm text-white"
+                >
+                  <span className="material-symbols-outlined text-sm">chat</span>
+                  Hubungi Admin via WhatsApp
+                </a>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* 1. CATALOG VIEW (TABS: HOME, MENU, CART, PROFILE) */}
+              {currentView === 'catalog' && (
+            <div className="flex flex-col min-h-screen relative bg-background text-on-surface">
           
           {/* TAB 1: HOME */}
           {activeTab === 'home' && (
@@ -1664,17 +1754,7 @@ export default function App() {
                   </>
                 )}
 
-                {/* Admin Access Panel */}
-                <div className="bg-surface-container-lowest rounded-2xl p-5 custom-shadow border border-on-surface/5 text-left">
-                  <h3 className="font-display font-bold text-xs text-primary mb-3">Portal Staf Restoran</h3>
-                  <button 
-                    onClick={handleAdminLoginPrompt}
-                    className="w-full py-3 bg-secondary-container text-on-secondary-container hover:bg-secondary-container/95 active:scale-95 transition-all text-xs rounded-xl font-bold flex items-center justify-center gap-2 border border-outline-variant/10"
-                  >
-                    <span className="material-symbols-outlined text-md">shield_person</span>
-                    <span>Masuk Panel Admin Cizquake</span>
-                  </button>
-                </div>
+
               </main>
             </div>
           )}
@@ -1698,7 +1778,10 @@ export default function App() {
                   <button 
                     onClick={() => {
                       setIsAdminLoggedIn(false);
-                      setActiveTab('profile');
+                      localStorage.removeItem('cizquake_admin_logged_in');
+                      if (!isAdminDomain) {
+                        setActiveTab('profile');
+                      }
                     }}
                     className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-red-50 active:scale-95 transition-all text-red-650"
                   >
@@ -2552,82 +2635,84 @@ export default function App() {
           )}
 
           {/* Shared Bottom Navigation Bar */}
-          <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] z-50 flex justify-around items-center px-4 pt-2.5 pb-1 bg-surface-container-lowest shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-none mx-auto border-t border-outline-variant/10">
-            {/* Home Tab */}
-            <button 
-              onClick={() => setActiveTab('home')}
-              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
-                activeTab === 'home' 
-                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
-                  : 'flex-col text-[#785900]/70 px-3 py-1'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "'FILL' 0" }}>home</span>
-              <span className={`font-label-lg font-bold ${activeTab === 'home' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Home</span>
-            </button>
-            
-            {/* Menu Tab */}
-            <button 
-              onClick={() => setActiveTab('menu')}
-              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
-                activeTab === 'menu' 
-                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
-                  : 'flex-col text-[#785900]/70 px-3 py-1'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'menu' ? "'FILL' 1" : "'FILL' 0" }}>restaurant_menu</span>
-              <span className={`font-label-lg font-bold ${activeTab === 'menu' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Menu</span>
-            </button>
-
-            {/* Cart Tab */}
-            <button 
-              onClick={() => setActiveTab('cart')}
-              className={`relative flex items-center justify-center transition-all duration-200 active:scale-90 ${
-                activeTab === 'cart' 
-                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
-                  : 'flex-col text-[#785900]/70 px-3 py-1'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'cart' ? "'FILL' 1" : "'FILL' 0" }}>shopping_bag</span>
-              <span className={`font-label-lg font-bold ${activeTab === 'cart' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Cart</span>
-              {getCartCount() > 0 && activeTab !== 'cart' && (
-                <span className="absolute -top-1.5 -right-1 bg-red-600 text-white rounded-full text-[9px] w-4.5 h-4.5 flex items-center justify-center font-extrabold shadow-sm">
-                  {getCartCount()}
-                </span>
-              )}
-            </button>
-
-            {/* Profile Tab */}
-            <button 
-              onClick={() => setActiveTab('profile')}
-              className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
-                activeTab === 'profile' 
-                  ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
-                  : 'flex-col text-[#785900]/70 px-3 py-1'
-              }`}
-            >
-              <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}>person</span>
-              <span className={`font-label-lg font-bold ${activeTab === 'profile' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Profile</span>
-            </button>
-            
-            {/* Admin Tab (Only if logged in) */}
-            {isAdminLoggedIn && (
+          {!isAdminDomain && (
+            <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[480px] z-50 flex justify-around items-center px-4 pt-2.5 pb-1 bg-surface-container-lowest shadow-[0_-4px_20px_0_rgba(0,0,0,0.05)] rounded-none mx-auto border-t border-outline-variant/10">
+              {/* Home Tab */}
               <button 
-                onClick={() => {
-                  setActiveTab('admin');
-                  fetchAdminOrders();
-                }}
+                onClick={() => setActiveTab('home')}
                 className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
-                  activeTab === 'admin' 
+                  activeTab === 'home' 
                     ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
                     : 'flex-col text-[#785900]/70 px-3 py-1'
                 }`}
               >
-                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'admin' ? "'FILL' 1" : "'FILL' 0" }}>admin_panel_settings</span>
-                <span className={`font-label-lg font-bold ${activeTab === 'admin' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Admin</span>
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'home' ? "'FILL' 1" : "'FILL' 0" }}>home</span>
+                <span className={`font-label-lg font-bold ${activeTab === 'home' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Home</span>
               </button>
-            )}
-          </nav>
+              
+              {/* Menu Tab */}
+              <button 
+                onClick={() => setActiveTab('menu')}
+                className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                  activeTab === 'menu' 
+                    ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                    : 'flex-col text-[#785900]/70 px-3 py-1'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'menu' ? "'FILL' 1" : "'FILL' 0" }}>restaurant_menu</span>
+                <span className={`font-label-lg font-bold ${activeTab === 'menu' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Menu</span>
+              </button>
+
+              {/* Cart Tab */}
+              <button 
+                onClick={() => setActiveTab('cart')}
+                className={`relative flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                  activeTab === 'cart' 
+                    ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                    : 'flex-col text-[#785900]/70 px-3 py-1'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'cart' ? "'FILL' 1" : "'FILL' 0" }}>shopping_bag</span>
+                <span className={`font-label-lg font-bold ${activeTab === 'cart' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Cart</span>
+                {getCartCount() > 0 && activeTab !== 'cart' && (
+                  <span className="absolute -top-1.5 -right-1 bg-red-600 text-white rounded-full text-[9px] w-4.5 h-4.5 flex items-center justify-center font-extrabold shadow-sm">
+                    {getCartCount()}
+                  </span>
+                )}
+              </button>
+
+              {/* Profile Tab */}
+              <button 
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                  activeTab === 'profile' 
+                    ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                    : 'flex-col text-[#785900]/70 px-3 py-1'
+                }`}
+              >
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'profile' ? "'FILL' 1" : "'FILL' 0" }}>person</span>
+                <span className={`font-label-lg font-bold ${activeTab === 'profile' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Profile</span>
+              </button>
+              
+              {/* Admin Tab (Only if logged in) */}
+              {isAdminLoggedIn && (
+                <button 
+                  onClick={() => {
+                    setActiveTab('admin');
+                    fetchAdminOrders();
+                  }}
+                  className={`flex items-center justify-center transition-all duration-200 active:scale-90 ${
+                    activeTab === 'admin' 
+                      ? 'flex-row gap-1.5 cizquake-nav-active font-extrabold shadow-sm' 
+                      : 'flex-col text-[#785900]/70 px-3 py-1'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: activeTab === 'admin' ? "'FILL' 1" : "'FILL' 0" }}>admin_panel_settings</span>
+                  <span className={`font-label-lg font-bold ${activeTab === 'admin' ? 'text-[11px] capitalize' : 'text-[9px] mt-0.5 uppercase'}`}>Admin</span>
+                </button>
+              )}
+            </nav>
+          )}
         </div>
       )}
 
@@ -3130,6 +3215,8 @@ export default function App() {
         </div>
       )}
 
+      </>
+      )}
       </>
       )}
 
