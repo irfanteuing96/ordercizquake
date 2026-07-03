@@ -104,7 +104,7 @@ const MENU_DATA = [
     price: 10000,
     sales: '1200 terjual',
     description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
-    image: '/img/Blueberry.jpeg',
+    image: '/img/Blueberry.jpeg?v=2',
     inStock: true,
     rating: 4.8,
     salesCount: 1200
@@ -431,7 +431,7 @@ const getMenuData = async () => {
           price: parseFloat(item.price),
           sales: item.sales || '0 terjual',
           description: item.description || '',
-          image: item.image || '',
+          image: item.id === 'mini-blueberry' ? '/img/Blueberry.jpeg?v=2' : (item.image || ''),
           inStock: item.in_stock,
           rating: parseFloat(item.rating || 4.8),
           salesCount: parseInt(item.sales_count || 0)
@@ -925,6 +925,14 @@ app.post('/api/shipping/rates', async (req, res) => {
 
     const mockRates = [
       {
+        company: 'cizquake',
+        courier_name: 'Cizquake Driver (Armada Sendiri)',
+        courier_code: 'cizquake',
+        courier_service_name: 'Armada Sendiri',
+        duration: '1 - 3 Jam',
+        price: 5000
+      },
+      {
         company: 'gosend',
         courier_name: 'GoSend Instant',
         courier_code: 'gosend',
@@ -986,6 +994,16 @@ app.post('/api/shipping/rates', async (req, res) => {
       price: price.price
     }));
 
+    // Inject Cizquake Driver
+    rates.unshift({
+      company: 'cizquake',
+      courier_name: 'Cizquake Driver (Armada Sendiri)',
+      courier_code: 'cizquake',
+      courier_service_name: 'Armada Sendiri',
+      duration: '1 - 3 Jam',
+      price: 5000
+    });
+
     res.json({ success: true, rates });
   } catch (error) {
     console.warn('Real BiteShip rates calculation failed. Falling back to Mock Rates. Reason:', error.message);
@@ -1001,6 +1019,14 @@ app.post('/api/shipping/rates', async (req, res) => {
 
     const rateInstant = Math.round(10000 + distance * 2500);
     const mockRates = [
+      {
+        company: 'cizquake',
+        courier_name: 'Cizquake Driver (Armada Sendiri)',
+        courier_code: 'cizquake',
+        courier_service_name: 'Armada Sendiri',
+        duration: '1 - 3 Jam',
+        price: 5000
+      },
       {
         company: 'gosend',
         courier_name: 'GoSend Instant (Mock)',
@@ -1161,18 +1187,31 @@ app.post('/api/checkout', async (req, res) => {
 async function bookCourierAutomatically(order) {
   console.log(`[BiteShip] Memicu pemesanan kurir otomatis untuk order: ${order.orderId}`);
   
+  const isCizquakeDriver = order.shipping.courierCompany === 'cizquake';
   const hasTestItem = order.items.some(item => item.name.toLowerCase().includes('uji coba'));
-  if (hasTestItem) {
-    console.log(`[BiteShip] Menghindari ojek booking asli untuk order uji coba: ${order.orderId}`);
+  if (isCizquakeDriver || hasTestItem) {
+    console.log(`[BiteShip] Menghindari ojek booking asli untuk Cizquake Driver / Order Uji Coba: ${order.orderId}`);
     await updateOrderFields(order.orderId, {
-      shippingStatus: 'delivered',
+      shippingStatus: 'driver_assigned',
       shippingOrderInfo: {
-        courier_order_id: `BITESHIP-TEST-${Date.now()}`,
-        courier_driver_name: 'Driver Uji Coba Cizquake',
-        courier_driver_phone: '085511223344',
+        courier_order_id: isCizquakeDriver ? `CIZDRIVER-${Date.now()}` : `BITESHIP-TEST-${Date.now()}`,
+        courier_driver_name: isCizquakeDriver ? 'Kurir Cizquake (Armada Sendiri)' : 'Driver Uji Coba Cizquake',
+        courier_driver_phone: isCizquakeDriver ? '088218003440' : '085511223344',
         courier_tracking_url: 'https://biteship.com/tracking/mock'
       }
     });
+
+    // Jalankan simulasi transit & delivery untuk Cizquake Driver agar peta / status berubah bertahap
+    setTimeout(async () => {
+      await updateOrderFields(order.orderId, { shippingStatus: 'on_the_way' });
+      console.log(`[Cizquake Driver Mock] Order ${order.orderId} sedang di perjalanan.`);
+    }, 10000);
+
+    setTimeout(async () => {
+      await updateOrderFields(order.orderId, { shippingStatus: 'delivered' });
+      console.log(`[Cizquake Driver Mock] Order ${order.orderId} telah sampai.`);
+    }, 25000);
+
     return;
   }
 

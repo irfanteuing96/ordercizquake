@@ -17,7 +17,7 @@ const MENU_DATA = [
     price: 10000,
     sales: '1.2RB terjual',
     description: 'Premium Mini Cheesecake topped with sweet, rich blueberry compote.',
-    image: '/img/Blueberry.jpeg',
+    image: '/img/Blueberry.jpeg?v=2',
     inStock: true,
     rating: 4.8,
     salesCount: '1.2k'
