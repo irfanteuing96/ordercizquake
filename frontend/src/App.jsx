@@ -240,11 +240,6 @@ export default function App() {
         setIsAdminLoggedIn(true);
         fetchAdminOrders();
       }
-    } else {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('admin') === 'masuk') {
-        window.location.href = 'https://portal.cizquake.store';
-      }
     }
   }, []);
 
