@@ -436,8 +436,8 @@ export default function App() {
   };
 
   const handleCheckoutSubmit = async () => {
-    if (!customerName || !customerPhone || !selectedArea || !detailedAddress || !selectedCourier) {
-      alert('Mohon lengkapi seluruh data pengiriman.');
+    if (!customerName || !customerPhone || !selectedArea || !detailedAddress || !selectedCourier || detailedAddress.trim().length < 15) {
+      alert('Mohon lengkapi seluruh data pengiriman dengan alamat lengkap minimal 15 karakter.');
       return;
     }
 
@@ -2729,6 +2729,22 @@ export default function App() {
                     placeholder="No. Rumah, RT/RW, nama jalan, patokan gerbang, pagar rumah, dll."
                     className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 h-20 resize-none pt-3 outline-none"
                   />
+                  <div className="flex justify-between items-center mt-1 px-1">
+                    <span className="text-[10px] font-semibold text-on-surface-variant/75">
+                      {detailedAddress.trim().length < 15 ? (
+                        <span className="text-red-500 flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[11px] font-bold">info</span>
+                          Minimal 15 karakter (kurang {15 - detailedAddress.trim().length} karakter lagi)
+                        </span>
+                      ) : (
+                        <span className="text-green-600 flex items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[11px] font-bold">check_circle</span>
+                          Alamat lengkap memenuhi syarat
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] font-bold text-on-surface-variant/60">{detailedAddress.trim().length} / 15+</span>
+                  </div>
                 </div>
               </div>
             </section>
@@ -2832,7 +2848,7 @@ export default function App() {
           <div className="fixed bottom-0 left-0 right-0 p-container-margin-mobile bg-surface-container-lowest/80 backdrop-blur-md z-40 max-w-[480px] mx-auto border-t border-outline-variant/20">
             <button 
               onClick={handleCheckoutSubmit}
-              disabled={isSubmittingOrder || !selectedCourier || !customerName || !customerPhone}
+              disabled={isSubmittingOrder || !selectedCourier || !customerName || !customerPhone || !detailedAddress || detailedAddress.trim().length < 15}
               className="w-full py-4 bg-primary-container text-on-primary-container font-display font-extrabold text-md rounded-full shadow-lg transition-all hover:brightness-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
             >
               <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Konfirmasi & Bayar'}</span>
