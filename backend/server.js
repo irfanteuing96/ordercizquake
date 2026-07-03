@@ -51,7 +51,7 @@ app.use(cors({
       return callback(null, true);
     }
 
-    const msg = 'Akses API ditolak oleh kebijakan CORS Cizquake.';
+    const msg = `Akses API ditolak oleh kebijakan CORS Cizquake. Origin: ${origin}`;
     return callback(new Error(msg), false);
   }
 }));
