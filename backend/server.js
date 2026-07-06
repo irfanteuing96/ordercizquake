@@ -283,12 +283,13 @@ const writeRestoSettings = (settings) => {
 };
 
 const getNextOpeningTime = (settings) => {
-  const now = new Date();
+  const wibString = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+  const wibNow = new Date(wibString);
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayLabels = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
   for (let i = 0; i < 7; i++) {
-    const checkDate = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
+    const checkDate = new Date(wibNow.getTime() + i * 24 * 60 * 60 * 1000);
     const dayName = days[checkDate.getDay()];
     const daySchedule = settings.schedule[dayName];
 
@@ -297,7 +298,7 @@ const getNextOpeningTime = (settings) => {
       const openDateTime = new Date(checkDate);
       openDateTime.setHours(openH, openM, 0, 0);
 
-      if (openDateTime > now) {
+      if (openDateTime > wibNow) {
         return {
           time: openDateTime.toISOString(),
           label: i === 0
@@ -313,7 +314,9 @@ const getNextOpeningTime = (settings) => {
 };
 
 const checkIsRestoOpen = (settings) => {
-  const now = new Date();
+  const absoluteNow = new Date();
+  const wibString = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+  const wibNow = new Date(wibString);
 
   if (settings.manualStatus === 'open') {
     return { isOpen: true, reason: 'manual_open' };
@@ -326,14 +329,14 @@ const checkIsRestoOpen = (settings) => {
 
     if (settings.manualUntil) {
       const untilTime = new Date(settings.manualUntil);
-      if (now < untilTime) {
+      if (absoluteNow < untilTime) {
         return { isOpen: false, reason: 'manual_closed_temporary', until: untilTime.toISOString() };
       }
     }
   }
 
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const currentDayName = days[now.getDay()];
+  const currentDayName = days[wibNow.getDay()];
   const daySchedule = settings.schedule[currentDayName];
 
   if (!daySchedule || !daySchedule.isOpen) {
@@ -343,8 +346,8 @@ const checkIsRestoOpen = (settings) => {
   const [openHour, openMin] = daySchedule.openTime.split(':').map(Number);
   const [closeHour, closeMin] = daySchedule.closeTime.split(':').map(Number);
 
-  const currentHour = now.getHours();
-  const currentMin = now.getMinutes();
+  const currentHour = wibNow.getHours();
+  const currentMin = wibNow.getMinutes();
 
   const currentTimeVal = currentHour * 60 + currentMin;
   const openTimeVal = openHour * 60 + openMin;
