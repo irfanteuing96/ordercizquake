@@ -1141,8 +1141,10 @@ app.post('/api/checkout', async (req, res) => {
         }
       });
 
-      if (response.data && response.data.payment && response.data.payment.url) {
-        const paymentUrl = response.data.payment.url;
+      console.log('[Doku API Response Raw]:', JSON.stringify(response.data));
+
+      if (response.data && response.data.response && response.data.response.payment && response.data.response.payment.url) {
+        const paymentUrl = response.data.response.payment.url;
         const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
         await updateOrderFields(orderId, {
           paymentExpiry: expiry
