@@ -4,7 +4,7 @@ import axios from 'axios';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:5000'
-    : 'https://cizquake-backend.onrender.com'
+    : 'https://ordercizquake.onrender.com'
 );
 
 const isAdminDomain = window.location.hostname === 'portal.cizquake.store' || window.location.hostname.startsWith('portal.');
