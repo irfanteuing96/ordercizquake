@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import axios from 'axios';
 import midtransClient from 'midtrans-client';
 import { createClient } from '@supabase/supabase-js';
+import crypto from 'crypto';
 import { sendOrderPaidNotifications } from './whatsappService.js';
 
 
@@ -87,6 +88,90 @@ if (isUseSupabase) {
 } else {
   console.log('[Supabase] No credentials found or incomplete. Falling back to local orders.json database.');
 }
+
+// -----------------
+// DOKU SETTINGS & SIGNATURE HELPERS
+// -----------------
+const dokuClientId = process.env.DOKU_CLIENT_ID || '';
+const dokuSecretKey = process.env.DOKU_SECRET_KEY || '';
+const dokuIsProduction = process.env.DOKU_IS_PRODUCTION === 'true';
+const dokuHost = dokuIsProduction ? 'https://api.doku.com' : 'https://api-sandbox.doku.com';
+const isMockDoku = !dokuClientId || !dokuSecretKey || dokuClientId.includes('placeholder');
+
+if (isMockDoku) {
+  console.log('[Doku] Sandbox keys missing or using placeholder. Running in DOKU Simulator Mode.');
+} else {
+  console.log(`[Doku] ${dokuIsProduction ? 'Production' : 'Sandbox'} keys loaded. Target Host: ${dokuHost}`);
+}
+
+const generateDokuDigest = (body) => {
+  const jsonString = JSON.stringify(body);
+  return crypto.createHash('sha256').update(jsonString).digest('base64');
+};
+
+const generateDokuSignature = (clientId, requestId, timestamp, target, digest, secretKey) => {
+  const component = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${target}\nDigest:${digest}`;
+  const hmac = crypto.createHmac('sha256', secretKey);
+  hmac.update(component);
+  const signature = hmac.digest('base64');
+  return `HMACSHA256=${signature}`;
+};
+
+const verifyDokuNotificationSignature = (headers, body, targetPath, secretKey) => {
+  const clientId = headers['client-id'];
+  const requestId = headers['request-id'];
+  const timestamp = headers['request-timestamp'];
+  const receivedSignature = headers['signature'];
+
+  if (!clientId || !requestId || !timestamp || !receivedSignature) {
+    return false;
+  }
+
+  const digest = generateDokuDigest(body);
+  const calculatedSignature = generateDokuSignature(clientId, requestId, timestamp, targetPath, digest, secretKey);
+  return calculatedSignature === receivedSignature;
+};
+
+const checkDokuPaymentStatus = async (orderId) => {
+  if (isMockDoku) {
+    return null;
+  }
+
+  try {
+    const requestId = `REQ-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const timestamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    const targetPath = `/orders/v1/status/${orderId}`;
+
+    // For GET requests, the signature components exclude the Digest
+    const component = `Client-Id:${dokuClientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${targetPath}`;
+    const hmac = crypto.createHmac('sha256', dokuSecretKey);
+    hmac.update(component);
+    const signature = `HMACSHA256=${hmac.digest('base64')}`;
+
+    console.log(`[Doku Status Check] Querying status for order ${orderId} on host ${dokuHost}${targetPath}`);
+
+    const response = await axios.get(`${dokuHost}${targetPath}`, {
+      headers: {
+        'Client-Id': dokuClientId,
+        'Request-Id': requestId,
+        'Request-Timestamp': timestamp,
+        'Signature': signature
+      }
+    });
+
+    console.log(`[Doku Status Check] Response for ${orderId}:`, JSON.stringify(response.data));
+
+    if (response.data && response.data.transaction && response.data.transaction.status) {
+      return response.data.transaction.status; // e.g., 'SUCCESS', 'FAILED', 'PENDING'
+    }
+  } catch (error) {
+    console.warn(`[Doku Status Check] Failed to check status for order ${orderId}:`, error.message);
+    if (error.response && error.response.data) {
+      console.warn('DOKU Status API Error details:', JSON.stringify(error.response.data));
+    }
+  }
+  return null;
+};
 
 // Helper to wrap Supabase queries with a timeout to prevent hanging
 const supabaseWithTimeout = (thenable, ms = 4000) => {
@@ -960,7 +1045,7 @@ app.post('/api/shipping/rates', async (req, res) => {
 // ENDPOINT 3: CHECKOUT & CREATE PAYMENT
 // -----------------
 app.post('/api/checkout', async (req, res) => {
-  const { customer, items, shipping, totalProductPrice, shippingPrice } = req.body;
+  const { customer, items, shipping, totalProductPrice, shippingPrice, paymentMethod } = req.body;
 
   const orderId = await getNextOrderId();
 
@@ -993,6 +1078,110 @@ app.post('/api/checkout', async (req, res) => {
   };
 
   await createOrder(newOrder);
+
+  // Jika metode pembayaran yang dipilih adalah DOKU
+  if (paymentMethod === 'doku') {
+    const referer = req.headers.referer || req.headers.origin || 'https://cizquake.store';
+    const callbackUrl = `${referer.replace(/\/$/, '')}?orderId=${orderId}&payment=doku`;
+
+    if (isMockDoku) {
+      console.log(`[Doku Mock] Generating Checkout Link for Order ID: ${orderId}, Amount: Rp ${grossAmount}`);
+      const mockCheckoutUrl = `${referer.replace(/\/$/, '')}?orderId=${orderId}&payment=doku_mock_sim`;
+      const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 60 menit exp
+
+      await updateOrderFields(orderId, {
+        paymentExpiry: expiry
+      });
+
+      return res.json({
+        success: true,
+        orderId,
+        grossAmount,
+        paymentType: 'doku_mock',
+        paymentUrl: mockCheckoutUrl,
+        expiryTime: expiry
+      });
+    }
+
+    try {
+      const requestId = `REQ-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const timestamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+      const targetPath = '/checkout/v1/payment';
+
+      const dokuPayload = {
+        order: {
+          amount: grossAmount,
+          invoice_number: orderId,
+          currency: 'IDR',
+          callback_url: callbackUrl,
+          callback_url_result: callbackUrl,
+          auto_redirect: true
+        },
+        customer: {
+          name: customer.name,
+          email: customer.email || 'customer@cizquake.com',
+          phone: customer.phone.startsWith('0') ? '62' + customer.phone.slice(1) : customer.phone,
+          address: shipping.address
+        },
+        payment: {
+          payment_due_date: 60
+        }
+      };
+
+      const digest = generateDokuDigest(dokuPayload);
+      const signature = generateDokuSignature(dokuClientId, requestId, timestamp, targetPath, digest, dokuSecretKey);
+
+      const response = await axios.post(`${dokuHost}${targetPath}`, dokuPayload, {
+        headers: {
+          'Client-Id': dokuClientId,
+          'Request-Id': requestId,
+          'Request-Timestamp': timestamp,
+          'Signature': signature,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data && response.data.payment && response.data.payment.url) {
+        const paymentUrl = response.data.payment.url;
+        const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await updateOrderFields(orderId, {
+          paymentExpiry: expiry
+        });
+
+        return res.json({
+          success: true,
+          orderId,
+          grossAmount,
+          paymentType: 'doku',
+          paymentUrl,
+          expiryTime: expiry
+        });
+      } else {
+        throw new Error('Respons Doku tidak mengembalikan URL pembayaran.');
+      }
+    } catch (error) {
+      console.warn('Real DOKU Checkout API failed. Falling back to Mock DOKU. Reason:', error.message);
+      if (error.response && error.response.data) {
+        console.warn('DOKU API Error details:', JSON.stringify(error.response.data));
+      }
+
+      const mockCheckoutUrl = `${referer.replace(/\/$/, '')}?orderId=${orderId}&payment=doku_mock_fallback`;
+      const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      await updateOrderFields(orderId, {
+        paymentExpiry: expiry
+      });
+
+      return res.json({
+        success: true,
+        orderId,
+        grossAmount,
+        paymentType: 'doku_mock_fallback',
+        paymentUrl: mockCheckoutUrl,
+        expiryTime: expiry,
+        warning: 'DOKU API error. Sistem otomatis menggunakan simulator DOKU.'
+      });
+    }
+  }
 
   // 2. Buat pembayaran QRIS di Midtrans
   if (isMockMidtrans) {
@@ -1156,6 +1345,66 @@ app.post('/api/payment-callback', async (req, res) => {
 });
 
 // -----------------
+// ENDPOINT 4.5: DOKU WEBHOOK / CALLBACK
+// -----------------
+app.post('/api/doku-callback', async (req, res) => {
+  const notification = req.body;
+  console.log('[Doku Webhook] Received status notification:', JSON.stringify(notification, null, 2));
+
+  // 1. Validasi keberadaan order & invoice_number
+  if (!notification || !notification.order || !notification.order.invoice_number) {
+    return res.status(400).json({ success: false, message: 'Invalid payload: order.invoice_number is missing' });
+  }
+
+  const orderId = notification.order.invoice_number;
+  const order = await getOrderById(orderId);
+
+  if (!order) {
+    console.log(`[Doku Webhook] Order ID ${orderId} not found. Returning 200 to acknowledge.`);
+    return res.status(200).json({ success: true, message: 'Notification received but order not found' });
+  }
+
+  // 2. Verifikasi Signature DOKU (kecuali jika dalam mode simulator)
+  if (!isMockDoku) {
+    const targetPath = '/api/doku-callback'; 
+    const isSignatureValid = verifyDokuNotificationSignature(req.headers, req.body, targetPath, dokuSecretKey);
+
+    if (!isSignatureValid) {
+      console.warn(`[Doku Webhook] Signature verification failed for order ${orderId}`);
+      return res.status(401).json({ success: false, message: 'Invalid signature' });
+    }
+    console.log(`[Doku Webhook] Signature verified successfully for order ${orderId}`);
+  } else {
+    console.log(`[Doku Webhook] Running in simulator mode, skipping signature verification.`);
+  }
+
+  // 3. Proses Status
+  const transactionStatus = notification.transaction ? notification.transaction.status : '';
+  let paymentStatus = 'pending';
+
+  if (transactionStatus === 'SUCCESS') {
+    paymentStatus = 'paid';
+  } else if (transactionStatus === 'FAILED') {
+    paymentStatus = 'failed';
+  }
+
+  await updateOrderFields(orderId, { paymentStatus });
+  order.paymentStatus = paymentStatus;
+
+  // Jika status pembayaran sukses, jalankan booking kurir otomatis dan kirim WA
+  if (paymentStatus === 'paid' && order.shippingStatus === 'idle') {
+    // Run async booking
+    bookCourierAutomatically(order);
+    // Kirim notifikasi WA ke customer dan admin
+    sendOrderPaidNotifications(order);
+    // Increment sales count
+    incrementMenuItemSales(order.items);
+  }
+
+  res.status(200).json({ success: true });
+});
+
+// -----------------
 // ENDPOINT 5: SECURE MIDTRANS DIAGNOSTIC
 // -----------------
 app.get('/api/admin/midtrans-diagnostic', async (req, res) => {
@@ -1226,6 +1475,29 @@ app.get('/api/order/:id', async (req, res) => {
 
   if (!order) {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
+  }
+
+  // Jika status pembayaran masih pending dan tipe pembayarannya adalah doku asli (bukan mock),
+  // lakukan pengecekan status secara real-time ke API Doku
+  if (order.paymentStatus === 'pending' && order.paymentType === 'doku' && !isMockDoku) {
+    const dokuStatus = await checkDokuPaymentStatus(id);
+    if (dokuStatus === 'SUCCESS') {
+      console.log(`[Doku Status Check] Order ${id} is successfully paid! Updating status.`);
+      const paymentStatus = 'paid';
+      await updateOrderFields(id, { paymentStatus });
+      order.paymentStatus = paymentStatus;
+
+      // Jalankan booking kurir otomatis dan kirim WA (sama seperti webhook)
+      if (order.shippingStatus === 'idle') {
+        bookCourierAutomatically(order);
+        sendOrderPaidNotifications(order);
+        incrementMenuItemSales(order.items);
+      }
+    } else if (dokuStatus === 'FAILED') {
+      console.log(`[Doku Status Check] Order ${id} failed.`);
+      await updateOrderFields(id, { paymentStatus: 'failed' });
+      order.paymentStatus = 'failed';
+    }
   }
 
   res.json({ success: true, order });

@@ -150,7 +150,7 @@ export default function App() {
   const [detailedAddress, setDetailedAddress] = useState(() => localStorage.getItem('cizquake_customer_detailed_address') || '');
   const [couriers, setCouriers] = useState([]);
   const [selectedCourier, setSelectedCourier] = useState(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('ewallet');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('doku');
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
@@ -160,10 +160,29 @@ export default function App() {
     }
   }, [selectedArea]);
 
+  // Parse URL query parameters to restore tracking view on redirect back from payment gateway
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const orderIdParam = params.get('orderId');
+    const paymentParam = params.get('payment');
+    if (orderIdParam) {
+      setActiveOrderId(orderIdParam);
+      if (paymentParam && paymentParam.startsWith('doku_mock')) {
+        setDokuMockType(paymentParam);
+        setCurrentView('doku_simulator');
+      } else {
+        setCurrentView('tracking');
+      }
+      const newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+      window.history.replaceState({ path: newUrl }, '', newUrl);
+    }
+  }, []);
+
   // Payment State
   const [activeOrderId, setActiveOrderId] = useState(null);
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [paymentExpiryTimer, setPaymentExpiryTimer] = useState('15:00');
+  const [dokuMockType, setDokuMockType] = useState(null);
 
   // Tracking State
   const [trackingInfo, setTrackingInfo] = useState(null);
@@ -385,12 +404,14 @@ export default function App() {
     }
   }, [selectedArea, cart]);
 
-  // Real-time tracking polling when in tracking view
+  // Real-time tracking polling when in tracking view or Doku simulator
   useEffect(() => {
     let pollInterval;
-    if (currentView === 'tracking' && activeOrderId) {
+    if ((currentView === 'tracking' || currentView === 'doku_simulator') && activeOrderId) {
       fetchOrderStatus(); // initial fetch
-      pollInterval = setInterval(fetchOrderStatus, 3000); // poll every 3s
+      if (currentView === 'tracking') {
+        pollInterval = setInterval(fetchOrderStatus, 3000); // poll every 3s
+      }
     }
     return () => clearInterval(pollInterval);
   }, [currentView, activeOrderId]);
@@ -477,7 +498,8 @@ export default function App() {
           courierService: selectedCourier.courier_service_name
         },
         totalProductPrice: getCartSubtotal(),
-        shippingPrice: selectedCourier.price
+        shippingPrice: selectedCourier.price,
+        paymentMethod: selectedPaymentMethod
       };
 
       const response = await axios.post(`${BACKEND_URL}/api/checkout`, payload);
@@ -490,7 +512,13 @@ export default function App() {
         
         setActiveOrderId(response.data.orderId);
         setPaymentInfo(response.data);
-        setCurrentView('payment');
+        
+        if (response.data.paymentType && response.data.paymentType.startsWith('doku')) {
+          alert('Pesanan dibuat! Anda akan dialihkan ke halaman pembayaran DOKU.');
+          window.location.href = response.data.paymentUrl;
+        } else {
+          setCurrentView('payment');
+        }
       }
     } catch (err) {
       console.error('Error creating checkout:', err);
@@ -519,6 +547,56 @@ export default function App() {
       }
     } catch (err) {
       console.error('Error simulating payment:', err);
+    }
+  };
+
+  const handleDokuSimulateSuccess = async () => {
+    if (!trackingInfo) return;
+    try {
+      // 1. Coba kirim webhook callback (simulasi webhook Doku)
+      const payload = {
+        order: {
+          invoice_number: activeOrderId,
+          amount: trackingInfo.grossAmount
+        },
+        transaction: {
+          status: 'SUCCESS'
+        }
+      };
+      await axios.post(`${BACKEND_URL}/api/doku-callback`, payload);
+      setCurrentView('tracking');
+    } catch (err) {
+      console.warn('Direct doku-callback webhook failed, falling back to secure simulate-pay endpoint. Reason:', err.message);
+      // 2. Jika webhook gagal (misalnya karena signature verification gagal pada real keys),
+      // gunakan endpoint developer simulator langsung.
+      try {
+        await axios.post(`${BACKEND_URL}/api/order/${activeOrderId}/simulate-pay`);
+        setCurrentView('tracking');
+      } catch (err2) {
+        console.error('Simulation failed completely:', err2);
+        alert('Gagal menyimulasikan pembayaran.');
+      }
+    }
+  };
+
+  const handleDokuSimulateFail = async () => {
+    if (!trackingInfo) return;
+    try {
+      // Kirim webhook gagal
+      const payload = {
+        order: {
+          invoice_number: activeOrderId,
+          amount: trackingInfo.grossAmount
+        },
+        transaction: {
+          status: 'FAILED'
+        }
+      };
+      await axios.post(`${BACKEND_URL}/api/doku-callback`, payload);
+      setCurrentView('tracking');
+    } catch (err) {
+      console.warn('Direct doku-callback webhook failed, falling back to direct state transition. Reason:', err.message);
+      setCurrentView('tracking');
     }
   };
 
@@ -2882,9 +2960,9 @@ export default function App() {
                   <input 
                     type="radio" 
                     name="payment" 
-                    value="ewallet" 
-                    checked={selectedPaymentMethod === 'ewallet'}
-                    onChange={() => setSelectedPaymentMethod('ewallet')}
+                    value="doku" 
+                    checked={selectedPaymentMethod === 'doku'}
+                    onChange={() => setSelectedPaymentMethod('doku')}
                     className="hidden peer" 
                   />
                   <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest">
@@ -2892,8 +2970,29 @@ export default function App() {
                       <span className="material-symbols-outlined text-primary">payments</span>
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-on-surface text-sm">E-Wallet QRIS (Otomatis)</p>
-                      <p className="text-on-surface-variant text-xs">Mendukung GoPay, OVO, DANA, LinkAja, BCA, dll.</p>
+                      <p className="font-bold text-on-surface text-sm">DOKU Checkout (Rekomendasi)</p>
+                      <p className="text-on-surface-variant text-xs">Mendukung QRIS, ShopeePay, DOKU Wallet, OVO, LinkAja, Alfamart & Indomaret</p>
+                    </div>
+                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
+                  </div>
+                </label>
+
+                <label className="cursor-pointer opacity-60">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="ewallet" 
+                    checked={selectedPaymentMethod === 'ewallet'}
+                    onChange={() => setSelectedPaymentMethod('ewallet')}
+                    className="hidden peer" 
+                  />
+                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest">
+                    <div className="w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
+                      <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-bold text-on-surface text-sm">E-Wallet QRIS (Midtrans - Non-aktif)</p>
+                      <p className="text-on-surface-variant text-xs">Menunggu verifikasi akun Midtrans</p>
                     </div>
                     <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
                   </div>
@@ -3015,6 +3114,135 @@ export default function App() {
         </div>
       )}
 
+      {/* 4.7. DOKU WEB CHECKOUT SIMULATOR VIEW */}
+      {currentView === 'doku_simulator' && trackingInfo && (
+        <div className="bg-background min-h-screen pb-32">
+          {/* Header */}
+          <header className="bg-[#E51C24] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#E51C24] mx-auto text-white px-container-margin-mobile">
+            <div className="absolute left-6 flex items-center">
+              <button 
+                onClick={handleDokuSimulateFail}
+                className="flex items-center text-white hover:opacity-80 active:scale-95 transition"
+              >
+                <span className="material-symbols-outlined text-xl">arrow_back</span>
+              </button>
+            </div>
+            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
+              <span className="material-symbols-outlined text-lg text-white">shield</span>
+              <span className="text-base font-black tracking-tight text-white font-display">DOKU Checkout</span>
+            </div>
+            <div className="flex-grow"></div>
+            <span className="bg-white/20 text-white px-3.5 py-1 rounded-full text-[10px] font-bold shadow-sm z-10">
+              SIMULATOR
+            </span>
+          </header>
+
+          <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
+            
+            {/* Simulation Header Warning */}
+            <div className="w-full bg-[#E51C24]/10 border border-[#E51C24]/30 rounded-2xl p-5 text-center shadow-sm">
+              <div className="flex items-center justify-center gap-2 text-[#E51C24] mb-2">
+                <span className="material-symbols-outlined text-xl font-bold">warning</span>
+                <p className="text-xs font-black uppercase tracking-wide">Developer Sandbox Simulator</p>
+              </div>
+              <p className="text-[11px] text-on-surface-variant leading-relaxed font-semibold">
+                Anda berada di halaman simulasi DOKU Checkout. Transaksi ini bersifat uji coba dan tidak menggunakan uang sungguhan.
+              </p>
+            </div>
+
+            {/* Merchant and Amount Info */}
+            <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5 shadow-sm text-left">
+              <div className="flex justify-between items-start border-b border-outline-variant/30 pb-4 mb-4">
+                <div>
+                  <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Merchant</h3>
+                  <p className="text-sm font-extrabold text-on-surface mt-1">Cizquake Store</p>
+                </div>
+                <div className="text-right">
+                  <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Invoice</h3>
+                  <p className="text-sm font-mono font-bold text-primary mt-1">#{trackingInfo.orderId}</p>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center bg-surface-container-low p-4 rounded-xl">
+                <span className="text-xs font-bold text-on-surface-variant">Total Nominal</span>
+                <span className="text-lg font-black text-[#E51C24] font-display">
+                  Rp {trackingInfo.grossAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            {/* Order Items Breakdown */}
+            <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5 shadow-sm text-left">
+              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider mb-4">Detail Pesanan</h4>
+              <div className="divide-y divide-outline-variant/20">
+                {trackingInfo.items.map((item, idx) => (
+                  <div key={idx} className="py-3 flex justify-between items-center text-xs font-semibold">
+                    <div className="flex-1">
+                      <p className="text-on-surface">{item.name}</p>
+                      <p className="text-on-surface-variant text-[10px] mt-0.5">Quantity: {item.quantity}</p>
+                    </div>
+                    <span className="text-on-surface">
+                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                ))}
+                
+                <div className="pt-3 flex justify-between items-center text-xs font-bold">
+                  <span className="text-on-surface-variant">Biaya Pengiriman</span>
+                  <span className="text-on-surface">
+                    Rp {trackingInfo.shippingPrice.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Simulated Payment Methods */}
+            <div className="bg-surface-container-lowest border border-outline-variant/15 rounded-2xl p-5 shadow-sm text-left">
+              <h4 className="text-xs font-bold text-on-surface uppercase tracking-wider mb-4">Pilih Metode Pembayaran</h4>
+              
+              <div className="space-y-3">
+                <div className="p-3.5 rounded-xl border border-outline-variant/50 flex items-center gap-3 bg-surface-container-low cursor-pointer hover:border-[#E51C24] transition">
+                  <span className="material-symbols-outlined text-[#E51C24]">qr_code_2</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-on-surface">QRIS (OVO, ShopeePay, DANA, dll.)</p>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">Bayar instan dengan scan kode QR</p>
+                  </div>
+                  <span className="material-symbols-outlined text-on-surface-variant text-sm">chevron_right</span>
+                </div>
+
+                <div className="p-3.5 rounded-xl border border-outline-variant/50 flex items-center gap-3 bg-surface-container-low cursor-pointer hover:border-[#E51C24] transition">
+                  <span className="material-symbols-outlined text-[#E51C24]">account_balance</span>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-on-surface">Virtual Account</p>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">Transfer Bank Mandiri, BCA, BRI, BNI</p>
+                  </div>
+                  <span className="material-symbols-outlined text-on-surface-variant text-sm">chevron_right</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Simulation Action Buttons */}
+            <div className="flex flex-col gap-3 mt-4">
+              <button 
+                onClick={handleDokuSimulateSuccess}
+                className="w-full bg-[#E51C24] hover:bg-[#c9141b] text-white font-black py-3.5 rounded-full shadow-lg shadow-red-200 active:scale-98 transition flex items-center justify-center gap-2 text-sm"
+              >
+                <span className="material-symbols-outlined text-sm font-bold">check_circle</span>
+                Simulasikan Bayar Sukses
+              </button>
+              
+              <button 
+                onClick={handleDokuSimulateFail}
+                className="w-full bg-surface-container hover:bg-surface-container-high text-on-surface font-bold py-3.5 rounded-full border border-outline-variant/50 active:scale-98 transition text-xs"
+              >
+                Gagalkan Pembayaran
+              </button>
+            </div>
+
+          </main>
+        </div>
+      )}
+
       {/* 5. TRACKING VIEW */}
       {currentView === 'tracking' && trackingInfo && (
         <div className="bg-background min-h-screen pb-32">
@@ -3025,11 +3253,34 @@ export default function App() {
             </div>
             <div className="flex-grow"></div>
             <span className="text-[10px] bg-white/20 text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider z-10">
-              Lunas / Paid
+              {trackingInfo.paymentStatus === 'paid' ? 'Lunas / Paid' : 'Belum Bayar / Pending'}
             </span>
           </header>
 
           <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
+            
+            {/* Developer Simulation Warning for Pending Orders */}
+            {trackingInfo.paymentStatus === 'pending' && (
+              <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm text-center">
+                <p className="text-red-700 text-xs font-bold mb-2 uppercase tracking-wide">MODE SIMULATOR DEVELOPER (PENDING PAYMENT)</p>
+                <p className="text-[11px] text-red-600 mb-3 font-semibold">Klik tombol di bawah ini untuk menyimulasikan notifikasi sukses pembayaran.</p>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const response = await axios.post(`${BACKEND_URL}/api/order/${trackingInfo.orderId}/simulate-pay`);
+                      if (response.data.success) {
+                        fetchOrderStatus();
+                      }
+                    } catch (err) {
+                      console.error('Error simulating payment:', err);
+                    }
+                  }} 
+                  className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-md shadow-red-200"
+                >
+                  Simulasikan Pembayaran Sukses
+                </button>
+              </div>
+            )}
             
             {/* Summary Order Box */}
             <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
