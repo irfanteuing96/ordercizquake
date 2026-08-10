@@ -60,16 +60,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Initialize Midtrans & Biteship Clients
-const isMockMidtrans = !process.env.MIDTRANS_SERVER_KEY || process.env.MIDTRANS_SERVER_KEY.includes('YOUR_SANDBOX');
+const isMockMidtrans = !process.env.MIDTRANS_SERVER_KEY || 
+                       process.env.MIDTRANS_SERVER_KEY.includes('YOUR_SANDBOX') ||
+                       process.env.MIDTRANS_SERVER_KEY.includes('YOUR_PRODUCTION') ||
+                       process.env.MIDTRANS_SERVER_KEY.includes('YOUR_MIDTRANS') ||
+                       process.env.MIDTRANS_SERVER_KEY.trim() === '';
 const isMockBiteship = !process.env.BITESHIP_API_KEY || process.env.BITESHIP_API_KEY.includes('YOUR_SANDBOX');
 
 let midtransCoreApi = null;
 if (!isMockMidtrans) {
+  const isMidtransProd = process.env.MIDTRANS_IS_PRODUCTION === 'true';
   midtransCoreApi = new midtransClient.CoreApi({
-    isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+    isProduction: isMidtransProd,
     serverKey: process.env.MIDTRANS_SERVER_KEY,
     clientKey: process.env.MIDTRANS_CLIENT_KEY
   });
+  console.log(`[Midtrans] Initialized successfully in ${isMidtransProd ? 'PRODUCTION' : 'SANDBOX'} mode.`);
+} else {
+  console.log('[Midtrans] Server key missing or placeholder. Running in Midtrans Simulator Mode.');
 }
 
 // Initialize Supabase Client (if keys are provided)
@@ -1228,10 +1236,14 @@ app.post('/api/checkout', async (req, res) => {
     };
 
     const chargeResponse = await midtransCoreApi.charge(transactionDetails);
+    console.log('[Midtrans QRIS Charge Response]:', JSON.stringify(chargeResponse));
 
-    // QRIS URL ada di actions[0] atau actions[1] yang namanya "generate-qr-code"
-    const qrAction = chargeResponse.actions.find(act => act.name === 'generate-qr-code');
-    const paymentQrUrl = qrAction ? qrAction.url : '';
+    // QRIS URL ada di actions yang bernama "generate-qr-code", atau buat dari qr_string jika ada
+    const qrAction = chargeResponse.actions ? chargeResponse.actions.find(act => act.name === 'generate-qr-code') : null;
+    let paymentQrUrl = qrAction ? qrAction.url : '';
+    if (!paymentQrUrl && chargeResponse.qr_string) {
+      paymentQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(chargeResponse.qr_string)}`;
+    }
 
     // Update order dengan data Midtrans
     newOrder.paymentQrUrl = paymentQrUrl;
@@ -1251,9 +1263,16 @@ app.post('/api/checkout', async (req, res) => {
       expiryTime: newOrder.paymentExpiry
     });
   } catch (error) {
-    console.warn('Real Midtrans API failed. Falling back to Mock QRIS. Reason:', error.message);
+    console.warn('Real Midtrans API failed. Reason:', error.message);
+    let midtransErrorMessage = error.message;
+    if (error.ApiResponse) {
+      console.warn('Midtrans API Error Details:', JSON.stringify(error.ApiResponse));
+      if (error.ApiResponse.status_message) {
+        midtransErrorMessage = error.ApiResponse.status_message;
+      }
+    }
 
-    // Fallback ke Mock QRIS agar aplikasi tidak macet saat testing
+    // Fallback ke Mock QRIS agar aplikasi tidak crash
     const qrisUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-${orderId}-${grossAmount}`;
 
     newOrder.paymentQrUrl = qrisUrl;
@@ -1271,7 +1290,7 @@ app.post('/api/checkout', async (req, res) => {
       paymentType: 'qris_mock_fallback',
       paymentQrUrl: qrisUrl,
       expiryTime: newOrder.paymentExpiry,
-      warning: 'Midtrans API error. Sistem otomatis beralih ke QRIS simulator.'
+      warning: `Midtrans API Error (${midtransErrorMessage}). Pastikan metode QRIS/GoPay sudah diaktifkan di Dashboard Midtrans Production -> Payment Channels.`
     });
   }
 });

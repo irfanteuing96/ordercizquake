@@ -150,7 +150,7 @@ export default function App() {
   const [detailedAddress, setDetailedAddress] = useState(() => localStorage.getItem('cizquake_customer_detailed_address') || '');
   const [couriers, setCouriers] = useState([]);
   const [selectedCourier, setSelectedCourier] = useState(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('doku');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('qris');
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
@@ -404,12 +404,12 @@ export default function App() {
     }
   }, [selectedArea, cart]);
 
-  // Real-time tracking polling when in tracking view or Doku simulator
+  // Real-time tracking polling when in tracking view, payment view, or Doku simulator
   useEffect(() => {
     let pollInterval;
-    if ((currentView === 'tracking' || currentView === 'doku_simulator') && activeOrderId) {
+    if ((currentView === 'tracking' || currentView === 'doku_simulator' || currentView === 'payment') && activeOrderId) {
       fetchOrderStatus(); // initial fetch
-      if (currentView === 'tracking') {
+      if (currentView === 'tracking' || currentView === 'payment') {
         pollInterval = setInterval(fetchOrderStatus, 3000); // poll every 3s
       }
     }
@@ -533,6 +533,9 @@ export default function App() {
       const response = await axios.get(`${BACKEND_URL}/api/order/${activeOrderId}`);
       if (response.data.success) {
         setTrackingInfo(response.data.order);
+        if (currentView === 'payment' && response.data.order && response.data.order.paymentStatus === 'paid') {
+          setCurrentView('tracking');
+        }
       }
     } catch (err) {
       console.error('Error checking order status:', err);
@@ -1186,36 +1189,50 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Hero Section */}
-                <section className="mb-6">
-                  <div className="relative w-full aspect-square rounded-none overflow-hidden group cursor-pointer transition-transform duration-500 shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent z-10"></div>
-                    <img 
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      alt={promoBanner.title} 
-                      src={promoBanner.image} 
-                    />
-                    <div className="absolute bottom-0 left-0 p-6 z-20 w-full text-left">
-                      <div className="flex flex-col gap-1">
-                        <span className="cizquake-featured-badge w-fit mb-2">Featured Favorite</span>
-                        <h2 className="font-display text-xl text-white leading-tight font-extrabold">{promoBanner.title}</h2>
-                        <p className="text-white/80 text-[10px] font-semibold leading-relaxed mb-2">{promoBanner.subtitle}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <span className="font-display text-[#fabd00] font-bold text-lg">Rp 10.000</span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
-                              if (item) addToCart(item);
-                            }}
-                            className="cizquake-btn-order-now transition-all active:scale-90"
-                          >
-                            <span className="material-symbols-outlined text-sm font-bold">shopping_bag</span>
-                            Order Now
-                          </button>
-                        </div>
+                {/* Yellow Text Hero Section with Duck Mascot */}
+                <section className="mb-6 bg-[#fabd00] p-6 text-left relative overflow-hidden shadow-sm">
+                  {/* Badge */}
+                  <div className="inline-flex items-center gap-2 bg-[#28190E] text-[#fabd00] text-[11px] font-black tracking-wider uppercase px-4 py-1.5 rounded-full mb-4 shadow-sm">
+                    <span className="text-xs">🐤</span>
+                    <span>CAMILAN VIRAL BARU</span>
+                  </div>
+
+                  {/* Headline */}
+                  <h1 className="font-display font-black text-2xl sm:text-3xl text-[#28190E] leading-[1.25] mb-3 tracking-tight">
+                    Renyah di luar,<br />creamy cheese di dalam.
+                  </h1>
+
+                  {/* Subtext */}
+                  <p className="text-[#3d2314] text-xs sm:text-sm font-semibold leading-relaxed mb-6 max-w-sm">
+                    Biskuit crunchy isi krim keju melimpah. Satu gigitan, langsung nagih — ini rasa yang bikin CizQuake goyang.
+                  </p>
+
+                  {/* Duck Mascot Card & CTA Button Row */}
+                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#28190E]/15">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-[#28190E] shadow-md bg-white flex-shrink-0">
+                        <img 
+                          src="/img/duck_box.png" 
+                          alt="CizQuake Duck Mascot Box" 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-display font-extrabold text-xs text-[#28190E] leading-tight">CizQuake Box</p>
+                        <p className="font-display font-black text-sm text-[#785900]">Rp 10.000</p>
                       </div>
                     </div>
+
+                    <button 
+                      onClick={() => {
+                        const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
+                        if (item) addToCart(item);
+                      }}
+                      className="bg-[#28190E] hover:bg-[#3d2314] text-[#fabd00] px-4 py-3 rounded-full font-display font-extrabold text-xs tracking-wider uppercase shadow-md active:scale-95 transition-all flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-sm font-bold">shopping_bag</span>
+                      <span>Order Now</span>
+                    </button>
                   </div>
                 </section>
 
@@ -2956,6 +2973,32 @@ export default function App() {
                 Metode Pembayaran
               </h2>
               <div className="grid grid-cols-1 gap-3">
+                {/* QRIS Midtrans Option - Primary & Active */}
+                <label className="cursor-pointer">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="qris" 
+                    checked={selectedPaymentMethod === 'qris'}
+                    onChange={() => setSelectedPaymentMethod('qris')}
+                    className="hidden peer" 
+                  />
+                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50">
+                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined text-primary font-bold">qr_code_scanner</span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-on-surface text-sm">QRIS Instan (Midtrans - Aktif)</p>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Rekomendasi</span>
+                      </div>
+                      <p className="text-on-surface-variant text-xs mt-0.5">Scan & bayar instan via GoPay, OVO, ShopeePay, BCA, Mandiri, DANA, dll.</p>
+                    </div>
+                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
+                  </div>
+                </label>
+
+                {/* DOKU Option */}
                 <label className="cursor-pointer">
                   <input 
                     type="radio" 
@@ -2965,34 +3008,13 @@ export default function App() {
                     onChange={() => setSelectedPaymentMethod('doku')}
                     className="hidden peer" 
                   />
-                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest">
+                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50">
                     <div className="w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
                       <span className="material-symbols-outlined text-primary">payments</span>
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-on-surface text-sm">DOKU Checkout (Rekomendasi)</p>
-                      <p className="text-on-surface-variant text-xs">Mendukung QRIS, ShopeePay, DOKU Wallet, OVO, LinkAja, Alfamart & Indomaret</p>
-                    </div>
-                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
-                  </div>
-                </label>
-
-                <label className="cursor-pointer opacity-60">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="ewallet" 
-                    checked={selectedPaymentMethod === 'ewallet'}
-                    onChange={() => setSelectedPaymentMethod('ewallet')}
-                    className="hidden peer" 
-                  />
-                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest">
-                    <div className="w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
-                      <span className="material-symbols-outlined text-primary">account_balance_wallet</span>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-on-surface text-sm">E-Wallet QRIS (Midtrans - Non-aktif)</p>
-                      <p className="text-on-surface-variant text-xs">Menunggu verifikasi akun Midtrans</p>
+                      <p className="font-bold text-on-surface text-sm">DOKU Checkout</p>
+                      <p className="text-on-surface-variant text-xs mt-0.5">Mendukung ShopeePay, DOKU Wallet, Alfamart & Indomaret</p>
                     </div>
                     <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
                   </div>
@@ -3054,17 +3076,27 @@ export default function App() {
 
           <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col items-center">
             
-            {/* Developer Simulation Warning */}
-            <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-center shadow-sm">
-              <p className="text-red-700 text-xs font-bold mb-2 uppercase tracking-wide">MODE SIMULATOR DEVELOPER</p>
-              <p className="text-[11px] text-red-600 mb-3 font-semibold">Klik tombol di bawah ini untuk menyimulasikan notifikasi sukses pembayaran QRIS tanpa memindai kode.</p>
-              <button 
-                onClick={triggerSimulatePayment} 
-                className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-md shadow-red-200"
-              >
-                Simulasikan Pembayaran Sukses
-              </button>
-            </div>
+            {/* Midtrans Channel Error Warning */}
+            {paymentInfo.warning && (
+              <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-center shadow-sm">
+                <p className="text-red-800 text-xs font-bold mb-1 uppercase tracking-wide">⚠️ Perhatian Midtrans</p>
+                <p className="text-[11px] text-red-700 leading-relaxed font-semibold">{paymentInfo.warning}</p>
+              </div>
+            )}
+
+            {/* Developer Simulation Warning (Only shown when running in mock mode) */}
+            {paymentInfo.paymentType?.includes('mock') && (
+              <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center shadow-sm">
+                <p className="text-amber-800 text-xs font-bold mb-1 uppercase tracking-wide">MODE SIMULATOR DEVELOPER</p>
+                <p className="text-[11px] text-amber-700 mb-3 font-semibold">Menggunakan simulator QRIS. Klik tombol di bawah untuk menyimulasikan status sukses.</p>
+                <button 
+                  onClick={triggerSimulatePayment} 
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-sm"
+                >
+                  Simulasikan Pembayaran Sukses
+                </button>
+              </div>
+            )}
 
             <div className="text-center mb-6">
               <h3 className="text-xs font-bold text-on-surface-variant/80 uppercase">Total Nominal Pembayaran</h3>
