@@ -226,3 +226,88 @@ body {
     }
 }
 
+/* ============ Entrance & Scroll Animations ============ */
+
+@keyframes cizquake-fade-up {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cizquake-fade-down {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cizquake-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes cizquake-pop-in {
+    0% { opacity: 0; transform: scale(0.9) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes cizquake-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+/* Entrance animation played once when a screen first mounts (e.g. app opened / tab switched) */
+.cizquake-enter-down {
+    animation: cizquake-fade-down 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cizquake-enter-up {
+    animation: cizquake-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cizquake-enter-up-delay-1 { animation: cizquake-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+.cizquake-enter-up-delay-2 { animation: cizquake-fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+
+/* Gentle continuous float, used sparingly on hero imagery */
+.cizquake-float {
+    animation: cizquake-float 4.5s ease-in-out infinite;
+}
+
+/* Scroll-triggered reveal: hidden until the element enters the viewport, then transitions in */
+.cizquake-reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.cizquake-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cizquake-reveal-scale {
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+
+.cizquake-reveal-scale.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .cizquake-enter-down,
+    .cizquake-enter-up,
+    .cizquake-enter-up-delay-1,
+    .cizquake-enter-up-delay-2,
+    .cizquake-float,
+    .cizquake-reveal,
+    .cizquake-reveal-scale {
+        animation: none !important;
+        transition: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+

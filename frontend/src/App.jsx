@@ -1,5 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+
+// Reveal: wraps a section so it fades/slides into view the first time it
+// scrolls into the viewport. Pure CSS + IntersectionObserver, no extra deps.
+function Reveal({ children, className = '', delay = 0, variant = 'up', as: Tag = 'div' }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+    let observer;
+    let cancelled = false;
+    let raf1 = 0;
+    let raf2 = 0;
+
+    // Defer setup until web fonts are loaded and layout has had a couple of
+    // frames to settle — otherwise a card far below the fold can be wrongly
+    // marked visible while the page is still shorter than its final layout
+    // (e.g. before fallback-font text reflows to the real webfont metrics).
+    const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    fontsReady.then(() => {
+      if (cancelled) return;
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          if (cancelled) return;
+          observer = new IntersectionObserver(
+            (entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  setVisible(true);
+                  observer.disconnect();
+                }
+              });
+            },
+            { threshold: 0.15, rootMargin: '0px 0px -10% 0px' }
+          );
+          observer.observe(node);
+        });
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (observer) observer.disconnect();
+    };
+  }, []);
+
+  const base = variant === 'scale' ? 'cizquake-reveal-scale' : 'cizquake-reveal';
+  return (
+    <Tag
+      ref={ref}
+      className={`${base}${visible ? ' is-visible' : ''}${className ? ` ${className}` : ''}`}
+      style={{ transitionDelay: visible ? `${delay}ms` : '0ms' }}
+    >
+      {children}
+    </Tag>
+  );
+}
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (
   window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -1157,23 +1217,23 @@ export default function App() {
           {/* TAB 1: HOME */}
           {activeTab === 'home' && (
             <>
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
+              <header className="cizquake-enter-down bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <div className="flex items-center gap-3 z-10">
-                  <img 
-                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0" 
-                    alt="Cizquake Logo" 
+                  <img
+                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0"
+                    alt="Cizquake Logo"
                     src="/logo.png"
                   />
                 </div>
-                
+
                 <span className="font-display text-base font-black tracking-tight text-white flex items-center gap-0.5 absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
                   Cizquake Express
                   <span className="material-symbols-outlined text-white text-base font-black leading-none" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                 </span>
-                
+
                 <div className="flex-1"></div>
-                
-                <button 
+
+                <button
                   onClick={() => setActiveTab('profile')}
                   className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white z-10"
                 >
@@ -1183,14 +1243,14 @@ export default function App() {
 
               <main className="mt-16 pb-32">
                 {/* Neon Running Text (Marquee) */}
-                <div className="cizquake-marquee-container">
+                <div className="cizquake-enter-down cizquake-marquee-container">
                   <div className="cizquake-marquee-content">
                     🧀 Cizquake Dessert Creamy & Lembut - Sensasi Lumer di Mulut yang Bikin Ketagihan! ✨ Pengiriman Instant Cepat Sampai! 🚀 Pesan Sekarang Sebelum Kehabisan Varian Favoritmu! 🔥
                   </div>
                 </div>
 
                 {/* Yellow Text Hero Section with Large Duck Mascot Box */}
-                <section className="mb-6 bg-[#fabd00] p-6 text-left relative overflow-hidden shadow-sm flex flex-col gap-4">
+                <section className="cizquake-enter-up mb-6 bg-[#fabd00] p-6 text-left relative overflow-hidden shadow-sm flex flex-col gap-4">
                   {/* Badge */}
                   <div>
                     <div className="inline-flex items-center gap-2 bg-[#28190E] text-[#fabd00] text-[11px] font-black tracking-wider uppercase px-4 py-1.5 rounded-full shadow-sm">
@@ -1210,11 +1270,11 @@ export default function App() {
                   </p>
 
                   {/* Large Showcase Image (Hand holding CizQuake Box) */}
-                  <div className="w-full h-64 sm:h-80 rounded-2xl overflow-hidden border-4 border-[#28190E] shadow-xl bg-white relative group cursor-pointer my-1">
-                    <img 
-                      src="/img/duck_box.png" 
-                      alt="CizQuake Box" 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                  <div className="cizquake-float w-full h-64 sm:h-80 rounded-2xl overflow-hidden border-4 border-[#28190E] shadow-xl bg-white relative group cursor-pointer my-1">
+                    <img
+                      src="/img/duck_box.png"
+                      alt="CizQuake Box"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   </div>
 
@@ -1225,7 +1285,7 @@ export default function App() {
                       <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
                     </div>
 
-                    <button 
+                    <button
                       onClick={() => {
                         const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
                         if (item) addToCart(item);
@@ -1239,7 +1299,7 @@ export default function App() {
                 </section>
 
                 {/* Categories scroll */}
-                <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-2.5">
+                <Reveal as="section" className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-2.5">
                   {['All menu', 'Mini box', 'Medium box', 'Beverages', 'Bundling', 'Gift'].map(cat => (
                     <button
                       key={cat}
@@ -1253,10 +1313,10 @@ export default function App() {
                       {cat}
                     </button>
                   ))}
-                </section>
+                </Reveal>
 
                 {/* Popular Menu (Grid layout) */}
-                <section className="px-container-margin-mobile mb-6">
+                <Reveal as="section" className="px-container-margin-mobile mb-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-display text-md text-[#2b1613] font-extrabold">Popular Menu</h3>
                     <button onClick={() => setActiveTab('menu')} className="text-[#785900] font-label-lg font-extrabold hover:underline text-xs">See All</button>
@@ -1264,9 +1324,10 @@ export default function App() {
 
                   {/* 2-Column Grid */}
                   <div className="grid grid-cols-2 gap-3">
-                    {filteredMenuItems.map(product => (
-                      <div 
-                        key={product.id} 
+                    {filteredMenuItems.map((product, idx) => (
+                      <Reveal
+                        key={product.id}
+                        delay={(idx % 4) * 80}
                         className={`cizquake-card overflow-hidden group flex flex-col h-full transition-all ${
                           !product.inStock ? 'opacity-70' : ''
                         }`}
@@ -1316,14 +1377,14 @@ export default function App() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </Reveal>
                     ))}
                   </div>
-                </section>
+                </Reveal>
 
                 {/* Promo Banner */}
                 {selectedCategory === 'All Flavors' && (
-                  <section className="px-container-margin-mobile">
+                  <Reveal as="section" variant="scale" className="px-container-margin-mobile">
                     <div className="bg-[#ffbc97]/30 rounded-2xl p-5 flex items-center justify-between relative overflow-hidden text-left border border-[#ffbc97]/20">
                       <div className="z-10 relative">
                         <h3 className="font-display text-sm text-[#763300] mb-1 font-bold">Sweet First Order?</h3>
@@ -1339,7 +1400,7 @@ export default function App() {
                         />
                       </div>
                     </div>
-                  </section>
+                  </Reveal>
                 )}
               </main>
             </>
@@ -1349,20 +1410,20 @@ export default function App() {
           {activeTab === 'menu' && (
             <>
               {/* Header */}
-              <header className="bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
+              <header className="cizquake-enter-down bg-[#fabd00] fixed top-0 left-0 right-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] mx-auto text-white px-container-margin-mobile">
                 <div className="flex items-center gap-3 z-10">
-                  <img 
-                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0" 
-                    alt="Cizquake Logo" 
+                  <img
+                    className="h-9 w-auto object-contain filter brightness-0 invert flex-shrink-0"
+                    alt="Cizquake Logo"
                     src="/logo.png"
                   />
                 </div>
-                
+
                 <span className="font-display text-base font-black tracking-tight text-white whitespace-nowrap absolute left-1/2 -translate-x-1/2">Menu Cizquake</span>
-                
+
                 <div className="flex-1"></div>
-                
-                <button 
+
+                <button
                   onClick={() => setActiveTab('profile')}
                   className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 active:scale-95 transition-all text-white z-10"
                 >
@@ -1372,12 +1433,12 @@ export default function App() {
 
               <main className="mt-16 pt-4 pb-32">
                 {/* Search Input */}
-                <section className="px-container-margin-mobile mb-6">
+                <section className="cizquake-enter-up px-container-margin-mobile mb-6">
                   <div className="relative flex items-center">
                     <span className="material-symbols-outlined absolute left-4 text-on-surface-variant">search</span>
-                    <input 
-                      className="w-full pl-12 pr-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary-container font-body-md text-on-surface placeholder-on-surface-variant/60 transition-all outline-none" 
-                      placeholder="Cari cizquake favoritmu..." 
+                    <input
+                      className="w-full pl-12 pr-4 py-4 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary-container font-body-md text-on-surface placeholder-on-surface-variant/60 transition-all outline-none"
+                      placeholder="Cari cizquake favoritmu..."
                       type="text"
                       value={searchQuery}
                       onChange={e => setSearchQuery(e.target.value)}
@@ -1386,14 +1447,14 @@ export default function App() {
                 </section>
 
                 {/* Menu Category Chips */}
-                <section className="mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-3">
+                <section className="cizquake-enter-up-delay-1 mb-6 px-container-margin-mobile overflow-x-auto hide-scrollbar flex gap-3">
                   {['All menu', 'Mini box', 'Medium box', 'Beverages', 'Bundling', 'Gift'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedMenuCategory(cat)}
                       className={`px-5 py-2 rounded-full font-label-lg whitespace-nowrap transition-all active:scale-95 text-xs font-bold ${
-                        selectedMenuCategory === cat 
-                          ? 'bg-primary-container text-on-primary-container shadow-sm font-bold' 
+                        selectedMenuCategory === cat
+                          ? 'bg-primary-container text-on-primary-container shadow-sm font-bold'
                           : 'bg-secondary-container/30 text-on-surface-variant'
                       }`}
                     >
@@ -1405,11 +1466,12 @@ export default function App() {
                 {/* Popular Picks (List Layout) */}
                 <section className="px-container-margin-mobile">
                   <h2 className="font-headline-md text-headline-md text-primary mb-4 text-left font-bold">Popular Picks</h2>
-                  
+
                   <div className="flex flex-col gap-4">
-                    {filteredMenuTabItems.map(product => (
-                      <div 
-                        key={product.id} 
+                    {filteredMenuTabItems.map((product, idx) => (
+                      <Reveal
+                        key={product.id}
+                        delay={(idx % 6) * 60}
                         className={`bg-surface-container-lowest rounded-lg p-4 cake-card-shadow flex gap-4 items-center group transition-all border border-on-surface/5 text-left ${
                           !product.inStock ? 'opacity-70' : ''
                         }`}
@@ -1446,7 +1508,7 @@ export default function App() {
                             )}
                           </div>
                         </div>
-                      </div>
+                      </Reveal>
                     ))}
                   </div>
                 </section>
