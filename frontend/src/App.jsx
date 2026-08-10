@@ -1189,38 +1189,40 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Yellow Text Hero Section with Duck Mascot */}
-                <section className="mb-6 bg-[#fabd00] p-6 text-left relative overflow-hidden shadow-sm">
+                {/* Yellow Text Hero Section with Large Duck Mascot Box */}
+                <section className="mb-6 bg-[#fabd00] p-6 text-left relative overflow-hidden shadow-sm flex flex-col gap-4">
                   {/* Badge */}
-                  <div className="inline-flex items-center gap-2 bg-[#28190E] text-[#fabd00] text-[11px] font-black tracking-wider uppercase px-4 py-1.5 rounded-full mb-4 shadow-sm">
-                    <span className="text-xs">🐤</span>
-                    <span>CAMILAN VIRAL BARU</span>
+                  <div>
+                    <div className="inline-flex items-center gap-2 bg-[#28190E] text-[#fabd00] text-[11px] font-black tracking-wider uppercase px-4 py-1.5 rounded-full shadow-sm">
+                      <span className="text-xs">🐤</span>
+                      <span>CAMILAN VIRAL BARU</span>
+                    </div>
                   </div>
 
                   {/* Headline */}
-                  <h1 className="font-display font-black text-2xl sm:text-3xl text-[#28190E] leading-[1.25] mb-3 tracking-tight">
+                  <h1 className="font-display font-black text-2xl sm:text-3xl text-[#28190E] leading-[1.2] tracking-tight">
                     Renyah di luar,<br />creamy cheese di dalam.
                   </h1>
 
                   {/* Subtext */}
-                  <p className="text-[#3d2314] text-xs sm:text-sm font-semibold leading-relaxed mb-6 max-w-sm">
+                  <p className="text-[#3d2314] text-xs sm:text-sm font-semibold leading-relaxed max-w-sm">
                     Biskuit crunchy isi krim keju melimpah. Satu gigitan, langsung nagih — ini rasa yang bikin CizQuake goyang.
                   </p>
 
-                  {/* Duck Mascot Card & CTA Button Row */}
-                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#28190E]/15">
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-[#28190E] shadow-md bg-white flex-shrink-0">
-                        <img 
-                          src="/img/duck_box.png" 
-                          alt="CizQuake Duck Mascot Box" 
-                          className="w-full h-full object-cover" 
-                        />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-display font-extrabold text-xs text-[#28190E] leading-tight">CizQuake Box</p>
-                        <p className="font-display font-black text-sm text-[#785900]">Rp 10.000</p>
-                      </div>
+                  {/* Large Showcase Image (Hand holding CizQuake Box) */}
+                  <div className="w-full h-64 sm:h-80 rounded-2xl overflow-hidden border-4 border-[#28190E] shadow-xl bg-white relative group cursor-pointer my-1">
+                    <img 
+                      src="/img/duck_box.png" 
+                      alt="CizQuake Box" 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  </div>
+
+                  {/* Price & Order Now CTA Row */}
+                  <div className="flex items-center justify-between gap-4 pt-2 border-t border-[#28190E]/15">
+                    <div>
+                      <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Promo</p>
+                      <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
                     </div>
 
                     <button 
@@ -1228,7 +1230,7 @@ export default function App() {
                         const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
                         if (item) addToCart(item);
                       }}
-                      className="bg-[#28190E] hover:bg-[#3d2314] text-[#fabd00] px-4 py-3 rounded-full font-display font-extrabold text-xs tracking-wider uppercase shadow-md active:scale-95 transition-all flex items-center gap-1.5 flex-shrink-0"
+                      className="bg-[#28190E] hover:bg-[#3d2314] text-[#fabd00] px-6 py-3.5 rounded-full font-display font-black text-xs tracking-wider uppercase shadow-lg active:scale-95 transition-all flex items-center gap-2"
                     >
                       <span className="material-symbols-outlined text-sm font-bold">shopping_bag</span>
                       <span>Order Now</span>
