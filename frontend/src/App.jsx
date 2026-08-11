@@ -3123,7 +3123,7 @@ export default function App() {
         </div>
       )}
 
-      {/* 4. PAYMENT VIEW (QRIS DISPLAY) */}
+      {/* 4. PAYMENT VIEW (STATIC QRIS DISPLAY) */}
       {currentView === 'payment' && paymentInfo && (
         <div className="bg-background min-h-screen pb-32">
           <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile">
@@ -3140,71 +3140,71 @@ export default function App() {
 
           <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col items-center">
             
-            {/* Midtrans Channel Error Warning */}
-            {paymentInfo.warning && (
-              <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-center shadow-sm">
-                <p className="text-red-800 text-xs font-bold mb-1 uppercase tracking-wide">⚠️ Perhatian Midtrans</p>
-                <p className="text-[11px] text-red-700 leading-relaxed font-semibold">{paymentInfo.warning}</p>
-              </div>
-            )}
-
-            {/* Developer Simulation Warning (Only shown when running in mock mode) */}
-            {paymentInfo.paymentType?.includes('mock') && (
-              <div className="w-full bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-center shadow-sm">
-                <p className="text-amber-800 text-xs font-bold mb-1 uppercase tracking-wide">MODE SIMULATOR DEVELOPER</p>
-                <p className="text-[11px] text-amber-700 mb-3 font-semibold">Menggunakan simulator QRIS. Klik tombol di bawah untuk menyimulasikan status sukses.</p>
-                <button 
-                  onClick={triggerSimulatePayment} 
-                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-sm"
+            {/* Nominal Callout Card */}
+            <div className="w-full bg-surface-container-lowest p-5 rounded-2xl custom-shadow border border-primary/20 text-center mb-5">
+              <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Nominal Yang Harus Diinput</h3>
+              <div className="flex items-center justify-center gap-3 mt-2">
+                <p className="text-3xl font-black text-primary font-display">
+                  Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
+                </p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(paymentInfo.grossAmount);
+                    alert(`Nominal Rp ${paymentInfo.grossAmount.toLocaleString('id-ID')} berhasil disalin!`);
+                  }}
+                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition flex items-center gap-1 active:scale-95"
+                  title="Salin Angka Nominal"
                 >
-                  Simulasikan Pembayaran Sukses
+                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                  <span>Salin</span>
                 </button>
               </div>
-            )}
-
-            <div className="text-center mb-6">
-              <h3 className="text-xs font-bold text-on-surface-variant/80 uppercase">Total Nominal Pembayaran</h3>
-              <p className="text-3xl font-extrabold text-primary mt-1 font-display font-bold">
-                Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
+              <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-2 bg-surface-container px-3 py-1 rounded-full border border-outline-variant/30 inline-block">
+                ID Pesanan: {paymentInfo.orderId}
               </p>
-              <p className="text-[10px] text-on-surface-variant font-mono mt-2 bg-surface-container px-3 py-1 rounded-full border border-outline-variant/30 inline-block">ID Pesanan: {paymentInfo.orderId}</p>
             </div>
 
-            {/* QRIS Code Image */}
-            <div className="bg-surface-container-lowest p-6 rounded-lg custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
-              <div className="w-[220px] h-[220px] bg-white p-2 border border-outline-variant/40 rounded-lg flex items-center justify-center shadow-inner">
-                {paymentInfo.paymentQrUrl ? (
-                  <img 
-                    src={paymentInfo.paymentQrUrl} 
-                    alt="QRIS Code" 
-                    className="w-full h-full object-contain" 
-                  />
-                ) : (
-                  <div className="text-center flex flex-col items-center gap-2">
-                    <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
-                    <span className="text-[11px] text-on-surface-variant">Memuat QRIS...</span>
-                  </div>
-                )}
+            {/* Static QRIS Code Image Box */}
+            <div className="w-full bg-surface-container-lowest p-6 rounded-2xl custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
+              <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md">
+                <img 
+                  src="/qris.jpeg" 
+                  alt="QRIS Statis Cizquake" 
+                  className="w-full h-auto object-contain rounded-lg" 
+                />
               </div>
               
-              <div className="flex flex-col items-center text-center gap-1.5 mt-4 max-w-[280px]">
+              <div className="flex flex-col items-center text-center gap-1 mt-4 max-w-[320px]">
                 <p className="text-xs font-bold text-on-surface">Pindai QRIS Menggunakan Aplikasi Bank/E-Wallet</p>
-                <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.</p>
+                <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">
+                  Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.
+                </p>
               </div>
             </div>
 
             {/* Instructions */}
-            <div className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl p-5 mb-8 text-left">
-              <h4 className="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-1.5 font-bold">
-                <span className="material-symbols-outlined text-sm font-bold">info</span>
-                Petunjuk Pembayaran
+            <div className="w-full bg-amber-50/60 border border-amber-200 rounded-2xl p-5 mb-6 text-left shadow-sm">
+              <h4 className="text-xs font-bold text-amber-900 uppercase mb-3 flex items-center gap-1.5 font-bold">
+                <span className="material-symbols-outlined text-sm font-bold text-amber-700">info</span>
+                Petunjuk Pembayaran QRIS Statis
               </h4>
-              <ol className="text-left text-xs text-on-surface-variant space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
-                <li>Simpan kode QR dengan melakukan screenshot halaman ini, atau scan langsung menggunakan handphone lain.</li>
-                <li>Buka e-wallet (GoPay, DANA, OVO) atau aplikasi m-Banking Anda.</li>
-                <li>Pilih menu scan QR/Pay dan arahkan kamera ke kode QRIS di atas.</li>
-                <li>Setelah konfirmasi bayar sukses di simulator/aplikasi, halaman ini akan otomatis berganti ke halaman pelacakan pesanan.</li>
+              <ol className="text-left text-xs text-amber-950 space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
+                <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau aplikasi m-Banking Anda.</li>
+                <li>Pilih menu **Scan QR / Bayar** dan arahkan kamera ke kode QRIS di atas.</li>
+                <li><strong className="text-amber-900 font-extrabold">Masukkan nominal Rp {paymentInfo.grossAmount.toLocaleString('id-ID')} secara manual</strong> pada aplikasi Anda.</li>
+                <li>Setelah berhasil melakukan pembayaran, tekan tombol **"Saya Sudah Bayar"** di bawah ini.</li>
               </ol>
+            </div>
+
+            {/* Confirmation Button */}
+            <div className="w-full mb-8">
+              <button 
+                onClick={triggerSimulatePayment} 
+                className="w-full py-4 bg-primary hover:bg-primary/95 text-white font-display font-extrabold text-sm rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">check_circle</span>
+                <span>Saya Sudah Bayar (Konfirmasi Pembayaran)</span>
+              </button>
             </div>
           </main>
         </div>

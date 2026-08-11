@@ -1041,9 +1041,9 @@ app.post('/api/shipping/rates', async (req, res) => {
       company: 'cizquake',
       courier_name: 'Cizquake Driver',
       courier_code: 'cizquake',
-      courier_service_name: 'Armada Sendiri',
+      courier_service_name: 'Armada Sendiri (Flat Rate)',
       duration: durationLabel,
-      price: 5000
+      price: 7000
     }
   ];
   return res.json({ success: true, rates, distance: parseFloat(distance.toFixed(1)) });
@@ -1193,106 +1193,23 @@ app.post('/api/checkout', async (req, res) => {
     }
   }
 
-  // 2. Buat pembayaran QRIS di Midtrans
-  if (isMockMidtrans) {
-    console.log(`[Midtrans Mock] Generating QRIS for Order ID: ${orderId}, Amount: Rp ${grossAmount}`);
-    // Simulasikan kembalian QRIS. Kita gunakan QR Code URL simulator
-    const qrisUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-${orderId}-${grossAmount}`;
+  // 2. Buat pembayaran QRIS (Menggunakan QRIS Statis Sementara qris.jpeg)
+  const qrisUrl = '/qris.jpeg';
+  const expiry = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 menit exp
 
-    // update order dengan QR info
-    newOrder.paymentQrUrl = qrisUrl;
-    newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 menit exp
+  await updateOrderFields(orderId, {
+    paymentQrUrl: qrisUrl,
+    paymentExpiry: expiry
+  });
 
-    await updateOrderFields(orderId, {
-      paymentQrUrl: qrisUrl,
-      paymentExpiry: newOrder.paymentExpiry
-    });
-
-    return res.json({
-      success: true,
-      orderId,
-      grossAmount,
-      paymentType: 'qris_mock',
-      paymentQrUrl: qrisUrl,
-      expiryTime: newOrder.paymentExpiry
-    });
-  }
-
-  try {
-    const transactionDetails = {
-      payment_type: 'qris',
-      transaction_details: {
-        order_id: orderId,
-        gross_amount: grossAmount
-      },
-      qris: {
-        acquirer: 'gopay' // Standard dynamic QRIS di Midtrans
-      },
-      customer_details: {
-        first_name: customer.name,
-        phone: customer.phone,
-        email: customer.email || 'customer@cizquake.com'
-      }
-    };
-
-    const chargeResponse = await midtransCoreApi.charge(transactionDetails);
-    console.log('[Midtrans QRIS Charge Response]:', JSON.stringify(chargeResponse));
-
-    // QRIS URL ada di actions yang bernama "generate-qr-code", atau buat dari qr_string jika ada
-    const qrAction = chargeResponse.actions ? chargeResponse.actions.find(act => act.name === 'generate-qr-code') : null;
-    let paymentQrUrl = qrAction ? qrAction.url : '';
-    if (!paymentQrUrl && chargeResponse.qr_string) {
-      paymentQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(chargeResponse.qr_string)}`;
-    }
-
-    // Update order dengan data Midtrans
-    newOrder.paymentQrUrl = paymentQrUrl;
-    newOrder.paymentExpiry = chargeResponse.expiry_time || new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-    await updateOrderFields(orderId, {
-      paymentQrUrl,
-      paymentExpiry: newOrder.paymentExpiry
-    });
-
-    res.json({
-      success: true,
-      orderId,
-      grossAmount,
-      paymentType: 'qris',
-      paymentQrUrl,
-      expiryTime: newOrder.paymentExpiry
-    });
-  } catch (error) {
-    console.warn('Real Midtrans API failed. Reason:', error.message);
-    let midtransErrorMessage = error.message;
-    if (error.ApiResponse) {
-      console.warn('Midtrans API Error Details:', JSON.stringify(error.ApiResponse));
-      if (error.ApiResponse.status_message) {
-        midtransErrorMessage = error.ApiResponse.status_message;
-      }
-    }
-
-    // Fallback ke Mock QRIS agar aplikasi tidak crash
-    const qrisUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=Cizquake-Payment-Simulator-${orderId}-${grossAmount}`;
-
-    newOrder.paymentQrUrl = qrisUrl;
-    newOrder.paymentExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-
-    await updateOrderFields(orderId, {
-      paymentQrUrl: qrisUrl,
-      paymentExpiry: newOrder.paymentExpiry
-    });
-
-    res.json({
-      success: true,
-      orderId,
-      grossAmount,
-      paymentType: 'qris_mock_fallback',
-      paymentQrUrl: qrisUrl,
-      expiryTime: newOrder.paymentExpiry,
-      warning: `Midtrans API Error (${midtransErrorMessage}). Pastikan metode QRIS/GoPay sudah diaktifkan di Dashboard Midtrans Production -> Payment Channels.`
-    });
-  }
+  return res.json({
+    success: true,
+    orderId,
+    grossAmount,
+    paymentType: 'qris_static',
+    paymentQrUrl: qrisUrl,
+    expiryTime: expiry
+  });
 });
 
 // Helper untuk men-trigger booking kurir otomatis di BiteShip
