@@ -208,10 +208,10 @@ export default function App() {
     }
   });
   const DEFAULT_COURIER = {
-    company: 'cizquake',
-    courier_name: 'Cizquake Driver',
-    courier_code: 'cizquake',
-    courier_service_name: 'Armada Sendiri (Flat Rate)',
+    company: 'spx',
+    courier_name: 'SPX Express',
+    courier_code: 'spx',
+    courier_service_name: 'SPX Instant (Flat Rate)',
     duration: '15-30 menit',
     price: 7000
   };
@@ -780,7 +780,7 @@ ${mapsLink}
 Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera diproses dan disiapkan ya min! Terima kasih 🙏✨`;
 
     const encodedText = encodeURIComponent(waMessage);
-    const adminNumber = '6282115004713';
+    const adminNumber = '6283822776920';
     const waUrl = `https://wa.me/${adminNumber}?text=${encodedText}`;
 
     // Open WhatsApp in new window
@@ -3197,7 +3197,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </section>
 
-            {/* Courier Selection (Flat Rate Cizquake Driver) */}
+            {/* Courier Selection (Flat Rate SPX Express) */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
               <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
                 <span className="material-symbols-outlined text-lg">local_shipping</span>
@@ -3206,14 +3206,14 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
 
               <div className="p-4 rounded-xl border-2 border-primary bg-primary-fixed/20 flex items-center gap-4 transition-all text-left">
                 <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary flex-shrink-0">
-                  <span className="material-symbols-outlined text-primary font-bold">two_wheeler</span>
+                  <span className="material-symbols-outlined text-primary font-bold">local_shipping</span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-on-surface text-sm">Cizquake Driver (Flat Rate)</p>
+                    <p className="font-bold text-on-surface text-sm">SPX Express (Flat Rate)</p>
                     <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Rp 7.000</span>
                   </div>
-                  <p className="text-on-surface-variant text-xs mt-0.5">Pengiriman langsung dari outlet Buahbatu Bandung (15-30 menit)</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5">Pengiriman cepat dari outlet Buahbatu Bandung via SPX Express (15-30 menit)</p>
                 </div>
                 <span className="material-symbols-outlined text-primary">check_circle</span>
               </div>
@@ -3564,147 +3564,54 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </div>
 
-            {/* Courier Info & Live Map Card */}
-            {trackingInfo.shippingOrderInfo && (
-              <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm space-y-4 text-left animate-in fade-in duration-200">
-                <h3 className="text-xs uppercase font-bold text-primary tracking-wider flex items-center gap-1.5 font-bold">
-                  <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
-                  Informasi Pengiriman
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
-                  <div className="space-y-1">
-                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Nama Kurir / Driver</p>
-                    <p className="text-on-surface font-bold">
-                      {trackingInfo.shippingOrderInfo.courier_driver_name || 'Mencari Driver...'}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kontak Driver</p>
-                    {trackingInfo.shippingOrderInfo.courier_driver_phone ? (
-                      <a 
-                        href={`tel:${trackingInfo.shippingOrderInfo.courier_driver_phone}`}
-                        className="text-primary hover:underline font-bold flex items-center gap-1 w-fit"
-                      >
-                        <span className="material-symbols-outlined text-xs">call</span>
-                        {trackingInfo.shippingOrderInfo.courier_driver_phone}
-                      </a>
-                    ) : (
-                      <p className="text-on-surface/50 italic font-medium">Tidak tersedia</p>
-                    )}
-                  </div>
-                  <div className="col-span-2 space-y-1">
-                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Nomor Resi / Order ID Biteship</p>
-                    <div className="flex items-center gap-2">
-                      <code className="bg-surface-container-low px-2.5 py-1 rounded-md border border-outline-variant/15 text-[10px] font-bold text-primary select-all">
-                        {trackingInfo.shippingOrderInfo.courier_order_id}
-                      </code>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(trackingInfo.shippingOrderInfo.courier_order_id);
-                          alert('Nomor Resi berhasil disalin!');
-                        }}
-                        className="text-[10px] font-bold text-on-surface-variant hover:text-primary flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-xs">content_copy</span>
-                        <span>Salin</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Inline Map or Iframe Tracking */}
-                {trackingInfo.shippingOrderInfo.courier_tracking_url && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Peta Pelacakan Live</p>
-                    <div className="w-full h-[320px] rounded-2xl overflow-hidden border border-outline-variant/10 bg-slate-50 relative shadow-inner">
-                      {trackingInfo.shippingOrderInfo.courier_tracking_url.includes('mock') || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('fallback') ? (
-                        <div id="leaflet-mock-map" className="w-full h-full z-10"></div>
-                      ) : (
-                        <iframe 
-                          src={trackingInfo.shippingOrderInfo.courier_tracking_url} 
-                          className="w-full h-full border-none"
-                          title="Live Courier Tracking Map"
-                          allow="geolocation"
-                        ></iframe>
-                      )}
-                    </div>
-                    
-                    {!(trackingInfo.shippingOrderInfo.courier_tracking_url.includes('mock') || trackingInfo.shippingOrderInfo.courier_tracking_url.includes('fallback')) && (
-                      <div className="text-center pt-1">
-                        <a 
-                          href={trackingInfo.shippingOrderInfo.courier_tracking_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[10px] text-primary hover:underline font-bold flex items-center justify-center gap-1 w-fit mx-auto"
-                        >
-                          <span className="material-symbols-outlined text-xs font-bold">open_in_new</span>
-                          Buka Peta Pelacakan di Tab Baru
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Tracking Steps Timeline */}
-            <h3 className="text-sm font-bold text-primary mb-1 text-left flex items-center gap-1.5 font-bold">
-              <span className="material-symbols-outlined text-md">list_alt</span>
-              Progres Pengiriman Cizquake
-            </h3>
-            
-            <div className="relative border-l-2 border-outline-variant/40 ml-4 pl-6 space-y-6 text-left pb-4">
+            {/* Courier Info Card (SPX Express & Admin Contact) */}
+            <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+              <h3 className="text-xs uppercase font-bold text-primary tracking-wider flex items-center gap-1.5 font-bold">
+                <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
+                Informasi Pengiriman
+              </h3>
               
-              {/* Step 1: Pembayaran Sukses */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  trackingInfo.paymentStatus === 'paid' ? 'bg-primary border-primary shadow-sm shadow-primary/40' : 'bg-background border-outline-variant'
-                }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Pembayaran Diterima</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Dana sebesar Rp {trackingInfo.grossAmount.toLocaleString('id-ID')} berhasil dikonfirmasi secara aman.</p>
+              <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
+                <div className="space-y-1">
+                  <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kurir Pengiriman</p>
+                  <p className="text-on-surface font-bold">SPX Express</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kontak Admin</p>
+                  <a 
+                    href="https://wa.me/6283822776920"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 hover:underline font-extrabold flex items-center gap-1 w-fit"
+                  >
+                    <span className="material-symbols-outlined text-xs font-bold">chat</span>
+                    083822776920
+                  </a>
+                </div>
               </div>
+            </div>
 
-              {/* Step 2: Pesanan Dipersiapkan */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  ['preparing', 'ready', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
-                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
-                    : 'bg-background border-outline-variant'
-                }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Sedang Dipersiapkan</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Tim Cizquake sedang menyiapkan dan mengemas pesanan premium Anda.</p>
+            {/* Simple Order Processing Banner */}
+            <div className="bg-amber-50 border-2 border-amber-200/80 rounded-2xl p-6 text-center shadow-sm space-y-3">
+              <div className="w-12 h-12 bg-amber-500/20 text-amber-900 rounded-full flex items-center justify-center mx-auto">
+                <span className="material-symbols-outlined text-2xl font-bold">hourglass_top</span>
               </div>
-
-              {/* Step 3: Siap Dikirim */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  ['ready', 'on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
-                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
-                    : 'bg-background border-outline-variant'
-                }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Siap Dikirim</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Pesanan selesai dibuat dan siap diserahkan kepada Kurir Cizquake.</p>
+              <div>
+                <h3 className="font-display font-extrabold text-base text-amber-950">Pesanan Sedang Diproses</h3>
+                <p className="text-xs text-amber-900 font-semibold leading-relaxed mt-1">
+                  Mohon ditunggu ya! Tim Cizquake sedang menyiapkan pesanan Anda untuk dikirim via kurir <strong>SPX Express</strong>.
+                </p>
               </div>
-
-              {/* Step 4: Dalam Perjalanan */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  ['on_the_way', 'delivered'].includes(trackingInfo.shippingStatus) 
-                    ? 'bg-primary border-primary shadow-sm shadow-primary/40' 
-                    : 'bg-background border-outline-variant'
-                }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Dalam Pengantaran</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Kurir Cizquake sedang dalam perjalanan membawa paket lezat ke lokasi Anda.</p>
-              </div>
-
-              {/* Step 5: Selesai */}
-              <div className="relative">
-                <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 ${
-                  trackingInfo.shippingStatus === 'delivered' ? 'bg-primary border-primary shadow-sm shadow-primary/40' : 'bg-background border-outline-variant'
-                }`}></div>
-                <h4 className="font-bold text-sm text-on-surface leading-none">Pesanan Tiba</h4>
-                <p className="text-xs text-on-surface-variant mt-1.5 font-semibold">Paket lezat Anda sudah sampai tujuan. Selamat menikmati!</p>
+              <div className="pt-2">
+                <a
+                  href={`https://wa.me/6283822776920?text=${encodeURIComponent(`Halo Admin Cizquake! Saya mau menanyakan perkembangan pesanan saya #${trackingInfo.orderId}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full font-bold text-xs shadow-md active:scale-95 transition"
+                >
+                  <span className="material-symbols-outlined text-sm">chat</span>
+                  <span>Tanya Admin via WA (083822776920)</span>
+                </a>
               </div>
             </div>
 
@@ -3790,7 +3697,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                 className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-display font-extrabold text-xs rounded-full shadow-lg active:scale-95 transition flex items-center justify-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-sm font-bold">check_circle</span>
-                <span>Gunakan Titik Ini 📍</span>
+                <span>TANDAI 📍</span>
               </button>
             </div>
           </div>

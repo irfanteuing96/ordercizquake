@@ -1038,10 +1038,10 @@ app.post('/api/shipping/rates', async (req, res) => {
 
   const rates = [
     {
-      company: 'cizquake',
-      courier_name: 'Cizquake Driver',
-      courier_code: 'cizquake',
-      courier_service_name: 'Armada Sendiri (Flat Rate)',
+      company: 'spx',
+      courier_name: 'SPX Express',
+      courier_code: 'spx',
+      courier_service_name: 'SPX Instant (Flat Rate)',
       duration: durationLabel,
       price: 7000
     }
@@ -1216,14 +1216,14 @@ app.post('/api/checkout', async (req, res) => {
 async function bookCourierAutomatically(order) {
   console.log(`[Cizquake] Pelacakan otomatis dinonaktifkan sementara. Status pengiriman menunggu aksi manual Admin.`);
   
-  // Set status awal ke 'idle' dan isi info Driver Cizquake agar siap diantar oleh Admin secara manual
+  // Set status awal ke 'idle' dan isi info Kurir SPX & Kontak Admin
   await updateOrderFields(order.orderId, {
     shippingStatus: 'idle',
     shippingOrderInfo: {
-      courier_order_id: `CIZDRIVER-${Date.now()}`,
-      courier_driver_name: 'Kurir Cizquake',
-      courier_driver_phone: '088218003440',
-      courier_tracking_url: 'https://biteship.com/tracking/mock'
+      courier_order_id: `SPX-${Date.now()}`,
+      courier_driver_name: 'Kurir SPX Express',
+      courier_driver_phone: '083822776920',
+      courier_tracking_url: 'https://spx.co.id'
     }
   });
 }
