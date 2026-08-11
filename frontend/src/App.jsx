@@ -227,6 +227,88 @@ export default function App() {
   });
   const [isLocating, setIsLocating] = useState(false);
 
+  // Interactive Map Modal State
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [mapTempPin, setMapTempPin] = useState({ lat: -6.9554, lng: 107.6588 });
+  const [isMapLoading, setIsMapLoading] = useState(false);
+  const mapInstanceRef = useRef(null);
+
+  const openMapPicker = async () => {
+    setIsMapModalOpen(true);
+    setIsMapLoading(true);
+    const initialPin = customLocationPin || { lat: -6.9554, lng: 107.6588 };
+    setMapTempPin(initialPin);
+
+    // Dynamically load Leaflet script & CSS if not already present
+    try {
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+
+      if (!window.L) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.id = 'leaflet-js';
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      setIsMapLoading(false);
+
+      // Wait for modal DOM element `#interactive-map-picker`
+      setTimeout(() => {
+        const L = window.L;
+        const mapContainer = document.getElementById('interactive-map-picker');
+        if (!mapContainer || !L) return;
+
+        // Cleanup existing map if any
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
+        }
+
+        const map = L.map('interactive-map-picker').setView([initialPin.lat, initialPin.lng], 15);
+        mapInstanceRef.current = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Add draggable marker
+        const marker = L.marker([initialPin.lat, initialPin.lng], { draggable: true }).addTo(map);
+
+        marker.on('dragend', () => {
+          const pos = marker.getLatLng();
+          setMapTempPin({ lat: pos.lat, lng: pos.lng });
+        });
+
+        map.on('click', (e) => {
+          marker.setLatLng(e.latlng);
+          setMapTempPin({ lat: e.latlng.lat, lng: e.latlng.lng });
+        });
+      }, 200);
+
+    } catch (err) {
+      console.error('Error loading Leaflet map:', err);
+      setIsMapLoading(false);
+    }
+  };
+
+  const confirmMapPickerLocation = () => {
+    setCustomLocationPin(mapTempPin);
+    localStorage.setItem('cizquake_customer_location_pin', JSON.stringify(mapTempPin));
+    setIsMapModalOpen(false);
+    alert(`📍 Titik lokasi peta berhasil dipilih! (${mapTempPin.lat.toFixed(5)}, ${mapTempPin.lng.toFixed(5)})`);
+  };
+
   const handleGetGPSLocation = () => {
     if (!navigator.geolocation) {
       alert('Fitur GPS tidak didukung oleh browser Anda.');
@@ -3046,57 +3128,70 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                   </div>
                 </div>
 
-                {/* Shareloc GPS Pin Button & Status */}
+                {/* 2 Options for Location Pin */}
                 <div className="pt-3 border-t border-outline-variant/20">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-left flex-1">
-                      <p className="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                        <span>Titik Lokasi (Shareloc)</span>
-                        <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">Opsional</span>
-                      </p>
-                      <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">
-                        {customLocationPin 
-                          ? `📍 Koordinat GPS: ${customLocationPin.lat.toFixed(5)}, ${customLocationPin.lng.toFixed(5)}` 
-                          : 'Tandai titik GPS agar link lokasi langsung masuk ke WA Admin.'}
-                      </p>
-                    </div>
-
+                  <p className="text-xs font-bold text-on-surface mb-2 flex items-center gap-1.5">
+                    <span>Titik Lokasi Maps (Shareloc)</span>
+                    <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">Rekomendasi</span>
+                  </p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                    {/* Option 1: GPS Current Location */}
                     <button
                       type="button"
                       onClick={handleGetGPSLocation}
                       disabled={isLocating}
-                      className="px-3.5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-xs transition flex items-center gap-1.5 active:scale-95 flex-shrink-0"
+                      className="p-3 bg-surface-container-low hover:bg-primary/10 border border-outline-variant/30 hover:border-primary text-on-surface rounded-xl font-bold text-xs transition flex items-center gap-2 active:scale-95 text-left"
                     >
-                      {isLocating ? (
-                        <>
+                      <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center flex-shrink-0">
+                        {isLocating ? (
                           <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                          <span>Mencari...</span>
-                        </>
-                      ) : (
-                        <>
+                        ) : (
                           <span className="material-symbols-outlined text-sm font-bold">my_location</span>
-                          <span>{customLocationPin ? 'Perbarui GPS' : 'Tandai GPS'}</span>
-                        </>
-                      )}
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold leading-tight">Lokasi Saya Saat Ini</p>
+                        <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">Gunakan GPS Otomatis</p>
+                      </div>
+                    </button>
+
+                    {/* Option 2: Pick Location on Map */}
+                    <button
+                      type="button"
+                      onClick={openMapPicker}
+                      className="p-3 bg-surface-container-low hover:bg-primary/10 border border-outline-variant/30 hover:border-primary text-on-surface rounded-xl font-bold text-xs transition flex items-center gap-2 active:scale-95 text-left"
+                    >
+                      <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="material-symbols-outlined text-sm font-bold">map</span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold leading-tight">Pilih Poin di Peta</p>
+                        <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">Geser / Klik Titik Peta</p>
+                      </div>
                     </button>
                   </div>
 
-                  {/* If GPS Location Pin is set */}
-                  {customLocationPin && (
-                    <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
+                  {/* Active Pin Status Indicator */}
+                  {customLocationPin ? (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
                       <div className="flex items-center gap-2 text-emerald-900 font-semibold">
-                        <span className="material-symbols-outlined text-emerald-600 font-bold">check_circle</span>
-                        <span>Titik Shareloc Siap Masuk WA Admin!</span>
+                        <span className="material-symbols-outlined text-emerald-600 font-bold text-sm">check_circle</span>
+                        <span>Titik Shareloc Siap Masuk WA Admin! ({customLocationPin.lat.toFixed(4)}, {customLocationPin.lng.toFixed(4)})</span>
                       </div>
                       <a
                         href={`https://www.google.com/maps?q=${customLocationPin.lat},${customLocationPin.lng}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] font-extrabold text-emerald-700 underline hover:text-emerald-800"
+                        className="text-[11px] font-extrabold text-emerald-700 underline hover:text-emerald-800 flex-shrink-0"
                       >
-                        Buka Maps
+                        Pratinjau
                       </a>
                     </div>
+                  ) : (
+                    <p className="text-[10px] text-on-surface-variant/70 font-semibold italic text-left">
+                      *Belum ada titik lokasi terpilih. Pilih salah satu opsi di atas agar link lokasi terisi otomatis di WA Admin.
+                    </p>
                   )}
                 </div>
               </div>
@@ -3635,6 +3730,71 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
       </>
       )}
       </>
+      )}
+
+      {/* Interactive Map Picker Modal */}
+      {isMapModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest w-full max-w-lg rounded-3xl p-5 shadow-2xl border border-outline-variant/20 animate-in zoom-in-95 duration-200 text-left flex flex-col gap-4">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-outline-variant/20">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary font-bold">map</span>
+                <h3 className="font-display font-extrabold text-sm text-on-surface">Pilih Poin Lokasi di Peta</h3>
+              </div>
+              <button 
+                onClick={() => setIsMapModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant transition"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            {/* Instruction Banner */}
+            <p className="text-xs text-on-surface-variant font-semibold bg-primary/10 text-primary p-3 rounded-xl">
+              💡 <strong>Petunjuk:</strong> Klik atau geser penanda (marker) merah di peta ke titik alamat tujuan Anda.
+            </p>
+
+            {/* Map Container */}
+            <div className="relative w-full h-72 rounded-2xl overflow-hidden border border-outline-variant/30 bg-surface-container-low shadow-inner">
+              {isMapLoading && (
+                <div className="absolute inset-0 z-20 bg-white/80 flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined animate-spin text-primary text-2xl">progress_activity</span>
+                  <span className="text-xs font-bold text-on-surface-variant">Memuat Peta Interaktif...</span>
+                </div>
+              )}
+              <div id="interactive-map-picker" className="w-full h-full"></div>
+            </div>
+
+            {/* Selected Coordinates Status */}
+            <div className="bg-surface-container-low p-3 rounded-xl flex items-center justify-between text-xs font-semibold">
+              <span className="text-on-surface-variant">Koordinat Terpilih:</span>
+              <span className="font-mono text-primary font-bold">
+                {mapTempPin.lat.toFixed(5)}, {mapTempPin.lng.toFixed(5)}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsMapModalOpen(false)}
+                className="flex-1 py-3 bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-xs rounded-full transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmMapPickerLocation}
+                className="flex-1 py-3 bg-primary hover:bg-primary/95 text-white font-display font-extrabold text-xs rounded-full shadow-lg active:scale-95 transition flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm font-bold">check_circle</span>
+                <span>Gunakan Titik Ini 📍</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
