@@ -3030,57 +3030,35 @@ export default function App() {
               </section>
             )}
 
-            {/* Payment Method Selector */}
+            {/* Payment Method Selector (Single Option: QRIS) */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
               <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
                 <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
                 Metode Pembayaran
               </h2>
               <div className="grid grid-cols-1 gap-3">
-                {/* QRIS Midtrans Option - Primary & Active */}
+                {/* Single Active Option: QRIS */}
                 <label className="cursor-pointer">
                   <input 
                     type="radio" 
                     name="payment" 
                     value="qris" 
-                    checked={selectedPaymentMethod === 'qris'}
-                    onChange={() => setSelectedPaymentMethod('qris')}
+                    checked={true}
+                    readOnly
                     className="hidden peer" 
                   />
-                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50">
+                  <div className="p-4 rounded-xl border-2 border-primary bg-primary-fixed/20 flex items-center gap-4 transition-all">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
                       <span className="material-symbols-outlined text-primary font-bold">qr_code_scanner</span>
                     </div>
                     <div className="flex-1 text-left">
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-on-surface text-sm">QRIS Instan (Midtrans - Aktif)</p>
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Rekomendasi</span>
+                        <p className="font-bold text-on-surface text-sm">Pembayaran QRIS</p>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Aktif</span>
                       </div>
-                      <p className="text-on-surface-variant text-xs mt-0.5">Scan & bayar instan via GoPay, OVO, ShopeePay, BCA, Mandiri, DANA, dll.</p>
+                      <p className="text-on-surface-variant text-xs mt-0.5">Scan & bayar via GoPay, OVO, ShopeePay, DANA, BCA, Mandiri, dll.</p>
                     </div>
-                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
-                  </div>
-                </label>
-
-                {/* DOKU Option */}
-                <label className="cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="payment" 
-                    value="doku" 
-                    checked={selectedPaymentMethod === 'doku'}
-                    onChange={() => setSelectedPaymentMethod('doku')}
-                    className="hidden peer" 
-                  />
-                  <div className="p-4 rounded-xl border-2 flex items-center gap-4 transition-all peer-checked:border-primary peer-checked:bg-primary-fixed/20 border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50">
-                    <div className="w-10 h-10 bg-secondary-container rounded-full flex items-center justify-center text-on-secondary-container">
-                      <span className="material-symbols-outlined text-primary">payments</span>
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-on-surface text-sm">DOKU Checkout</p>
-                      <p className="text-on-surface-variant text-xs mt-0.5">Mendukung ShopeePay, DOKU Wallet, Alfamart & Indomaret</p>
-                    </div>
-                    <span className="material-symbols-outlined text-primary opacity-0 peer-checked:opacity-100">check_circle</span>
+                    <span className="material-symbols-outlined text-primary opacity-100">check_circle</span>
                   </div>
                 </label>
               </div>
