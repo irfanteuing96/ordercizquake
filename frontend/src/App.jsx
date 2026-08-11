@@ -207,9 +207,54 @@ export default function App() {
       return null;
     }
   });
+  const DEFAULT_COURIER = {
+    company: 'cizquake',
+    courier_name: 'Cizquake Driver',
+    courier_code: 'cizquake',
+    courier_service_name: 'Armada Sendiri (Flat Rate)',
+    duration: '15-30 menit',
+    price: 7000
+  };
+
   const [detailedAddress, setDetailedAddress] = useState(() => localStorage.getItem('cizquake_customer_detailed_address') || '');
-  const [couriers, setCouriers] = useState([]);
-  const [selectedCourier, setSelectedCourier] = useState(null);
+  const [customLocationPin, setCustomLocationPin] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cizquake_customer_location_pin');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGetGPSLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Fitur GPS tidak didukung oleh browser Anda.');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const pin = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        setCustomLocationPin(pin);
+        localStorage.setItem('cizquake_customer_location_pin', JSON.stringify(pin));
+        setIsLocating(false);
+        alert(`📍 Titik lokasi GPS (Shareloc) berhasil ditandai! (${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)})`);
+      },
+      (error) => {
+        setIsLocating(false);
+        console.warn('Geolocation error:', error);
+        alert('Gagal mengambil lokasi GPS. Mohon izinkan akses lokasi di HP/Browser Anda.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const [couriers, setCouriers] = useState([DEFAULT_COURIER]);
+  const [selectedCourier, setSelectedCourier] = useState(DEFAULT_COURIER);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('qris');
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -532,10 +577,14 @@ export default function App() {
   };
 
   const handleCheckoutSubmit = async () => {
-    if (!customerName || !customerPhone || !selectedArea || !detailedAddress || !selectedCourier || detailedAddress.trim().length < 15) {
-      alert('Mohon lengkapi seluruh data pengiriman dengan alamat lengkap minimal 15 karakter.');
+    if (!customerName || !customerPhone || !detailedAddress || detailedAddress.trim().length < 10) {
+      alert('Mohon isi Nama Lengkap, Nomor WhatsApp, dan Alamat Pengiriman (minimal 10 karakter).');
       return;
     }
+
+    const courier = selectedCourier || DEFAULT_COURIER;
+    const lat = customLocationPin?.lat || selectedArea?.latitude || -6.9554;
+    const lng = customLocationPin?.lng || selectedArea?.longitude || 107.6588;
 
     setIsSubmittingOrder(true);
     try {
@@ -551,34 +600,29 @@ export default function App() {
           quantity: item.quantity
         })),
         shipping: {
-          address: `${detailedAddress}, ${selectedArea.name}`,
-          latitude: selectedArea.latitude,
-          longitude: selectedArea.longitude,
-          courierCompany: selectedCourier.company,
-          courierService: selectedCourier.courier_service_name
+          address: detailedAddress,
+          latitude: lat,
+          longitude: lng,
+          courierCompany: courier.company,
+          courierService: courier.courier_service_name
         },
         totalProductPrice: getCartSubtotal(),
-        shippingPrice: selectedCourier.price,
+        shippingPrice: courier.price,
         paymentMethod: selectedPaymentMethod
       };
 
       const response = await axios.post(`${BACKEND_URL}/api/checkout`, payload);
       if (response.data.success) {
-        // Persist profile values in local storage
         localStorage.setItem('cizquake_customer_phone', customerPhone);
         localStorage.setItem('cizquake_customer_name', customerName);
         localStorage.setItem('cizquake_customer_detailed_address', detailedAddress);
-        localStorage.setItem('cizquake_customer_selected_area', JSON.stringify(selectedArea));
         
         setActiveOrderId(response.data.orderId);
         setPaymentInfo(response.data);
         
-        if (response.data.paymentType && response.data.paymentType.startsWith('doku')) {
-          alert('Pesanan dibuat! Anda akan dialihkan ke halaman pembayaran DOKU.');
-          window.location.href = response.data.paymentUrl;
-        } else {
-          setCurrentView('payment');
-        }
+        setCurrentView('payment');
+      } else {
+        alert(response.data.message || 'Gagal memproses pesanan');
       }
     } catch (err) {
       console.error('Error creating checkout:', err);
@@ -617,11 +661,16 @@ export default function App() {
     const orderId = paymentInfo?.orderId || activeOrderId || 'CIZ-0000';
     const name = customerName || 'Pelanggan';
     const phone = customerPhone || '-';
-    const address = detailedAddress 
-      ? (selectedArea ? `${detailedAddress}, ${selectedArea.name}` : detailedAddress) 
-      : '-';
+    const address = detailedAddress || '-';
 
-    const itemsList = cart.map(item => `• ${item.name} x${item.quantity} (Rp ${(item.price * item.quantity).toLocaleString('id-ID')})`).join('\n');
+    const lat = customLocationPin?.lat || trackingInfo?.shipping?.latitude || -6.9554;
+    const lng = customLocationPin?.lng || trackingInfo?.shipping?.longitude || 107.6588;
+    const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+
+    const itemsList = cart.length > 0
+      ? cart.map(item => `• ${item.name} x${item.quantity} (Rp ${(item.price * item.quantity).toLocaleString('id-ID')})`).join('\n')
+      : '• Pesanan Cizquake Box';
+
     const shippingPriceText = selectedCourier ? `Rp ${selectedCourier.price.toLocaleString('id-ID')}` : 'Rp 7.000';
     const totalText = paymentInfo?.grossAmount ? `Rp ${paymentInfo.grossAmount.toLocaleString('id-ID')}` : `Rp ${(getCartSubtotal() + 7000).toLocaleString('id-ID')}`;
 
@@ -635,13 +684,16 @@ Saya mau konfirmasi pembayaran untuk pesanan saya:
 📱 *No. WhatsApp:* ${phone}
 
 📦 *Rincian Pesanan:*
-${itemsList || '-'}
+${itemsList}
 
 🚚 *Ongkir:* ${shippingPriceText}
 💰 *Total Pembayaran:* ${totalText}
 
 📍 *Alamat Pengiriman:*
 ${address}
+
+🗺️ *Link Lokasi (Google Maps / Shareloc):*
+${mapsLink}
 
 Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera diproses dan disiapkan ya min! Terima kasih 🙏✨`;
 
@@ -2960,123 +3012,117 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </section>
 
-            {/* Delivery Address Section */}
+            {/* Delivery Address & Shareloc Section */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
               <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
                 <span className="material-symbols-outlined text-lg">location_on</span>
-                Alamat Pengiriman
+                Alamat Pengiriman & Titik Lokasi
               </h2>
               
               <div className="space-y-4 text-left">
-                <div className="relative">
-                  <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Cari Kelurahan / Kecamatan (Bandung)</label>
-                  <input 
-                    type="text"
-                    value={addressSearch}
-                    onChange={e => {
-                      setAddressSearch(e.target.value);
-                      if (selectedArea) setSelectedArea(null);
-                    }}
-                    placeholder="Ketik minimal 3 huruf..." 
-                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 outline-none"
-                  />
-                  
-                  {/* Results Autocomplete */}
-                  {areaResults.length > 0 && !selectedArea && (
-                    <div className="absolute z-10 w-full mt-1 bg-surface-container-lowest border border-outline-variant/30 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                      {areaResults.map(area => (
-                        <div 
-                          key={area.id}
-                          onClick={() => {
-                            setSelectedArea(area);
-                            setAddressSearch(area.name);
-                            setAreaResults([]);
-                          }}
-                          className="px-4 py-3 cursor-pointer hover:bg-primary-fixed/20 text-on-surface text-sm border-b border-outline-variant/10"
-                        >
-                          {area.name} (Kode Pos: {area.postal_code})
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {selectedArea && (
-                  <div className="flex items-center gap-2 text-green-750 text-xs bg-green-100/50 p-3 rounded-lg border border-green-200">
-                    <span className="material-symbols-outlined text-sm font-bold text-green-600">check_circle</span>
-                    <span className="text-green-800">Area Terpilih: <strong>{selectedArea.name}</strong></span>
-                  </div>
-                )}
-
+                {/* Detailed Address Textarea */}
                 <div>
                   <label className="block text-xs font-bold text-on-surface-variant/80 uppercase mb-1">Alamat Lengkap & Patokan Rumah</label>
                   <textarea 
                     value={detailedAddress}
                     onChange={e => setDetailedAddress(e.target.value)}
-                    placeholder="No. Rumah, RT/RW, nama jalan, patokan gerbang, pagar rumah, dll."
-                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 h-20 resize-none pt-3 outline-none"
+                    placeholder="Masukkan nama jalan, No. Rumah, RT/RW, patokan gerbang/pagar, dll."
+                    className="w-full px-4 py-3 bg-surface-container-low rounded-xl border-none focus:ring-2 focus:ring-primary font-body-md text-on-surface text-sm placeholder-on-surface-variant/50 h-24 resize-none pt-3 outline-none"
                   />
                   <div className="flex justify-between items-center mt-1 px-1">
                     <span className="text-[10px] font-semibold text-on-surface-variant/75">
-                      {detailedAddress.trim().length < 15 ? (
-                        <span className="text-red-500 flex items-center gap-0.5">
+                      {detailedAddress.trim().length < 10 ? (
+                        <span className="text-amber-600 flex items-center gap-0.5">
                           <span className="material-symbols-outlined text-[11px] font-bold">info</span>
-                          Minimal 15 karakter (kurang {15 - detailedAddress.trim().length} karakter lagi)
+                          Tuliskan alamat secara jelas & patokan pengiriman
                         </span>
                       ) : (
                         <span className="text-green-600 flex items-center gap-0.5">
                           <span className="material-symbols-outlined text-[11px] font-bold">check_circle</span>
-                          Alamat lengkap memenuhi syarat
+                          Alamat terisi lengkap
                         </span>
                       )}
                     </span>
-                    <span className="text-[10px] font-bold text-on-surface-variant/60">{detailedAddress.trim().length} / 15+</span>
                   </div>
+                </div>
+
+                {/* Shareloc GPS Pin Button & Status */}
+                <div className="pt-3 border-t border-outline-variant/20">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-left flex-1">
+                      <p className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                        <span>Titik Lokasi (Shareloc)</span>
+                        <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">Opsional</span>
+                      </p>
+                      <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">
+                        {customLocationPin 
+                          ? `📍 Koordinat GPS: ${customLocationPin.lat.toFixed(5)}, ${customLocationPin.lng.toFixed(5)}` 
+                          : 'Tandai titik GPS agar link lokasi langsung masuk ke WA Admin.'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleGetGPSLocation}
+                      disabled={isLocating}
+                      className="px-3.5 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-xs transition flex items-center gap-1.5 active:scale-95 flex-shrink-0"
+                    >
+                      {isLocating ? (
+                        <>
+                          <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                          <span>Mencari...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined text-sm font-bold">my_location</span>
+                          <span>{customLocationPin ? 'Perbarui GPS' : 'Tandai GPS'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* If GPS Location Pin is set */}
+                  {customLocationPin && (
+                    <div className="mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2 text-emerald-900 font-semibold">
+                        <span className="material-symbols-outlined text-emerald-600 font-bold">check_circle</span>
+                        <span>Titik Shareloc Siap Masuk WA Admin!</span>
+                      </div>
+                      <a
+                        href={`https://www.google.com/maps?q=${customLocationPin.lat},${customLocationPin.lng}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[11px] font-extrabold text-emerald-700 underline hover:text-emerald-800"
+                      >
+                        Buka Maps
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
 
-            {/* Courier Selection */}
-            {selectedArea && (
-              <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
-                <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
-                  <span className="material-symbols-outlined text-lg">local_shipping</span>
-                  Pilih Kurir Instan (Pengiriman dari Buahbatu)
-                </h2>
+            {/* Courier Selection (Flat Rate Cizquake Driver) */}
+            <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
+              <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
+                <span className="material-symbols-outlined text-lg">local_shipping</span>
+                Pengiriman & Kurir
+              </h2>
 
-                {isLoadingRates ? (
-                  <div className="text-center py-8 text-on-surface-variant text-xs flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined animate-spin text-primary">progress_activity</span>
-                    <span>Mencari tarif kurir instan terbaik...</span>
+              <div className="p-4 rounded-xl border-2 border-primary bg-primary-fixed/20 flex items-center gap-4 transition-all text-left">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary font-bold">two_wheeler</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-on-surface text-sm">Cizquake Driver (Flat Rate)</p>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Rp 7.000</span>
                   </div>
-                ) : couriers.length === 0 ? (
-                  <div className="text-center py-6 text-error text-xs flex items-center justify-center gap-2 bg-red-50 rounded-lg border border-red-100">
-                    <span className="material-symbols-outlined">warning</span>
-                    <span>Layanan kurir tidak tersedia / area pengiriman terlalu jauh.</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {couriers.map(courier => (
-                      <div 
-                        key={courier.courier_name}
-                        onClick={() => setSelectedCourier(courier)}
-                        className={`cursor-pointer p-4 rounded-xl border-2 flex items-center justify-between transition-all text-left ${
-                          selectedCourier?.courier_name === courier.courier_name 
-                            ? 'border-primary bg-primary-fixed/20' 
-                            : 'border-outline-variant/30 bg-surface-container-lowest hover:border-primary/50'
-                        }`}
-                      >
-                        <div>
-                          <p className="font-bold text-on-surface text-sm uppercase">{courier.courier_name}</p>
-                          <p className="text-on-surface-variant text-xs mt-0.5">Estimasi tiba: {courier.duration}</p>
-                        </div>
-                        <span className="font-display font-bold text-primary text-sm">Rp {courier.price.toLocaleString('id-ID')}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
+                  <p className="text-on-surface-variant text-xs mt-0.5">Pengiriman langsung dari outlet Buahbatu Bandung (15-30 menit)</p>
+                </div>
+                <span className="material-symbols-outlined text-primary">check_circle</span>
+              </div>
+            </section>
 
             {/* Payment Method Selector (Single Option: QRIS) */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
