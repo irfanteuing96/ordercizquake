@@ -302,9 +302,15 @@ export default function App() {
     }
   };
 
+  const [locationPinMode, setLocationPinMode] = useState(() => {
+    return localStorage.getItem('cizquake_customer_pin_mode') || (localStorage.getItem('cizquake_customer_location_pin') ? 'gps' : null);
+  });
+
   const confirmMapPickerLocation = () => {
     setCustomLocationPin(mapTempPin);
+    setLocationPinMode('map');
     localStorage.setItem('cizquake_customer_location_pin', JSON.stringify(mapTempPin));
+    localStorage.setItem('cizquake_customer_pin_mode', 'map');
     setIsMapModalOpen(false);
     alert(`📍 Titik lokasi peta berhasil dipilih! (${mapTempPin.lat.toFixed(5)}, ${mapTempPin.lng.toFixed(5)})`);
   };
@@ -322,7 +328,9 @@ export default function App() {
           lng: position.coords.longitude
         };
         setCustomLocationPin(pin);
+        setLocationPinMode('gps');
         localStorage.setItem('cizquake_customer_location_pin', JSON.stringify(pin));
+        localStorage.setItem('cizquake_customer_pin_mode', 'gps');
         setIsLocating(false);
         alert(`📍 Titik lokasi GPS (Shareloc) berhasil ditandai! (${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)})`);
       },
@@ -3135,64 +3143,72 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold">Rekomendasi</span>
                   </p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {/* Option 1: GPS Current Location */}
                     <button
                       type="button"
                       onClick={handleGetGPSLocation}
                       disabled={isLocating}
-                      className="p-3 bg-surface-container-low hover:bg-primary/10 border border-outline-variant/30 hover:border-primary text-on-surface rounded-xl font-bold text-xs transition flex items-center gap-2 active:scale-95 text-left"
+                      className={`p-3.5 rounded-xl border-2 flex items-center gap-3 transition-all active:scale-95 text-left ${
+                        locationPinMode === 'gps' && customLocationPin
+                          ? 'border-primary bg-primary-fixed/20 text-primary shadow-sm'
+                          : 'border-outline-variant/30 bg-surface-container-low text-on-surface hover:border-primary/50'
+                      }`}
                     >
-                      <div className="w-8 h-8 bg-primary/10 text-primary rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        locationPinMode === 'gps' && customLocationPin
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-primary/10 text-primary'
+                      }`}>
                         {isLocating ? (
                           <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
                         ) : (
-                          <span className="material-symbols-outlined text-sm font-bold">my_location</span>
+                          <span className="material-symbols-outlined text-base font-bold">my_location</span>
                         )}
                       </div>
-                      <div>
-                        <p className="text-xs font-bold leading-tight">Lokasi Saya Saat Ini</p>
-                        <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">Gunakan GPS Otomatis</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold leading-tight truncate">Lokasi Saya Saat Ini</p>
+                        <p className="text-[10px] font-semibold mt-0.5 truncate">
+                          {locationPinMode === 'gps' && customLocationPin
+                            ? `📍 ${customLocationPin.lat.toFixed(4)}, ${customLocationPin.lng.toFixed(4)}`
+                            : 'Gunakan GPS Otomatis'}
+                        </p>
                       </div>
+                      {locationPinMode === 'gps' && customLocationPin && (
+                        <span className="material-symbols-outlined text-primary text-lg font-bold flex-shrink-0">check_circle</span>
+                      )}
                     </button>
 
                     {/* Option 2: Pick Location on Map */}
                     <button
                       type="button"
                       onClick={openMapPicker}
-                      className="p-3 bg-surface-container-low hover:bg-primary/10 border border-outline-variant/30 hover:border-primary text-on-surface rounded-xl font-bold text-xs transition flex items-center gap-2 active:scale-95 text-left"
+                      className={`p-3.5 rounded-xl border-2 flex items-center gap-3 transition-all active:scale-95 text-left ${
+                        locationPinMode === 'map' && customLocationPin
+                          ? 'border-primary bg-primary-fixed/20 text-primary shadow-sm'
+                          : 'border-outline-variant/30 bg-surface-container-low text-on-surface hover:border-primary/50'
+                      }`}
                     >
-                      <div className="w-8 h-8 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="material-symbols-outlined text-sm font-bold">map</span>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        locationPinMode === 'map' && customLocationPin
+                          ? 'bg-primary text-white shadow-sm'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        <span className="material-symbols-outlined text-base font-bold">map</span>
                       </div>
-                      <div>
-                        <p className="text-xs font-bold leading-tight">Pilih Poin di Peta</p>
-                        <p className="text-[10px] text-on-surface-variant/70 font-semibold mt-0.5">Geser / Klik Titik Peta</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold leading-tight truncate">Pilih Poin di Peta</p>
+                        <p className="text-[10px] font-semibold mt-0.5 truncate">
+                          {locationPinMode === 'map' && customLocationPin
+                            ? `📍 ${customLocationPin.lat.toFixed(4)}, ${customLocationPin.lng.toFixed(4)}`
+                            : 'Geser / Klik Titik Peta'}
+                        </p>
                       </div>
+                      {locationPinMode === 'map' && customLocationPin && (
+                        <span className="material-symbols-outlined text-primary text-lg font-bold flex-shrink-0">check_circle</span>
+                      )}
                     </button>
                   </div>
-
-                  {/* Active Pin Status Indicator */}
-                  {customLocationPin ? (
-                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-2 text-xs">
-                      <div className="flex items-center gap-2 text-emerald-900 font-semibold">
-                        <span className="material-symbols-outlined text-emerald-600 font-bold text-sm">check_circle</span>
-                        <span>Titik Shareloc Siap Masuk WA Admin! ({customLocationPin.lat.toFixed(4)}, {customLocationPin.lng.toFixed(4)})</span>
-                      </div>
-                      <a
-                        href={`https://www.google.com/maps?q=${customLocationPin.lat},${customLocationPin.lng}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] font-extrabold text-emerald-700 underline hover:text-emerald-800 flex-shrink-0"
-                      >
-                        Pratinjau
-                      </a>
-                    </div>
-                  ) : (
-                    <p className="text-[10px] text-on-surface-variant/70 font-semibold italic text-left">
-                      *Belum ada titik lokasi terpilih. Pilih salah satu opsi di atas agar link lokasi terisi otomatis di WA Admin.
-                    </p>
-                  )}
                 </div>
               </div>
             </section>
