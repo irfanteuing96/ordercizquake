@@ -613,6 +613,54 @@ export default function App() {
     }
   };
 
+  const handleConfirmPaymentAndOpenWA = async () => {
+    const orderId = paymentInfo?.orderId || activeOrderId || 'CIZ-0000';
+    const name = customerName || 'Pelanggan';
+    const phone = customerPhone || '-';
+    const address = detailedAddress 
+      ? (selectedArea ? `${detailedAddress}, ${selectedArea.name}` : detailedAddress) 
+      : '-';
+
+    const itemsList = cart.map(item => `• ${item.name} x${item.quantity} (Rp ${(item.price * item.quantity).toLocaleString('id-ID')})`).join('\n');
+    const shippingPriceText = selectedCourier ? `Rp ${selectedCourier.price.toLocaleString('id-ID')}` : 'Rp 7.000';
+    const totalText = paymentInfo?.grossAmount ? `Rp ${paymentInfo.grossAmount.toLocaleString('id-ID')}` : `Rp ${(getCartSubtotal() + 7000).toLocaleString('id-ID')}`;
+
+    const waMessage = 
+`Halo Admin Cizquake! 👋
+
+Saya mau konfirmasi pembayaran untuk pesanan saya:
+
+🆔 *ID Pesanan:* ${orderId}
+👤 *Nama Pemesan:* ${name}
+📱 *No. WhatsApp:* ${phone}
+
+📦 *Rincian Pesanan:*
+${itemsList || '-'}
+
+🚚 *Ongkir:* ${shippingPriceText}
+💰 *Total Pembayaran:* ${totalText}
+
+📍 *Alamat Pengiriman:*
+${address}
+
+Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera diproses dan disiapkan ya min! Terima kasih 🙏✨`;
+
+    const encodedText = encodeURIComponent(waMessage);
+    const adminNumber = '6282115004713';
+    const waUrl = `https://wa.me/${adminNumber}?text=${encodedText}`;
+
+    // Open WhatsApp in new window
+    window.open(waUrl, '_blank');
+
+    // Trigger update status on backend & redirect to tracking view
+    try {
+      await triggerSimulatePayment();
+    } catch (err) {
+      console.error('Error confirming payment:', err);
+      setCurrentView('tracking');
+    }
+  };
+
   const handleDokuSimulateSuccess = async () => {
     if (!trackingInfo) return;
     try {
@@ -3170,19 +3218,22 @@ export default function App() {
                 <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau aplikasi m-Banking Anda.</li>
                 <li>Pilih menu **Scan QR / Bayar** dan arahkan kamera ke kode QRIS di atas.</li>
                 <li><strong className="text-amber-900 font-extrabold">Masukkan nominal Rp {paymentInfo.grossAmount.toLocaleString('id-ID')} secara manual</strong> pada aplikasi Anda.</li>
-                <li>Setelah berhasil melakukan pembayaran, tekan tombol **"Saya Sudah Bayar"** di bawah ini.</li>
+                <li>Setelah berhasil transfer, tekan tombol **"Konfirmasi Bayar via WhatsApp"** di bawah untuk mengirim bukti transfer ke Admin.</li>
               </ol>
             </div>
 
             {/* Confirmation Button */}
-            <div className="w-full mb-8">
+            <div className="w-full mb-8 flex flex-col gap-2.5">
               <button 
-                onClick={triggerSimulatePayment} 
-                className="w-full py-4 bg-primary hover:bg-primary/95 text-white font-display font-extrabold text-sm rounded-full shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                onClick={handleConfirmPaymentAndOpenWA} 
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-display font-extrabold text-sm rounded-full shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-lg">check_circle</span>
-                <span>Saya Sudah Bayar (Konfirmasi Pembayaran)</span>
+                <span className="material-symbols-outlined text-xl">chat</span>
+                <span>Konfirmasi Pembayaran via WhatsApp</span>
               </button>
+              <p className="text-[10px] text-on-surface-variant/80 text-center font-semibold leading-relaxed">
+                *Tombol ini akan membuka WhatsApp dengan pesan rincian order otomatis dan langsung memperbarui status pesanan Anda.
+              </p>
             </div>
           </main>
         </div>
