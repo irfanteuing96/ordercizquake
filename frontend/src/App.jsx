@@ -1445,7 +1445,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                   <div>
                     <div className="inline-flex items-center gap-2 bg-[#28190E] text-[#fabd00] text-[11px] font-black tracking-wider uppercase px-4 py-1.5 rounded-full shadow-sm">
                       <span className="text-xs">🧀</span>
-                      <span>DESSERT KEJU FAVORIT</span>
+                      <span>DESSERT LEMBUT LUMER</span>
                     </div>
                   </div>
 
@@ -1468,29 +1468,23 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     />
                   </div>
 
-                  {/* Price & Ongkir Only 7rb CTA Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#28190E]/15">
-                    <div className="flex items-center justify-between sm:justify-start gap-3">
-                      <div>
-                        <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Mini Box</p>
-                        <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
-                      </div>
-                      <div className="bg-[#28190E]/10 border border-[#28190E]/20 px-3 py-1.5 rounded-xl">
-                        <p className="text-[9px] font-black text-[#28190E] uppercase tracking-wider">🛵 Ongkir Flat</p>
-                        <p className="text-xs font-black text-[#28190E]">7 Rb Se-Bandung Raya</p>
-                      </div>
+                  {/* Price & Black Ongkir Flat Card Row */}
+                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#28190E]/15">
+                    <div>
+                      <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Mini Box</p>
+                      <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        const item = menu.find(i => i.id === 'mini-cheese' || i.id.includes('cheese'));
-                        if (item) addToCart(item);
-                      }}
-                      className="bg-[#28190E] hover:bg-[#3d2314] text-[#fabd00] px-6 py-3.5 rounded-full font-display font-black text-xs tracking-wider uppercase shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
-                      <span>Pesan (Ongkir Only 7rb)</span>
-                    </button>
+                    {/* Black Ongkir Flat Box with Truck Icon */}
+                    <div className="bg-[#28190E] text-[#fabd00] px-4 py-2.5 rounded-2xl shadow-md flex items-center gap-2.5 border border-[#28190E]">
+                      <div className="w-8 h-8 bg-[#fabd00]/20 rounded-xl flex items-center justify-center text-[#fabd00]">
+                        <span className="material-symbols-outlined text-base font-bold">local_shipping</span>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-[#fabd00]/80">Ongkir Flat Rate</p>
+                        <p className="text-xs font-black tracking-tight text-[#fabd00]">7 Rb Se-Bandung Raya</p>
+                      </div>
+                    </div>
                   </div>
                 </section>
 
