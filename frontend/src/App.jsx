@@ -679,8 +679,16 @@ export default function App() {
   };
 
   const handleCheckoutSubmit = async () => {
-    if (!customerName || !customerPhone || !detailedAddress || detailedAddress.trim().length < 10) {
-      alert('Mohon isi Nama Lengkap, Nomor WhatsApp, dan Alamat Pengiriman (minimal 10 karakter).');
+    if (!customerName || !customerName.trim()) {
+      alert('Mohon isi Nama Lengkap penerima.');
+      return;
+    }
+    if (!customerPhone || !customerPhone.trim()) {
+      alert('Mohon isi Nomor WhatsApp penerima.');
+      return;
+    }
+    if (!detailedAddress || detailedAddress.trim().length < 3) {
+      alert('Mohon isi Alamat Lengkap pengiriman.');
       return;
     }
 
@@ -3309,14 +3317,14 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
           </main>
 
           {/* Sticky Bottom Confirm Button */}
-          <div className="fixed bottom-0 left-0 right-0 p-container-margin-mobile bg-surface-container-lowest/80 backdrop-blur-md z-40 max-w-[480px] mx-auto border-t border-outline-variant/20">
+          <div className="fixed bottom-0 left-0 right-0 p-container-margin-mobile bg-surface-container-lowest/90 backdrop-blur-md z-40 max-w-[480px] mx-auto border-t border-outline-variant/20 shadow-lg">
             <button 
               onClick={handleCheckoutSubmit}
-              disabled={isSubmittingOrder || !selectedCourier || !customerName || !customerPhone || !detailedAddress || detailedAddress.trim().length < 15}
-              className="w-full py-4 bg-primary-container text-on-primary-container font-display font-extrabold text-md rounded-full shadow-lg transition-all hover:brightness-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+              disabled={isSubmittingOrder}
+              className="w-full py-4 bg-[#fabd00] hover:bg-[#e0a800] text-white font-display font-extrabold text-md rounded-full shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
               <span>{isSubmittingOrder ? 'Memproses Pesanan...' : 'Konfirmasi & Bayar'}</span>
-              <span className="material-symbols-outlined">chevron_right</span>
+              <span className="material-symbols-outlined font-bold">chevron_right</span>
             </button>
           </div>
         </div>
