@@ -1105,8 +1105,8 @@ app.post('/api/checkout', async (req, res) => {
 
   await createOrder(newOrder);
 
-  // Jika metode pembayaran yang dipilih adalah DOKU
-  if (paymentMethod === 'doku') {
+  // Jika metode pembayaran yang dipilih adalah DOKU / QRIS Dinamis
+  if (paymentMethod === 'doku' || paymentMethod === 'qris') {
     const referer = req.headers.referer || req.headers.origin || 'https://cizquake.store';
     const callbackUrl = `${referer.replace(/\/$/, '')}?orderId=${orderId}&payment=doku`;
 

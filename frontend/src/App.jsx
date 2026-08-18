@@ -730,7 +730,11 @@ export default function App() {
         setActiveOrderId(response.data.orderId);
         setPaymentInfo(response.data);
         
-        setCurrentView('payment');
+        if (response.data.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
+        } else {
+          setCurrentView('payment');
+        }
       } else {
         alert(response.data.message || 'Gagal memproses pesanan');
       }
