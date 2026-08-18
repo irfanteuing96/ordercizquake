@@ -1172,9 +1172,13 @@ app.post('/api/checkout', async (req, res) => {
 
       if (response.data && response.data.response && response.data.response.payment && response.data.response.payment.url) {
         const paymentUrl = response.data.response.payment.url;
+        const qrData = response.data.response.payment.qr_content || response.data.response.payment.qr_code || response.data.response.payment.qr_string || null;
+        const paymentQrUrl = qrData ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}` : null;
+
         const expiry = new Date(Date.now() + 60 * 60 * 1000).toISOString();
         await updateOrderFields(orderId, {
-          paymentExpiry: expiry
+          paymentExpiry: expiry,
+          paymentQrUrl
         });
 
         return res.json({
@@ -1183,6 +1187,7 @@ app.post('/api/checkout', async (req, res) => {
           grossAmount,
           paymentType: 'doku',
           paymentUrl,
+          paymentQrUrl,
           expiryTime: expiry
         });
       } else {

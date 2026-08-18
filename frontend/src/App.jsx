@@ -3406,18 +3406,28 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                   </div>
                 </div>
 
-                <div className={`w-full ${isDokuFocusQr ? 'h-[460px]' : 'h-[580px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
-                  <iframe 
-                    src={paymentInfo.paymentUrl} 
-                    title="QRIS Dinamis DOKU" 
-                    className="w-full border-none transition-all duration-300"
-                    style={
-                      isDokuFocusQr 
-                        ? { position: 'absolute', top: '-310px', left: 0, right: 0, width: '100%', height: '820px' }
-                        : { position: 'relative', top: 0, width: '100%', height: '100%' }
-                    }
-                  />
-                </div>
+                {paymentInfo.paymentQrUrl ? (
+                  <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md my-2">
+                    <img 
+                      src={paymentInfo.paymentQrUrl} 
+                      alt="QRIS Dinamis DOKU" 
+                      className="w-full h-auto object-contain rounded-lg" 
+                    />
+                  </div>
+                ) : (
+                  <div className={`w-full ${isDokuFocusQr ? 'h-[370px]' : 'h-[580px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
+                    <iframe 
+                      src={paymentInfo.paymentUrl} 
+                      title="QRIS Dinamis DOKU" 
+                      className="w-full border-none transition-all duration-300"
+                      style={
+                        isDokuFocusQr 
+                          ? { position: 'absolute', top: '-485px', left: 0, right: 0, width: '100%', height: '900px' }
+                          : { position: 'relative', top: 0, width: '100%', height: '100%' }
+                      }
+                    />
+                  </div>
+                )}
 
                 <div className="w-full flex items-center justify-between mt-3 px-1">
                   <span className="text-[10px] text-on-surface-variant font-semibold">
