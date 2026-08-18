@@ -730,11 +730,7 @@ export default function App() {
         setActiveOrderId(response.data.orderId);
         setPaymentInfo(response.data);
         
-        if (response.data.paymentUrl) {
-          window.location.href = response.data.paymentUrl;
-        } else {
-          setCurrentView('payment');
-        }
+        setCurrentView('payment');
       } else {
         alert(response.data.message || 'Gagal memproses pesanan');
       }
@@ -3334,13 +3330,16 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
         </div>
       )}
 
-      {/* 4. PAYMENT VIEW (STATIC QRIS DISPLAY) */}
+      {/* 4. PAYMENT VIEW (DYNAMIC DOKU QRIS & NATIVE INTERFACE) */}
       {currentView === 'payment' && paymentInfo && (
         <div className="bg-background min-h-screen pb-32">
           <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile">
+            <button onClick={() => setCurrentView('checkout')} className="p-2 transition-transform active:scale-95 text-white flex items-center justify-center z-10">
+              <span className="material-symbols-outlined">arrow_back</span>
+            </button>
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
-              <span className="material-symbols-outlined text-lg text-white">payments</span>
-              <span className="text-base font-black tracking-tight text-white font-display">Pembayaran QRIS</span>
+              <span className="material-symbols-outlined text-lg text-white">qr_code_2</span>
+              <span className="text-base font-black tracking-tight text-white font-display">Pembayaran QRIS Dinamis</span>
             </div>
             <div className="flex-grow"></div>
             <span className="bg-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-10">
@@ -3353,7 +3352,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
             
             {/* Nominal Callout Card */}
             <div className="w-full bg-surface-container-lowest p-5 rounded-2xl custom-shadow border border-primary/20 text-center mb-5">
-              <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Nominal Yang Harus Diinput</h3>
+              <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Nominal Pembayaran (Otomatis Terkunci)</h3>
               <div className="flex items-center justify-center gap-3 mt-2">
                 <p className="text-3xl font-black text-primary font-display">
                   Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
@@ -3375,35 +3374,76 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </p>
             </div>
 
-            {/* Static QRIS Code Image Box */}
-            <div className="w-full bg-surface-container-lowest p-6 rounded-2xl custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
-              <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md">
-                <img 
-                  src="/qris.jpeg" 
-                  alt="QRIS Statis Cizquake" 
-                  className="w-full h-auto object-contain rounded-lg" 
-                />
+            {/* QRIS Container (Dynamic DOKU Frame / QR Display) */}
+            {paymentInfo.paymentUrl ? (
+              <div className="w-full bg-surface-container-lowest p-4 rounded-2xl custom-shadow border border-primary/20 flex flex-col items-center mb-6">
+                <div className="w-full mb-3 flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm text-primary">qr_code_scanner</span>
+                    Kode QRIS Dinamis DOKU
+                  </span>
+                  <a
+                    href={paymentInfo.paymentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    <span>Layar Penuh</span>
+                    <span className="material-symbols-outlined text-xs">open_in_new</span>
+                  </a>
+                </div>
+
+                <div className="w-full h-[520px] rounded-xl overflow-hidden border border-outline-variant/20 shadow-inner bg-white relative">
+                  <iframe 
+                    src={paymentInfo.paymentUrl} 
+                    title="QRIS Dinamis DOKU" 
+                    className="w-full h-full border-none"
+                  />
+                </div>
+
+                <div className="w-full flex items-center justify-between mt-3 px-1">
+                  <span className="text-[10px] text-on-surface-variant font-semibold">
+                    *Mendukung GoPay, OVO, ShopeePay, DANA, BCA, Mandiri, dll.
+                  </span>
+                  <a
+                    href={paymentInfo.paymentUrl}
+                    className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1 transition"
+                  >
+                    <span>📱 Buka Langsung Laman QRIS</span>
+                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                  </a>
+                </div>
               </div>
-              
-              <div className="flex flex-col items-center text-center gap-1 mt-4 max-w-[320px]">
-                <p className="text-xs font-bold text-on-surface">Pindai QRIS Menggunakan Aplikasi Bank/E-Wallet</p>
-                <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">
-                  Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.
-                </p>
+            ) : (
+              <div className="w-full bg-surface-container-lowest p-6 rounded-2xl custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
+                <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md">
+                  <img 
+                    src={paymentInfo.paymentQrUrl || "/qris.jpeg"} 
+                    alt="QRIS Pembayaran Cizquake" 
+                    className="w-full h-auto object-contain rounded-lg" 
+                  />
+                </div>
+                
+                <div className="flex flex-col items-center text-center gap-1 mt-4 max-w-[320px]">
+                  <p className="text-xs font-bold text-on-surface">Pindai QRIS Menggunakan Aplikasi Bank/E-Wallet</p>
+                  <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">
+                    Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Instructions */}
             <div className="w-full bg-amber-50/60 border border-amber-200 rounded-2xl p-5 mb-6 text-left shadow-sm">
               <h4 className="text-xs font-bold text-amber-900 uppercase mb-3 flex items-center gap-1.5 font-bold">
                 <span className="material-symbols-outlined text-sm font-bold text-amber-700">info</span>
-                Petunjuk Pembayaran QRIS Statis
+                Petunjuk Pembayaran QRIS Dinamis
               </h4>
               <ol className="text-left text-xs text-amber-950 space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
-                <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau aplikasi m-Banking Anda.</li>
-                <li>Pilih menu **Scan QR / Bayar** dan arahkan kamera ke kode QRIS di atas.</li>
-                <li><strong className="text-amber-900 font-extrabold">Masukkan nominal Rp {paymentInfo.grossAmount.toLocaleString('id-ID')} secara manual</strong> pada aplikasi Anda.</li>
-                <li>Setelah berhasil transfer, tekan tombol **"Konfirmasi Bayar via WhatsApp"** di bawah untuk mengirim bukti transfer ke Admin.</li>
+                <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau m-Banking Anda.</li>
+                <li>Scan kode QRIS Dinamis DOKU yang ada pada tampilan di atas.</li>
+                <li>Nominal sebesar <strong className="text-amber-900 font-extrabold">Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}</strong> akan otomatis terisi dan terkunci.</li>
+                <li>Setelah berhasil bayar, tekan tombol **"Konfirmasi Pembayaran via WhatsApp"** di bawah.</li>
               </ol>
             </div>
 

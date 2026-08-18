@@ -1150,7 +1150,8 @@ app.post('/api/checkout', async (req, res) => {
           address: shipping.address
         },
         payment: {
-          payment_due_date: 60
+          payment_due_date: 60,
+          payment_method_types: ['QRIS']
         }
       };
 
