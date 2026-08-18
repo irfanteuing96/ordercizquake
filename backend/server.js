@@ -513,6 +513,7 @@ const normalizeCategory = (cat) => {
 };
 
 const getMenuData = async () => {
+  let menuList = [];
   if (isUseSupabase) {
     try {
       const { data, error } = await supabaseWithTimeout(
@@ -523,7 +524,7 @@ const getMenuData = async () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        return data.map(item => ({
+        menuList = data.map(item => ({
           id: item.id,
           name: item.name,
           category: normalizeCategory(item.category),
@@ -538,15 +539,32 @@ const getMenuData = async () => {
       } else {
         console.log('[Supabase] menu_items is empty, seeding default menu...');
         await seedDefaultMenu();
-        return MENU_DATA;
+        menuList = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
       }
     } catch (err) {
       console.error('[Supabase] Error getting menu items, falling back to local:', err.message);
-      return readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
+      menuList = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
     }
   } else {
-    return readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
+    menuList = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
   }
+
+  // Ensure local menu items (e.g. promo-test-1000) are merged if missing from Supabase DB
+  const localItems = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
+  for (const localItem of localItems) {
+    if (!menuList.some(it => it.id === localItem.id)) {
+      menuList.push(localItem);
+    }
+  }
+
+  // Pin promo-test-1000 to the very top
+  menuList.sort((a, b) => {
+    if (a.id === 'promo-test-1000') return -1;
+    if (b.id === 'promo-test-1000') return 1;
+    return 0;
+  });
+
+  return menuList;
 };
 
 const updateMenuStock = async (id, inStock) => {
