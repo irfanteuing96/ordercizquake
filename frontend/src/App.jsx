@@ -179,6 +179,18 @@ const MENU_DATA = [
     inStock: true,
     rating: 4.9,
     salesCount: '1.5k'
+  },
+  {
+    id: 'promo-test-1000',
+    name: 'Promo Menu 1.000 (Uji Coba QRIS)',
+    category: 'Mini Dessert Box',
+    price: 1000,
+    sales: '10 terjual',
+    description: 'Menu khusus uji coba pembayaran QRIS Dinamis seharga Rp 1.000.',
+    image: '/img/Coklat.jpeg',
+    inStock: true,
+    rating: 5.0,
+    salesCount: '10'
   }
 ];
 
