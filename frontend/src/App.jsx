@@ -390,6 +390,7 @@ export default function App() {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [paymentExpiryTimer, setPaymentExpiryTimer] = useState('15:00');
   const [dokuMockType, setDokuMockType] = useState(null);
+  const [isDokuFocusQr, setIsDokuFocusQr] = useState(true);
 
   // Tracking State
   const [trackingInfo, setTrackingInfo] = useState(null);
@@ -3382,22 +3383,39 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     <span className="material-symbols-outlined text-sm text-primary">qr_code_scanner</span>
                     Kode QRIS Dinamis DOKU
                   </span>
-                  <a
-                    href={paymentInfo.paymentUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                  >
-                    <span>Layar Penuh</span>
-                    <span className="material-symbols-outlined text-xs">open_in_new</span>
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDokuFocusQr(!isDokuFocusQr)}
+                      className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition flex items-center gap-1 active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-xs">
+                        {isDokuFocusQr ? 'crop_free' : 'center_focus_strong'}
+                      </span>
+                      <span>{isDokuFocusQr ? 'Tampilan Utuh' : 'Fokus QR Code'}</span>
+                    </button>
+                    <a
+                      href={paymentInfo.paymentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                    >
+                      <span>Layar Penuh</span>
+                      <span className="material-symbols-outlined text-xs">open_in_new</span>
+                    </a>
+                  </div>
                 </div>
 
-                <div className="w-full h-[520px] rounded-xl overflow-hidden border border-outline-variant/20 shadow-inner bg-white relative">
+                <div className={`w-full ${isDokuFocusQr ? 'h-[460px]' : 'h-[580px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
                   <iframe 
                     src={paymentInfo.paymentUrl} 
                     title="QRIS Dinamis DOKU" 
-                    className="w-full h-full border-none"
+                    className="w-full border-none transition-all duration-300"
+                    style={
+                      isDokuFocusQr 
+                        ? { position: 'absolute', top: '-310px', left: 0, right: 0, width: '100%', height: '820px' }
+                        : { position: 'relative', top: 0, width: '100%', height: '100%' }
+                    }
                   />
                 </div>
 
