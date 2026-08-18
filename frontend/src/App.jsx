@@ -3415,14 +3415,14 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     />
                   </div>
                 ) : (
-                  <div className={`w-full ${isDokuFocusQr ? 'h-[370px]' : 'h-[580px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
+                  <div className={`w-full ${isDokuFocusQr ? 'h-[520px]' : 'h-[640px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
                     <iframe 
                       src={paymentInfo.paymentUrl} 
                       title="QRIS Dinamis DOKU" 
                       className="w-full border-none transition-all duration-300"
                       style={
                         isDokuFocusQr 
-                          ? { position: 'absolute', top: '-485px', left: 0, right: 0, width: '100%', height: '900px' }
+                          ? { position: 'absolute', top: '-310px', left: 0, right: 0, width: '100%', height: '880px' }
                           : { position: 'relative', top: 0, width: '100%', height: '100%' }
                       }
                     />
