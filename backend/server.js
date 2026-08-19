@@ -1339,7 +1339,9 @@ async function dispatchBiteshipCourier(order) {
         latitude: parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554'),
         longitude: parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588')
       },
-      destination_contact_name: order.customer.name,
+      // Sisipkan nomor pesanan di depan nama supaya driver bisa sebutkan/cocokkan
+      // nomor pesanan saat verifikasi ke customer (mis. "CIZ-007 Irfan").
+      destination_contact_name: `${order.orderId} ${order.customer.name}`,
       destination_contact_phone: order.customer.phone,
       destination_address: order.shipping.address,
       destination_coordinate: {
