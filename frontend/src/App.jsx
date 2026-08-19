@@ -3393,12 +3393,21 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               DOKU's full checkout page (fills all available space, its own
               scroll), or our own QR image + instructions when we have a
               plain image to show. */}
-          <div className="flex-1 min-h-0 relative bg-white">
+          <div className="flex-1 min-h-0 relative bg-white overflow-hidden">
             {paymentInfo.paymentUrl && !paymentInfo.paymentQrUrl ? (
+              // DOKU's own page opens with a countdown banner, a "Back to
+              // Merchant" bar and a merchant logo placeholder — all
+              // redundant since we already show our own countdown up top.
+              // We crop exactly that redundant strip out (measured against
+              // DOKU's real checkout page: "Scan QR Code to Pay" starts at
+              // ~539px) so the view opens straight on the QR. The iframe's
+              // own document is still fully intact and scrollable — nothing
+              // below is cut off, only this top slice is hidden from view.
               <iframe
                 src={paymentInfo.paymentUrl}
                 title="Pembayaran QRIS Dinamis DOKU"
-                className="w-full h-full border-0 block"
+                className="absolute left-0 w-full border-0 block"
+                style={{ top: '-520px', height: 'calc(100% + 520px)' }}
               />
             ) : (
               <div className="h-full overflow-y-auto px-container-margin-mobile py-5 flex flex-col items-center gap-5">
