@@ -1,17 +1,5 @@
 [
   {
-    "id": "promo-test-1000",
-    "name": "Promo Menu 1.000 (Uji Coba QRIS)",
-    "category": "Mini box",
-    "price": 1000,
-    "sales": "10 terjual",
-    "description": "Menu khusus uji coba pembayaran QRIS Dinamis seharga Rp 1.000.",
-    "image": "/img/Coklat.jpeg",
-    "inStock": true,
-    "rating": 5.0,
-    "salesCount": 10
-  },
-  {
     "id": "mini-blueberry",
     "name": "Mini Box Blueberry",
     "category": "Mini box",

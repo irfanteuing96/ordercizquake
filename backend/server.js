@@ -550,20 +550,15 @@ const getMenuData = async () => {
     menuList = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
   }
 
-  // Ensure local menu items (e.g. promo-test-1000) are merged if missing from Supabase DB
-  const localItems = readMenuItems().map(item => ({ ...item, category: normalizeCategory(item.category) }));
-  for (const localItem of localItems) {
-    if (!menuList.some(it => it.id === localItem.id)) {
-      menuList.push(localItem);
-    }
-  }
-
-  // Pin promo-test-1000 to the very top
-  menuList.sort((a, b) => {
-    if (a.id === 'promo-test-1000') return -1;
-    if (b.id === 'promo-test-1000') return 1;
-    return 0;
-  });
+  // NOTE: we used to merge any local-JSON item missing from the Supabase
+  // list back in here (meant to protect seed items during Supabase lag).
+  // Removed on purpose: Render resets menu_items.json to whatever's
+  // committed in git on every deploy, so once Supabase actually has data,
+  // this merge kept resurrecting items admins had deleted (e.g.
+  // promo-test-1000 kept coming back after every push). Supabase is now
+  // the single source of truth whenever it has data; the local file only
+  // matters as a full fallback when Supabase is empty/unreachable (handled
+  // above), not as something to merge on top of good Supabase data.
 
   return menuList;
 };
