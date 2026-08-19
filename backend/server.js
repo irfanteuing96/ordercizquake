@@ -1075,6 +1075,31 @@ const buildFallbackShippingRate = (destination_latitude, destination_longitude) 
   }];
 };
 
+// Bungkus semua isi keranjang jadi SATU baris kiriman ke Biteship dengan
+// berat FLAT (selalu di bawah 1kg), berapa pun jumlah/qty item-nya.
+// Sebelumnya tiap item dikasih berat 300g dikali quantity, jadi order
+// besar bisa "kelipatan" tembus 1kg padahal dessert box itu ringan &
+// bisa ditumpuk -- berat aslinya nggak pernah sebesar itu.
+const buildBiteshipShipmentItems = (items) => {
+  const list = Array.isArray(items) && items.length > 0 ? items : [];
+  const totalValue = list.reduce((sum, it) => sum + Math.max(it.price || 10000, 1) * Math.max(it.quantity || 1, 1), 0) || 10000;
+  const totalQty = list.reduce((sum, it) => sum + Math.max(it.quantity || 1, 1), 0) || 1;
+  const summaryName = list.length > 0
+    ? list.map(it => `${it.name}${it.quantity > 1 ? ` x${it.quantity}` : ''}`).join(', ').slice(0, 200)
+    : 'Cizquake Dessert';
+
+  return [{
+    name: summaryName,
+    description: `Pesanan Cizquake (${totalQty} pcs)`,
+    value: totalValue,
+    quantity: 1,
+    length: 20,
+    width: 20,
+    height: 12,
+    weight: 500 // flat, selalu di bawah 1kg
+  }];
+};
+
 app.post('/api/shipping/rates', async (req, res) => {
   const { destination_latitude, destination_longitude, items } = req.body;
 
@@ -1091,18 +1116,7 @@ app.post('/api/shipping/rates', async (req, res) => {
     const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
     const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
 
-    const biteshipItems = (Array.isArray(items) && items.length > 0)
-      ? items.map(it => ({
-          name: it.name || 'Cizquake Dessert',
-          description: 'Cizquake dessert box',
-          value: Math.max(it.price || 10000, 1),
-          quantity: Math.max(it.quantity || 1, 1),
-          length: 15,
-          width: 15,
-          height: 8,
-          weight: 300
-        }))
-      : [{ name: 'Cizquake Dessert', description: 'Cizquake dessert box', value: 10000, quantity: 1, length: 15, width: 15, height: 8, weight: 300 }];
+    const biteshipItems = buildBiteshipShipmentItems(items);
 
     const response = await axios.post('https://api.biteship.com/v1/rates/couriers', {
       origin_latitude: originLat,
@@ -1370,16 +1384,7 @@ async function dispatchBiteshipCourier(order) {
       // No `category` here on purpose: Biteship rejects "food" (not a valid
       // enum value on their side) and defaults it to "others" when omitted,
       // confirmed against the live API.
-      items: (order.items || []).map(it => ({
-        name: it.name,
-        description: 'Cizquake dessert box',
-        value: Math.max(it.price || 10000, 1),
-        quantity: Math.max(it.quantity || 1, 1),
-        length: 15,
-        width: 15,
-        height: 8,
-        weight: 300
-      }))
+      items: buildBiteshipShipmentItems(order.items)
     };
 
     console.log(`[Biteship] Memesan kurir ${courierCompany} (instant) untuk order ${order.orderId}...`);
