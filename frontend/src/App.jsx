@@ -3373,7 +3373,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
             </button>
             <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap">
               <span className="material-symbols-outlined text-lg text-white">qr_code_2</span>
-              <span className="text-base font-black tracking-tight text-white font-display">Pembayaran QRIS Dinamis</span>
+              <span className="text-base font-black tracking-tight text-white font-display">Pembayaran QRIS</span>
             </div>
             <div className="flex-grow"></div>
             <span className="bg-white/20 text-white px-3.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm z-10">
