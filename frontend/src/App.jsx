@@ -3435,27 +3435,19 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau m-Banking Anda.</li>
                     <li>Scan kode QRIS di atas.</li>
                     <li>Nominal sebesar <strong className="text-amber-900 font-extrabold">Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}</strong> akan otomatis terisi dan terkunci.</li>
-                    <li>Setelah berhasil bayar, tekan tombol "Konfirmasi Pembayaran via WhatsApp" di bawah.</li>
+                    <li>Setelah berhasil bayar, halaman ini akan otomatis lanjut ke status pesanan — tidak perlu konfirmasi manual.</li>
                   </ol>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Footer CTA — pinned at the bottom, still Cizquake themed, so the
-              screen always feels sandwiched by our own app chrome. */}
-          <div className="shrink-0 bg-background border-t border-outline-variant/20 px-container-margin-mobile py-3 flex flex-col gap-1.5">
-            <button
-              onClick={handleConfirmPaymentAndOpenWA}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-display font-extrabold text-sm rounded-full shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-xl">chat</span>
-              <span>Konfirmasi Pembayaran via WhatsApp</span>
-            </button>
-            <p className="text-[9px] text-on-surface-variant/80 text-center font-semibold leading-relaxed">
-              *Tombol ini akan membuka WhatsApp dengan pesan rincian order otomatis dan langsung memperbarui status pesanan Anda.
-            </p>
-          </div>
+          {/* No footer here on purpose: we don't ask for a manual "I've
+              paid" confirmation anymore. Status is polled automatically
+              (see fetchOrderStatus below) and the view switches to
+              'tracking' by itself the moment paymentStatus becomes 'paid'.
+              Removing the footer also gives DOKU's page the full remaining
+              height — only our header up top stays branded. */}
         </div>
       )}
 
