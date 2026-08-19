@@ -219,11 +219,13 @@ export default function App() {
       return null;
     }
   });
+  // Placeholder shown only until the real rate comes back from the backend
+  // (which now queries live Grab/Gojek Instant rates via Biteship).
   const DEFAULT_COURIER = {
-    company: 'spx',
-    courier_name: 'SPX Express',
-    courier_code: 'spx',
-    courier_service_name: 'SPX Instant (Flat Rate)',
+    company: 'flat',
+    courier_name: 'Kurir Instant',
+    courier_code: 'flat',
+    courier_service_name: 'Mencari kurir tercepat...',
     duration: '15-30 menit',
     price: 7000
   };
@@ -3237,7 +3239,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </section>
 
-            {/* Courier Selection (Flat Rate SPX Express) */}
+            {/* Courier Selection (real-time Grab/Gojek Instant rate via Biteship) */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
               <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
                 <span className="material-symbols-outlined text-lg">local_shipping</span>
@@ -3246,14 +3248,23 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
 
               <div className="p-4 rounded-xl border-2 border-primary bg-primary-fixed/20 flex items-center gap-4 transition-all text-left">
                 <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary flex-shrink-0">
-                  <span className="material-symbols-outlined text-primary font-bold">local_shipping</span>
+                  <span className={`material-symbols-outlined text-primary font-bold ${isLoadingRates ? 'animate-spin' : ''}`}>
+                    {isLoadingRates ? 'progress_activity' : 'local_shipping'}
+                  </span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-bold text-on-surface text-sm">SPX Express (Flat Rate)</p>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">Rp 7.000</span>
+                    <p className="font-bold text-on-surface text-sm">
+                      {(selectedCourier || DEFAULT_COURIER).courier_name}
+                      {(selectedCourier || DEFAULT_COURIER).courier_service_name ? ` (${(selectedCourier || DEFAULT_COURIER).courier_service_name})` : ''}
+                    </p>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">
+                      Rp {(selectedCourier || DEFAULT_COURIER).price.toLocaleString('id-ID')}
+                    </span>
                   </div>
-                  <p className="text-on-surface-variant text-xs mt-0.5">Pengiriman cepat dari outlet Buahbatu Bandung via SPX Express (15-30 menit)</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5">
+                    Pengiriman instant dari outlet Buahbatu Bandung ({(selectedCourier || DEFAULT_COURIER).duration})
+                  </p>
                 </div>
                 <span className="material-symbols-outlined text-primary">check_circle</span>
               </div>
@@ -3635,31 +3646,52 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </div>
 
-            {/* Courier Info Card (SPX Express & Admin Contact) */}
+            {/* Courier Info Card — shows the real courier + driver once Admin
+                has dispatched it via Biteship; falls back to admin contact
+                while the order is still being prepared. */}
             <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm space-y-4 text-left">
               <h3 className="text-xs uppercase font-bold text-primary tracking-wider flex items-center gap-1.5 font-bold">
                 <span className="material-symbols-outlined text-sm font-bold">local_shipping</span>
                 Informasi Pengiriman
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-4 text-xs font-semibold">
                 <div className="space-y-1">
                   <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kurir Pengiriman</p>
-                  <p className="text-on-surface font-bold">SPX Express</p>
+                  <p className="text-on-surface font-bold">
+                    {trackingInfo.shipping?.courierCompany ? trackingInfo.shipping.courierCompany.toUpperCase() + ' Instant' : 'Kurir Instant'}
+                  </p>
+                  {trackingInfo.shippingOrderInfo?.courier_driver_name && (
+                    <p className="text-on-surface-variant text-[10px]">{trackingInfo.shippingOrderInfo.courier_driver_name}</p>
+                  )}
                 </div>
                 <div className="space-y-1">
-                  <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">Kontak Admin</p>
-                  <a 
-                    href="https://wa.me/6283822776920"
+                  <p className="text-on-surface-variant/65 text-[9px] uppercase font-bold">
+                    {trackingInfo.shippingOrderInfo?.courier_driver_phone ? 'Kontak Driver' : 'Kontak Admin'}
+                  </p>
+                  <a
+                    href={`https://wa.me/62${(trackingInfo.shippingOrderInfo?.courier_driver_phone || '083822776920').replace(/^0/, '')}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-emerald-700 hover:underline font-extrabold flex items-center gap-1 w-fit"
                   >
                     <span className="material-symbols-outlined text-xs font-bold">chat</span>
-                    083822776920
+                    {trackingInfo.shippingOrderInfo?.courier_driver_phone || '083822776920'}
                   </a>
                 </div>
               </div>
+
+              {trackingInfo.shippingOrderInfo?.courier_tracking_url && (
+                <a
+                  href={trackingInfo.shippingOrderInfo.courier_tracking_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl text-xs font-bold transition"
+                >
+                  <span className="material-symbols-outlined text-sm">location_on</span>
+                  Lacak Kurir Secara Langsung
+                </a>
+              )}
             </div>
 
             {/* Simple Order Processing Banner */}
@@ -3670,7 +3702,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               <div>
                 <h3 className="font-display font-extrabold text-base text-amber-950">Pesanan Sedang Diproses</h3>
                 <p className="text-xs text-amber-900 font-semibold leading-relaxed mt-1">
-                  Mohon ditunggu ya! Tim Cizquake sedang menyiapkan pesanan Anda untuk dikirim via kurir <strong>SPX Express</strong>.
+                  Mohon ditunggu ya! Tim Cizquake sedang menyiapkan pesanan Anda untuk dikirim via kurir instant{trackingInfo.shipping?.courierCompany ? ` (${trackingInfo.shipping.courierCompany.toUpperCase()})` : ''}.
                 </p>
               </div>
               <div className="pt-2">

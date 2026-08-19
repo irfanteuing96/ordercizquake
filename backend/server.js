@@ -1031,13 +1031,13 @@ app.get('/api/shipping/areas', async (req, res) => {
 // -----------------
 // ENDPOINT 2: CALCULATE RATES
 // -----------------
-app.post('/api/shipping/rates', async (req, res) => {
-  const { destination_latitude, destination_longitude } = req.body;
-
+// Fallback estimasi flat kalau Biteship API belum aktif/gagal — supaya
+// checkout tidak pernah macet total hanya karena kurir instant lagi error.
+const buildFallbackShippingRate = (destination_latitude, destination_longitude) => {
   const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
   const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
 
-  let distance = 5.0; // default 5km jika koordinat tidak ada
+  let distance = 5.0;
   if (destination_latitude && destination_longitude) {
     const latDiff = parseFloat(destination_latitude) - originLat;
     const lngDiff = parseFloat(destination_longitude) - originLng;
@@ -1045,26 +1045,92 @@ app.post('/api/shipping/rates', async (req, res) => {
     if (distance < 0.1) distance = 0.1;
   }
 
-  const prepTime = 15; // Waktu persiapan 15 menit
-  const travelTime = distance * 5; // Waktu perjalanan 5 menit per 1 km
+  const prepTime = 15;
+  const travelTime = distance * 5;
   const totalTime = prepTime + travelTime;
-
-  // Rentang estimasi +/- 5 menit dari total waktu kalkulasi
   const minTime = Math.max(15, Math.round(totalTime - 5));
   const maxTime = Math.round(totalTime + 5);
-  const durationLabel = `${minTime}-${maxTime} menit (${distance.toFixed(1)} km)`;
 
-  const rates = [
-    {
-      company: 'spx',
-      courier_name: 'SPX Express',
-      courier_code: 'spx',
-      courier_service_name: 'SPX Instant (Flat Rate)',
-      duration: durationLabel,
-      price: 7000
+  return [{
+    company: 'flat',
+    courier_name: 'Kurir Cizquake',
+    courier_code: 'flat',
+    courier_service_name: 'Same-City Delivery',
+    duration: `${minTime}-${maxTime} menit (${distance.toFixed(1)} km)`,
+    price: 7000
+  }];
+};
+
+app.post('/api/shipping/rates', async (req, res) => {
+  const { destination_latitude, destination_longitude, items } = req.body;
+
+  if (!destination_latitude || !destination_longitude) {
+    return res.status(400).json({ success: false, message: 'Koordinat tujuan tidak ditemukan.' });
+  }
+
+  if (isMockBiteship) {
+    const rates = buildFallbackShippingRate(destination_latitude, destination_longitude);
+    return res.json({ success: true, rates });
+  }
+
+  try {
+    const originLat = parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554');
+    const originLng = parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588');
+
+    const biteshipItems = (Array.isArray(items) && items.length > 0)
+      ? items.map(it => ({
+          name: it.name || 'Cizquake Dessert',
+          description: 'Cizquake dessert box',
+          value: Math.max(it.price || 10000, 1),
+          quantity: Math.max(it.quantity || 1, 1),
+          length: 15,
+          width: 15,
+          height: 8,
+          weight: 300
+        }))
+      : [{ name: 'Cizquake Dessert', description: 'Cizquake dessert box', value: 10000, quantity: 1, length: 15, width: 15, height: 8, weight: 300 }];
+
+    const response = await axios.post('https://api.biteship.com/v1/rates/couriers', {
+      origin_latitude: originLat,
+      origin_longitude: originLng,
+      destination_latitude: parseFloat(destination_latitude),
+      destination_longitude: parseFloat(destination_longitude),
+      couriers: 'grab,gojek',
+      items: biteshipItems
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.BITESHIP_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const pricing = (response.data && response.data.pricing) || [];
+    const rates = pricing
+      .filter(p => p.courier_service_code === 'instant')
+      .sort((a, b) => a.price - b.price)
+      .map(p => ({
+        company: p.company,
+        courier_name: p.courier_name,
+        courier_code: p.courier_code,
+        courier_service_name: p.courier_service_name,
+        courier_service_code: p.courier_service_code,
+        duration: p.duration,
+        price: p.price
+      }));
+
+    if (rates.length === 0) {
+      throw new Error('Tidak ada kurir instant Biteship yang tersedia untuk rute ini.');
     }
-  ];
-  return res.json({ success: true, rates, distance: parseFloat(distance.toFixed(1)) });
+
+    return res.json({ success: true, rates });
+  } catch (error) {
+    console.warn('[Biteship Rates] Gagal ambil tarif real-time, memakai estimasi flat. Alasan:', error.message);
+    if (error.response && error.response.data) {
+      console.warn('[Biteship Rates] Detail error API:', JSON.stringify(error.response.data));
+    }
+    const rates = buildFallbackShippingRate(destination_latitude, destination_longitude);
+    return res.json({ success: true, rates, warning: 'Estimasi kurir real-time gagal, menampilkan estimasi flat sementara.' });
+  }
 });
 
 // -----------------
@@ -1236,20 +1302,114 @@ app.post('/api/checkout', async (req, res) => {
   });
 });
 
-// Helper untuk men-trigger booking kurir otomatis di BiteShip
+// Dipanggil begitu pembayaran sukses. Dulu fungsi ini langsung mengisi info
+// kurir palsu ("SPX Express") padahal belum ada kurir sungguhan yang
+// dipesan — sekarang kita biarkan status tetap 'idle' tanpa info kurir
+// (dessert-nya belum tentu siap juga), menunggu Admin memproses pesanan
+// lewat panel Admin. Booking kurir asli baru terjadi di dispatchBiteshipCourier,
+// dipanggil saat status diubah ke 'on_the_way'.
 async function bookCourierAutomatically(order) {
-  console.log(`[Cizquake] Pelacakan otomatis dinonaktifkan sementara. Status pengiriman menunggu aksi manual Admin.`);
-  
-  // Set status awal ke 'idle' dan isi info Kurir SPX & Kontak Admin
-  await updateOrderFields(order.orderId, {
-    shippingStatus: 'idle',
-    shippingOrderInfo: {
-      courier_order_id: `SPX-${Date.now()}`,
-      courier_driver_name: 'Kurir SPX Express',
-      courier_driver_phone: '083822776920',
-      courier_tracking_url: 'https://spx.co.id'
+  console.log(`[Cizquake] Pesanan ${order.orderId} sudah dibayar. Menunggu Admin memproses (Terima & Siapkan Pesanan) di panel Admin.`);
+}
+
+// Booking kurir instant sungguhan (Grab/Gojek) lewat Biteship. Dipanggil
+// saat Admin menekan "Kirim Pesanan (Mulai Pengantaran)" — titik saat
+// dessert-nya benar-benar siap diambil kurir.
+async function dispatchBiteshipCourier(order) {
+  if (isMockBiteship) {
+    console.log(`[Biteship] Kunci API belum diisi / masih placeholder. Melewati booking kurir sungguhan untuk order ${order.orderId}.`);
+    await updateOrderFields(order.orderId, {
+      shippingOrderInfo: {
+        courier_driver_name: 'Booking Manual (Biteship belum aktif)',
+        courier_driver_phone: process.env.ORIGIN_CONTACT_PHONE || '',
+        courier_tracking_url: null
+      }
+    });
+    return;
+  }
+
+  const courierCompany = (order.shipping && order.shipping.courierCompany) || 'grab';
+
+  try {
+    const payload = {
+      shipper_contact_name: process.env.ORIGIN_CONTACT_NAME || 'Cizquake',
+      shipper_contact_phone: process.env.ORIGIN_CONTACT_PHONE || '',
+      shipper_organization: 'Cizquake',
+      origin_contact_name: process.env.ORIGIN_CONTACT_NAME || 'Cizquake',
+      origin_contact_phone: process.env.ORIGIN_CONTACT_PHONE || '',
+      origin_address: process.env.ORIGIN_ADDRESS || '',
+      origin_coordinate: {
+        latitude: parseFloat(process.env.ORIGIN_LATITUDE || '-6.9554'),
+        longitude: parseFloat(process.env.ORIGIN_LONGITUDE || '107.6588')
+      },
+      destination_contact_name: order.customer.name,
+      destination_contact_phone: order.customer.phone,
+      destination_address: order.shipping.address,
+      destination_coordinate: {
+        latitude: parseFloat(order.shipping.latitude),
+        longitude: parseFloat(order.shipping.longitude)
+      },
+      courier_company: courierCompany,
+      courier_type: 'instant',
+      delivery_type: 'now',
+      order_note: `Pesanan Cizquake #${order.orderId}`,
+      reference_id: order.orderId,
+      items: (order.items || []).map(it => ({
+        name: it.name,
+        description: 'Cizquake dessert box',
+        category: 'food',
+        value: Math.max(it.price || 10000, 1),
+        quantity: Math.max(it.quantity || 1, 1),
+        length: 15,
+        width: 15,
+        height: 8,
+        weight: 300
+      }))
+    };
+
+    console.log(`[Biteship] Memesan kurir ${courierCompany} (instant) untuk order ${order.orderId}...`);
+
+    const response = await axios.post('https://api.biteship.com/v1/orders', payload, {
+      headers: {
+        Authorization: `Bearer ${process.env.BITESHIP_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = response.data;
+    if (!data || !data.success) {
+      throw new Error('Biteship tidak mengembalikan status sukses.');
     }
-  });
+
+    await updateOrderFields(order.orderId, {
+      shippingOrderInfo: {
+        biteship_order_id: data.id,
+        courier_order_id: (data.courier && data.courier.tracking_id) || null,
+        courier_waybill_id: (data.courier && data.courier.waybill_id) || null,
+        courier_company: (data.courier && data.courier.company) || courierCompany,
+        courier_driver_name: (data.courier && data.courier.driver_name) || 'Menunggu driver ditugaskan',
+        courier_driver_phone: (data.courier && data.courier.driver_phone) || null,
+        courier_tracking_url: (data.courier && data.courier.link) || null
+      }
+    });
+
+    console.log(`[Biteship] Sukses booking kurir untuk order ${order.orderId}. Biteship order id: ${data.id}`);
+  } catch (error) {
+    console.warn(`[Biteship] Gagal booking kurir otomatis untuk order ${order.orderId}. Perlu booking manual. Alasan:`, error.message);
+    if (error.response && error.response.data) {
+      console.warn('[Biteship] Detail error API:', JSON.stringify(error.response.data));
+    }
+
+    await updateOrderFields(order.orderId, {
+      shippingStatus: 'booking_failed',
+      shippingOrderInfo: {
+        courier_driver_name: 'Booking otomatis gagal — perlu dikirim manual',
+        courier_driver_phone: process.env.ORIGIN_CONTACT_PHONE || '',
+        courier_tracking_url: null,
+        error: error.message
+      }
+    });
+  }
 }
 
 // -----------------
@@ -1364,6 +1524,66 @@ app.post('/api/doku-callback', async (req, res) => {
   }
 
   res.status(200).json({ success: true });
+});
+
+// -----------------
+// ENDPOINT 4.6: BITESHIP WEBHOOK (order.status / order.waybill_id)
+// -----------------
+// Configure this URL in the Biteship Dashboard (Settings > Webhook):
+// https://<your-backend-domain>/api/biteship-webhook
+// We only use this to keep driver info (name/phone/tracking link) fresh as
+// Biteship assigns/updates the courier — it does NOT drive shippingStatus,
+// that stays under manual Admin control (idle -> preparing -> ready ->
+// on_the_way -> delivered) to match how the kitchen/dispatch flow actually works.
+app.post('/api/biteship-webhook', async (req, res) => {
+  const payload = req.body || {};
+  console.log('[Biteship Webhook] Received:', JSON.stringify(payload));
+
+  const referenceId = payload.order_id; // this is Biteship's own order id, not ours
+  if (!referenceId) {
+    return res.status(200).json({ success: true, message: 'No order_id in payload, ignored.' });
+  }
+
+  try {
+    // Find the local order whose shippingOrderInfo.biteship_order_id matches.
+    let orders;
+    if (isUseSupabase) {
+      const { data } = await supabaseWithTimeout(
+        supabase.from('orders').select('order_id, shipping_order_info').filter('shipping_order_info->>biteship_order_id', 'eq', referenceId),
+        4000
+      );
+      orders = data || [];
+    } else {
+      const all = readOrders();
+      orders = all.filter(o => o.shippingOrderInfo && o.shippingOrderInfo.biteship_order_id === referenceId)
+        .map(o => ({ order_id: o.orderId, shipping_order_info: o.shippingOrderInfo }));
+    }
+
+    if (orders.length === 0) {
+      console.log(`[Biteship Webhook] No local order matches Biteship order ${referenceId}. Ignored.`);
+      return res.status(200).json({ success: true, message: 'No matching local order.' });
+    }
+
+    const localOrderId = orders[0].order_id;
+    const existingInfo = orders[0].shipping_order_info || {};
+
+    await updateOrderFields(localOrderId, {
+      shippingOrderInfo: {
+        ...existingInfo,
+        courier_driver_name: payload.courier_driver_name || existingInfo.courier_driver_name,
+        courier_driver_phone: payload.courier_driver_phone || existingInfo.courier_driver_phone,
+        courier_tracking_url: payload.courier_link || existingInfo.courier_tracking_url,
+        courier_waybill_id: payload.courier_waybill_id || existingInfo.courier_waybill_id,
+        biteship_status: payload.status || existingInfo.biteship_status
+      }
+    });
+
+    console.log(`[Biteship Webhook] Updated driver info for local order ${localOrderId} (Biteship status: ${payload.status}).`);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[Biteship Webhook] Error processing webhook:', error.message);
+    res.status(200).json({ success: true }); // acknowledge anyway so Biteship doesn't keep retrying
+  }
 });
 
 // -----------------
@@ -1755,7 +1975,7 @@ app.post('/api/admin/order/:id/status', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
   }
 
-  const validStatuses = ['idle', 'searching', 'driver_assigned', 'on_the_way', 'delivered', 'booking_failed'];
+  const validStatuses = ['idle', 'preparing', 'ready', 'searching', 'driver_assigned', 'on_the_way', 'delivered', 'booking_failed'];
   if (!validStatuses.includes(shippingStatus)) {
     return res.status(400).json({ success: false, message: 'Status pengiriman tidak valid.' });
   }
@@ -1763,10 +1983,18 @@ app.post('/api/admin/order/:id/status', async (req, res) => {
   await updateOrderFields(id, { shippingStatus });
   order.shippingStatus = shippingStatus;
 
+  // Begitu admin menekan "Kirim Pesanan (Mulai Pengantaran)", dessert-nya
+  // sudah siap — ini titik yang tepat untuk benar-benar memesan kurir
+  // instant (Grab/Gojek) via Biteship, bukan saat pembayaran baru masuk
+  // (kalau dipesan sedini itu, kurir akan tiba sebelum makanan jadi).
+  if (shippingStatus === 'on_the_way') {
+    await dispatchBiteshipCourier(order);
+  }
+
   // Kirim notifikasi WA status pengiriman baru ke pelanggan
   let statusText = '';
   if (shippingStatus === 'on_the_way') {
-    statusText = `sedang dalam perjalanan menuju alamat Anda bersama kurir ${order.shipping.courierCompany.toUpperCase()}.`;
+    statusText = `sedang dalam perjalanan menuju alamat Anda bersama kurir ${(order.shipping.courierCompany || 'kami').toUpperCase()}.`;
   } else if (shippingStatus === 'delivered') {
     statusText = `telah berhasil diantarkan dan sampai di tujuan. Terima kasih telah memesan di Cizquake! 🍰✨`;
   }
