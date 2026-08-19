@@ -390,7 +390,6 @@ export default function App() {
   const [paymentInfo, setPaymentInfo] = useState(null);
   const [paymentExpiryTimer, setPaymentExpiryTimer] = useState('15:00');
   const [dokuMockType, setDokuMockType] = useState(null);
-  const [isDokuFocusQr, setIsDokuFocusQr] = useState(true);
 
   // Tracking State
   const [trackingInfo, setTrackingInfo] = useState(null);
@@ -3333,8 +3332,12 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
 
       {/* 4. PAYMENT VIEW (DYNAMIC DOKU QRIS & NATIVE INTERFACE) */}
       {currentView === 'payment' && paymentInfo && (
-        <div className="bg-background min-h-screen pb-32">
-          <header className="bg-[#fabd00] fixed top-0 w-full max-w-[480px] z-50 flex items-center h-16 border-b border-[#fabd00] max-w-[480px] mx-auto text-white px-container-margin-mobile">
+        // Full-screen "app shell": Cizquake header on top and a Cizquake footer
+        // pinned at the bottom, sandwiching whatever payment content sits in
+        // between (including DOKU's own full checkout page) — so it always
+        // reads as "still inside the Cizquake app", never a page you left.
+        <div className="fixed top-0 left-0 right-0 bottom-0 w-full max-w-[480px] mx-auto z-50 flex flex-col bg-background">
+          <header className="shrink-0 bg-[#fabd00] flex items-center h-16 border-b border-[#fabd00] text-white px-container-margin-mobile">
             <button onClick={() => setCurrentView('checkout')} className="p-2 transition-transform active:scale-95 text-white flex items-center justify-center z-10">
               <span className="material-symbols-outlined">arrow_back</span>
             </button>
@@ -3349,146 +3352,101 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
             </span>
           </header>
 
-          <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col items-center">
-            
-            {/* Nominal Callout Card */}
-            <div className="w-full bg-surface-container-lowest p-5 rounded-2xl custom-shadow border border-primary/20 text-center mb-5">
-              <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Total Nominal Pembayaran (Otomatis Terkunci)</h3>
-              <div className="flex items-center justify-center gap-3 mt-2">
-                <p className="text-3xl font-black text-primary font-display">
-                  Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
-                </p>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(paymentInfo.grossAmount);
-                    alert(`Nominal Rp ${paymentInfo.grossAmount.toLocaleString('id-ID')} berhasil disalin!`);
-                  }}
-                  className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-bold transition flex items-center gap-1 active:scale-95"
-                  title="Salin Angka Nominal"
-                >
-                  <span className="material-symbols-outlined text-sm">content_copy</span>
-                  <span>Salin</span>
-                </button>
-              </div>
-              <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-2 bg-surface-container px-3 py-1 rounded-full border border-outline-variant/30 inline-block">
-                ID Pesanan: {paymentInfo.orderId}
+          {/* Compact nominal strip — always visible, keeps the Cizquake theme
+              present even while the content area below shows DOKU's page. */}
+          <div className="shrink-0 flex items-center justify-between gap-3 px-container-margin-mobile py-2.5 bg-surface-container-lowest border-b border-outline-variant/20">
+            <div className="min-w-0">
+              <p className="text-[9px] font-bold text-on-surface-variant uppercase tracking-wider leading-none">Total Pembayaran</p>
+              <p className="text-lg font-black text-primary font-display leading-tight truncate">
+                Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}
               </p>
             </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[9px] text-on-surface-variant font-semibold bg-surface-container px-2 py-1 rounded-full border border-outline-variant/30 whitespace-nowrap">
+                {paymentInfo.orderId}
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentInfo.grossAmount);
+                  alert(`Nominal Rp ${paymentInfo.grossAmount.toLocaleString('id-ID')} berhasil disalin!`);
+                }}
+                className="w-7 h-7 flex items-center justify-center bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition active:scale-95"
+                title="Salin Angka Nominal"
+              >
+                <span className="material-symbols-outlined text-sm">content_copy</span>
+              </button>
+              {paymentInfo.paymentUrl && !paymentInfo.paymentQrUrl && (
+                <a
+                  href={paymentInfo.paymentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 flex items-center justify-center bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition active:scale-95"
+                  title="Buka di Tab Baru"
+                >
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                </a>
+              )}
+            </div>
+          </div>
 
-            {/* QRIS Container (Dynamic DOKU Frame / QR Display) */}
-            {paymentInfo.paymentUrl ? (
-              <div className="w-full bg-surface-container-lowest p-4 rounded-2xl custom-shadow border border-primary/20 flex flex-col items-center mb-6">
-                <div className="w-full mb-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-on-surface flex items-center gap-1">
-                    <span className="material-symbols-outlined text-sm text-primary">qr_code_scanner</span>
-                    Kode QRIS Dinamis DOKU
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsDokuFocusQr(!isDokuFocusQr)}
-                      className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition flex items-center gap-1 active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-xs">
-                        {isDokuFocusQr ? 'crop_free' : 'center_focus_strong'}
-                      </span>
-                      <span>{isDokuFocusQr ? 'Tampilan Utuh' : 'Fokus QR Code'}</span>
-                    </button>
-                    <a
-                      href={paymentInfo.paymentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                    >
-                      <span>Layar Penuh</span>
-                      <span className="material-symbols-outlined text-xs">open_in_new</span>
-                    </a>
-                  </div>
-                </div>
-
-                {paymentInfo.paymentQrUrl ? (
-                  <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md my-2">
-                    <img 
-                      src={paymentInfo.paymentQrUrl} 
-                      alt="QRIS Dinamis DOKU" 
-                      className="w-full h-auto object-contain rounded-lg" 
-                    />
-                  </div>
-                ) : (
-                  <div className={`w-full ${isDokuFocusQr ? 'h-[520px]' : 'h-[640px]'} rounded-xl overflow-hidden border-2 border-primary/30 shadow-inner bg-white relative transition-all duration-300`}>
-                    <iframe 
-                      src={paymentInfo.paymentUrl} 
-                      title="QRIS Dinamis DOKU" 
-                      className="w-full border-none transition-all duration-300"
-                      style={
-                        isDokuFocusQr 
-                          ? { position: 'absolute', top: '-310px', left: 0, right: 0, width: '100%', height: '880px' }
-                          : { position: 'relative', top: 0, width: '100%', height: '100%' }
-                      }
-                    />
-                  </div>
-                )}
-
-                <div className="w-full flex items-center justify-between mt-3 px-1">
-                  <span className="text-[10px] text-on-surface-variant font-semibold">
-                    *Mendukung GoPay, OVO, ShopeePay, DANA, BCA, Mandiri, dll.
-                  </span>
-                  <a
-                    href={paymentInfo.paymentUrl}
-                    className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1 transition"
-                  >
-                    <span>📱 Buka Langsung Laman QRIS</span>
-                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                  </a>
-                </div>
-              </div>
+          {/* Content area — the ONLY part that visually changes: either
+              DOKU's full checkout page (fills all available space, its own
+              scroll), or our own QR image + instructions when we have a
+              plain image to show. */}
+          <div className="flex-1 min-h-0 relative bg-white">
+            {paymentInfo.paymentUrl && !paymentInfo.paymentQrUrl ? (
+              <iframe
+                src={paymentInfo.paymentUrl}
+                title="Pembayaran QRIS Dinamis DOKU"
+                className="w-full h-full border-0 block"
+              />
             ) : (
-              <div className="w-full bg-surface-container-lowest p-6 rounded-2xl custom-shadow flex flex-col items-center border border-outline-variant/10 mb-6">
+              <div className="h-full overflow-y-auto px-container-margin-mobile py-5 flex flex-col items-center gap-5">
                 <div className="w-full max-w-[280px] bg-white p-3 border-2 border-primary/30 rounded-2xl flex items-center justify-center shadow-md">
-                  <img 
-                    src={paymentInfo.paymentQrUrl || "/qris.jpeg"} 
-                    alt="QRIS Pembayaran Cizquake" 
-                    className="w-full h-auto object-contain rounded-lg" 
+                  <img
+                    src={paymentInfo.paymentQrUrl || "/qris.jpeg"}
+                    alt="QRIS Pembayaran Cizquake"
+                    className="w-full h-auto object-contain rounded-lg"
                   />
                 </div>
-                
-                <div className="flex flex-col items-center text-center gap-1 mt-4 max-w-[320px]">
+
+                <div className="flex flex-col items-center text-center gap-1 max-w-[320px]">
                   <p className="text-xs font-bold text-on-surface">Pindai QRIS Menggunakan Aplikasi Bank/E-Wallet</p>
                   <p className="text-[10px] text-on-surface-variant/80 leading-relaxed font-semibold">
                     Mendukung GoPay, OVO, ShopeePay, DANA, BCA, LinkAja, Livin' Mandiri, dll.
                   </p>
                 </div>
+
+                <div className="w-full bg-amber-50/60 border border-amber-200 rounded-2xl p-5 text-left shadow-sm">
+                  <h4 className="text-xs font-bold text-amber-900 uppercase mb-3 flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm font-bold text-amber-700">info</span>
+                    Petunjuk Pembayaran QRIS
+                  </h4>
+                  <ol className="text-left text-xs text-amber-950 space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
+                    <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau m-Banking Anda.</li>
+                    <li>Scan kode QRIS di atas.</li>
+                    <li>Nominal sebesar <strong className="text-amber-900 font-extrabold">Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}</strong> akan otomatis terisi dan terkunci.</li>
+                    <li>Setelah berhasil bayar, tekan tombol "Konfirmasi Pembayaran via WhatsApp" di bawah.</li>
+                  </ol>
+                </div>
               </div>
             )}
+          </div>
 
-            {/* Instructions */}
-            <div className="w-full bg-amber-50/60 border border-amber-200 rounded-2xl p-5 mb-6 text-left shadow-sm">
-              <h4 className="text-xs font-bold text-amber-900 uppercase mb-3 flex items-center gap-1.5 font-bold">
-                <span className="material-symbols-outlined text-sm font-bold text-amber-700">info</span>
-                Petunjuk Pembayaran QRIS Dinamis
-              </h4>
-              <ol className="text-left text-xs text-amber-950 space-y-2.5 list-decimal list-inside leading-relaxed font-semibold">
-                <li>Buka e-wallet (GoPay, DANA, OVO, ShopeePay) atau m-Banking Anda.</li>
-                <li>Scan kode QRIS Dinamis DOKU yang ada pada tampilan di atas.</li>
-                <li>Nominal sebesar <strong className="text-amber-900 font-extrabold">Rp {paymentInfo.grossAmount.toLocaleString('id-ID')}</strong> akan otomatis terisi dan terkunci.</li>
-                <li>Setelah berhasil bayar, tekan tombol **"Konfirmasi Pembayaran via WhatsApp"** di bawah.</li>
-              </ol>
-            </div>
-
-            {/* Confirmation Button */}
-            <div className="w-full mb-8 flex flex-col gap-2.5">
-              <button 
-                onClick={handleConfirmPaymentAndOpenWA} 
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-display font-extrabold text-sm rounded-full shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <span className="material-symbols-outlined text-xl">chat</span>
-                <span>Konfirmasi Pembayaran via WhatsApp</span>
-              </button>
-              <p className="text-[10px] text-on-surface-variant/80 text-center font-semibold leading-relaxed">
-                *Tombol ini akan membuka WhatsApp dengan pesan rincian order otomatis dan langsung memperbarui status pesanan Anda.
-              </p>
-            </div>
-          </main>
+          {/* Footer CTA — pinned at the bottom, still Cizquake themed, so the
+              screen always feels sandwiched by our own app chrome. */}
+          <div className="shrink-0 bg-background border-t border-outline-variant/20 px-container-margin-mobile py-3 flex flex-col gap-1.5">
+            <button
+              onClick={handleConfirmPaymentAndOpenWA}
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-display font-extrabold text-sm rounded-full shadow-lg shadow-emerald-600/25 active:scale-95 transition-all flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-xl">chat</span>
+              <span>Konfirmasi Pembayaran via WhatsApp</span>
+            </button>
+            <p className="text-[9px] text-on-surface-variant/80 text-center font-semibold leading-relaxed">
+              *Tombol ini akan membuka WhatsApp dengan pesan rincian order otomatis dan langsung memperbarui status pesanan Anda.
+            </p>
+          </div>
         </div>
       )}
 
