@@ -1659,9 +1659,19 @@ app.get('/api/order/:id', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
   }
 
-  // Jika status pembayaran masih pending dan tipe pembayarannya adalah doku asli (bukan mock),
-  // lakukan pengecekan status secara real-time ke API Doku
-  if (order.paymentStatus === 'pending' && order.paymentType === 'doku' && !isMockDoku) {
+  // Jika status pembayaran masih pending, lakukan pengecekan status secara
+  // real-time ke API Doku sebagai jaring pengaman kalau webhook Doku
+  // (/api/doku-callback) gagal/tidak sampai ke server ini.
+  //
+  // Catatan: dulu ada syarat tambahan `order.paymentType === 'doku'` di sini,
+  // tapi paymentType TIDAK PERNAH disimpan ke database (bukan kolom di
+  // createOrder/getOrderById) -- jadi syarat itu selalu false dan blok ini
+  // TIDAK PERNAH jalan sama sekali. Ini artinya order yang sudah dibayar
+  // asli tapi webhook Doku-nya nggak sampai, akan nyangkut selamanya di
+  // status "pending" walau customer sudah benar-benar bayar. checkDokuPaymentStatus
+  // sendiri sudah aman dipanggil untuk order non-Doku (gagal dengan tenang,
+  // lihat try/catch di dalamnya), jadi syarat paymentType itu dihapus saja.
+  if (order.paymentStatus === 'pending' && !isMockDoku) {
     const dokuStatus = await checkDokuPaymentStatus(id);
     if (dokuStatus === 'SUCCESS') {
       console.log(`[Doku Status Check] Order ${id} is successfully paid! Updating status.`);
