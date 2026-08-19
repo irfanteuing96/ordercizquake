@@ -988,6 +988,21 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
     }
   };
 
+  // Hide = benar-benar tidak tampil di katalog customer (beda dengan
+  // toggleMenuStock, yang tetap menampilkan item dengan badge "SOLD OUT").
+  const toggleMenuHidden = async (id, currentHiddenStatus) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/admin/menu/${id}/toggle-hide`, {
+        isHidden: !currentHiddenStatus
+      });
+      if (response.data.success) {
+        setMenu(prev => prev.map(m => m.id === id ? { ...m, isHidden: !currentHiddenStatus } : m));
+      }
+    } catch (err) {
+      alert('Gagal mengubah status hidden kue.');
+    }
+  };
+
   const openAddMenuModal = () => {
     setEditingMenuItem(null);
     setFormName('');
@@ -1211,6 +1226,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
   // Filtering & sorting menu items for Home tab
   const filteredMenuItems = menu
     .filter(item => {
+      if (item.isHidden) return false;
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       if (!matchesSearch) return false;
       if (selectedCategory === 'All Flavors' || selectedCategory === 'All menu' || selectedCategory === 'All') return true;
@@ -1227,6 +1243,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
   // Filtering & sorting menu items for Menu tab
   const filteredMenuTabItems = menu
     .filter(item => {
+      if (item.isHidden) return false;
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       if (!matchesSearch) return false;
       if (selectedMenuCategory === 'All' || selectedMenuCategory === 'All menu') return true;
@@ -2445,7 +2462,12 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs font-black text-on-surface leading-tight truncate">{item.name}</p>
+                                <p className="text-xs font-black text-on-surface leading-tight truncate flex items-center gap-1.5">
+                                  {item.name}
+                                  {item.isHidden && (
+                                    <span className="text-[8px] uppercase font-bold text-on-surface-variant bg-surface-container-high px-1.5 py-0.5 rounded flex-shrink-0">Tersembunyi</span>
+                                  )}
+                                </p>
                                 <p className="text-[10px] text-on-surface-variant/80 font-semibold mt-1">
                                   Rp {item.price.toLocaleString('id-ID')} • <span className="text-[9px] uppercase font-bold text-primary-container bg-primary-container/20 px-1.5 py-0.5 rounded">{item.category}</span>
                                 </p>
@@ -2462,6 +2484,18 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                                 }`}
                               >
                                 {item.inStock ? 'Tersedia' : 'Habis'}
+                              </button>
+
+                              <button
+                                onClick={() => toggleMenuHidden(item.id, item.isHidden)}
+                                className={`w-8 h-8 rounded-lg border flex items-center justify-center active:scale-90 transition-all ${
+                                  item.isHidden
+                                    ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                    : 'border-outline-variant/20 hover:bg-surface-container-high text-on-surface-variant'
+                                }`}
+                                title={item.isHidden ? 'Tampilkan Lagi ke Customer' : 'Sembunyikan dari Customer'}
+                              >
+                                <span className="material-symbols-outlined text-sm">{item.isHidden ? 'visibility_off' : 'visibility'}</span>
                               </button>
 
                               <button

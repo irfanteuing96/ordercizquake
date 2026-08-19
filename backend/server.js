@@ -533,6 +533,7 @@ const getMenuData = async () => {
           description: item.description || '',
           image: item.id === 'mini-blueberry' ? '/img/Blueberry.png?v=3' : (item.image || ''),
           inStock: item.in_stock,
+          isHidden: item.is_hidden === true,
           rating: parseFloat(item.rating || 4.8),
           salesCount: parseInt(item.sales_count || 0)
         }));
@@ -576,20 +577,38 @@ const updateMenuStock = async (id, inStock) => {
       );
       if (error) throw error;
       console.log(`[Supabase] Success updating stock for ${id}: ${inStock}`);
-      return true;
     } catch (err) {
       console.error('[Supabase] Error updating menu stock, falling back to local:', err.message);
-      const menu = readMenuItems();
-      const updated = menu.map(m => m.id === id ? { ...m, inStock } : m);
-      writeMenuItems(updated);
-      return true;
     }
-  } else {
-    const menu = readMenuItems();
-    const updated = menu.map(m => m.id === id ? { ...m, inStock } : m);
-    writeMenuItems(updated);
-    return true;
   }
+  // Always mirror to the local JSON file too (see editMenuItem/deleteMenuItem
+  // comments below for why this matters even when Supabase is the primary store).
+  const menu = readMenuItems();
+  const updated = menu.map(m => m.id === id ? { ...m, inStock } : m);
+  writeMenuItems(updated);
+  return true;
+};
+
+// Toggle apakah menu ini disembunyikan TOTAL dari katalog customer (beda
+// dengan inStock, yang tetap menampilkan item dengan badge "SOLD OUT").
+// Hidden = tidak tampil sama sekali, tapi bisa dinyalakan lagi kapan saja.
+const updateMenuHidden = async (id, isHidden) => {
+  if (isUseSupabase) {
+    try {
+      const { error } = await supabaseWithTimeout(
+        supabase.from('menu_items').update({ is_hidden: isHidden }).eq('id', id),
+        4000
+      );
+      if (error) throw error;
+      console.log(`[Supabase] Success updating hidden status for ${id}: ${isHidden}`);
+    } catch (err) {
+      console.error('[Supabase] Error updating menu hidden status, falling back to local:', err.message);
+    }
+  }
+  const menu = readMenuItems();
+  const updated = menu.map(m => m.id === id ? { ...m, isHidden } : m);
+  writeMenuItems(updated);
+  return true;
 };
 
 const addMenuItem = async (item) => {
@@ -604,6 +623,7 @@ const addMenuItem = async (item) => {
         description: item.description || '',
         image: item.image || '',
         in_stock: item.inStock !== false,
+        is_hidden: item.isHidden === true,
         rating: parseFloat(item.rating || 4.8),
         sales_count: parseInt(item.salesCount || 0)
       };
@@ -629,6 +649,14 @@ const addMenuItem = async (item) => {
   }
 };
 
+// IMPORTANT: getMenuData() merges any local-JSON item missing from the
+// Supabase-sourced list back into the response (so seed items like
+// promo-test-1000 always show up even before Supabase has them). That means
+// edit/delete MUST always also apply to the local file -- otherwise:
+//   - delete: item still lives locally, and gets resurrected by that merge.
+//   - edit: if the item never actually existed as a Supabase row, the
+//     Supabase update silently matches 0 rows (not an error), so nothing
+//     visibly changes even though this function reports success.
 const editMenuItem = async (id, fields) => {
   if (isUseSupabase) {
     try {
@@ -639,6 +667,7 @@ const editMenuItem = async (id, fields) => {
       if (fields.description !== undefined) dbUpdates.description = fields.description;
       if (fields.image !== undefined) dbUpdates.image = fields.image;
       if (fields.inStock !== undefined) dbUpdates.in_stock = fields.inStock;
+      if (fields.isHidden !== undefined) dbUpdates.is_hidden = fields.isHidden;
       if (fields.rating !== undefined) dbUpdates.rating = fields.rating;
       if (fields.salesCount !== undefined) dbUpdates.sales_count = fields.salesCount;
 
@@ -648,26 +677,17 @@ const editMenuItem = async (id, fields) => {
       );
       if (error) throw error;
       console.log(`[Supabase] Success editing menu item: ${id}`);
-      return true;
     } catch (err) {
       console.error('[Supabase] Error editing menu item, falling back to local:', err.message);
-      const menu = readMenuItems();
-      const idx = menu.findIndex(m => m.id === id);
-      if (idx !== -1) {
-        menu[idx] = { ...menu[idx], ...fields };
-        writeMenuItems(menu);
-      }
-      return true;
     }
-  } else {
-    const menu = readMenuItems();
-    const idx = menu.findIndex(m => m.id === id);
-    if (idx !== -1) {
-      menu[idx] = { ...menu[idx], ...fields };
-      writeMenuItems(menu);
-    }
-    return true;
   }
+  const menu = readMenuItems();
+  const idx = menu.findIndex(m => m.id === id);
+  if (idx !== -1) {
+    menu[idx] = { ...menu[idx], ...fields };
+    writeMenuItems(menu);
+  }
+  return true;
 };
 
 const deleteMenuItem = async (id) => {
@@ -679,20 +699,14 @@ const deleteMenuItem = async (id) => {
       );
       if (error) throw error;
       console.log(`[Supabase] Success deleting menu item: ${id}`);
-      return true;
     } catch (err) {
       console.error('[Supabase] Error deleting menu item, falling back to local:', err.message);
-      const menu = readMenuItems();
-      const filtered = menu.filter(m => m.id !== id);
-      writeMenuItems(filtered);
-      return true;
     }
-  } else {
-    const menu = readMenuItems();
-    const filtered = menu.filter(m => m.id !== id);
-    writeMenuItems(filtered);
-    return true;
   }
+  const menu = readMenuItems();
+  const filtered = menu.filter(m => m.id !== id);
+  writeMenuItems(filtered);
+  return true;
 };
 
 const incrementMenuItemSales = async (items) => {
@@ -1780,8 +1794,27 @@ app.post('/api/admin/menu/:id/toggle-stock', async (req, res) => {
   }
 });
 
+// Hide = benar-benar tidak tampil di katalog customer sama sekali (beda
+// dengan toggle-stock, yang tetap menampilkan item dengan badge "SOLD OUT").
+// Bisa dinyalakan lagi kapan saja, item-nya tidak dihapus.
+app.post('/api/admin/menu/:id/toggle-hide', async (req, res) => {
+  const { id } = req.params;
+  const { isHidden } = req.body;
+
+  if (isHidden === undefined) {
+    return res.status(400).json({ success: false, message: 'Status isHidden diperlukan.' });
+  }
+
+  const success = await updateMenuHidden(id, isHidden);
+  if (success) {
+    res.json({ success: true, message: `Status hidden ${id} berhasil diubah.` });
+  } else {
+    res.status(500).json({ success: false, message: 'Gagal memperbarui status hidden.' });
+  }
+});
+
 app.post('/api/admin/menu/add', async (req, res) => {
-  const { name, category, price, description, image, rating, salesCount } = req.body;
+  const { name, category, price, description, image, rating, salesCount, isHidden } = req.body;
   if (!name || !category || !price) {
     return res.status(400).json({ success: false, message: 'Nama, kategori, dan harga wajib diisi.' });
   }
@@ -1799,6 +1832,7 @@ app.post('/api/admin/menu/add', async (req, res) => {
     description: description || '',
     image: image || '',
     inStock: true,
+    isHidden: isHidden === true,
     rating: parseFloat(rating || 4.8),
     salesCount: countNum
   };
@@ -1813,7 +1847,7 @@ app.post('/api/admin/menu/add', async (req, res) => {
 
 app.post('/api/admin/menu/:id/edit', async (req, res) => {
   const { id } = req.params;
-  const { name, category, price, description, image, inStock, rating, salesCount } = req.body;
+  const { name, category, price, description, image, inStock, isHidden, rating, salesCount } = req.body;
 
   const fields = {};
   if (name !== undefined) fields.name = name;
@@ -1822,6 +1856,7 @@ app.post('/api/admin/menu/:id/edit', async (req, res) => {
   if (description !== undefined) fields.description = description;
   if (image !== undefined) fields.image = image;
   if (inStock !== undefined) fields.inStock = inStock;
+  if (isHidden !== undefined) fields.isHidden = isHidden;
   if (rating !== undefined) fields.rating = parseFloat(rating);
   if (salesCount !== undefined) {
     const countNum = parseInt(salesCount || 0);
