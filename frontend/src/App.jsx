@@ -606,12 +606,19 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch rates when area changes or cart changes
+  // Fetch rates whenever the ACTUAL destination point changes — this must
+  // mirror the same priority handleCheckoutSubmit uses (customLocationPin
+  // wins over selectedArea), otherwise picking a location via GPS or the
+  // map pin leaves the shown price stale/wrong while the real order still
+  // books a courier for the (different) pin location.
+  const effectiveDestLat = customLocationPin?.lat ?? selectedArea?.latitude ?? null;
+  const effectiveDestLng = customLocationPin?.lng ?? selectedArea?.longitude ?? null;
+
   useEffect(() => {
-    if (selectedArea && cart.length > 0) {
-      fetchShippingRates();
+    if (effectiveDestLat != null && effectiveDestLng != null && cart.length > 0) {
+      fetchShippingRates(effectiveDestLat, effectiveDestLng);
     }
-  }, [selectedArea, cart]);
+  }, [effectiveDestLat, effectiveDestLng, cart]);
 
   // Real-time tracking polling when in tracking view, payment view, or Doku simulator
   useEffect(() => {
@@ -652,15 +659,15 @@ export default function App() {
   // -----------------
   // API CALLS
   // -----------------
-  const fetchShippingRates = async () => {
+  const fetchShippingRates = async (destLat, destLng) => {
     setIsLoadingRates(true);
     setCouriers([]);
     setSelectedCourier(null);
     try {
       const response = await axios.post(`${BACKEND_URL}/api/shipping/rates`, {
-        destination_latitude: selectedArea.latitude,
-        destination_longitude: selectedArea.longitude,
-        destination_area_id: selectedArea.id,
+        destination_latitude: destLat,
+        destination_longitude: destLng,
+        destination_area_id: selectedArea?.id,
         items: cart.map(item => ({
           name: item.name,
           price: item.price,
@@ -3226,35 +3233,60 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
               </div>
             </section>
 
-            {/* Courier Selection (real-time Grab/Gojek Instant rate via Biteship) */}
+            {/* Courier Selection — real-time Grab vs Gojek Instant rates via
+                Biteship, customer picks which one to actually book. */}
             <section className="bg-surface-container-lowest p-5 rounded-lg custom-shadow border border-outline-variant/10">
               <h2 className="font-display font-bold text-[16px] text-primary mb-4 flex items-center gap-2 text-left">
                 <span className="material-symbols-outlined text-lg">local_shipping</span>
                 Pengiriman & Kurir
               </h2>
 
-              <div className="p-4 rounded-xl border-2 border-primary bg-primary-fixed/20 flex items-center gap-4 transition-all text-left">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary flex-shrink-0">
-                  <span className={`material-symbols-outlined text-primary font-bold ${isLoadingRates ? 'animate-spin' : ''}`}>
-                    {isLoadingRates ? 'progress_activity' : 'local_shipping'}
-                  </span>
+              {isLoadingRates ? (
+                <div className="p-4 rounded-xl border-2 border-dashed border-outline-variant/40 flex items-center gap-3 text-left">
+                  <span className="material-symbols-outlined text-primary font-bold animate-spin">progress_activity</span>
+                  <p className="text-xs text-on-surface-variant font-semibold">Mengecek ongkir Grab & Gojek untuk alamat ini...</p>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-on-surface text-sm">
-                      {(selectedCourier || DEFAULT_COURIER).courier_name}
-                      {(selectedCourier || DEFAULT_COURIER).courier_service_name ? ` (${(selectedCourier || DEFAULT_COURIER).courier_service_name})` : ''}
-                    </p>
-                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">
-                      Rp {(selectedCourier || DEFAULT_COURIER).price.toLocaleString('id-ID')}
-                    </span>
-                  </div>
-                  <p className="text-on-surface-variant text-xs mt-0.5">
-                    Pengiriman instant dari outlet Cizquake Bandung ({(selectedCourier || DEFAULT_COURIER).duration})
-                  </p>
+              ) : couriers.length > 0 ? (
+                <div className="flex flex-col gap-2.5">
+                  {couriers.map((courier) => {
+                    const isSelected = selectedCourier && selectedCourier.company === courier.company && selectedCourier.courier_service_code === courier.courier_service_code;
+                    return (
+                      <button
+                        type="button"
+                        key={`${courier.company}-${courier.courier_service_code}`}
+                        onClick={() => setSelectedCourier(courier)}
+                        className={`w-full p-4 rounded-xl border-2 flex items-center gap-4 transition-all text-left ${
+                          isSelected ? 'border-primary bg-primary-fixed/20' : 'border-outline-variant/30 bg-surface-container-lowest hover:border-primary/40'
+                        }`}
+                      >
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary/10 text-primary' : 'bg-surface-container text-on-surface-variant'}`}>
+                          <span className="material-symbols-outlined font-bold">local_shipping</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-on-surface text-sm">
+                              {courier.courier_name}{courier.courier_service_name ? ` (${courier.courier_service_name})` : ''}
+                            </p>
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full whitespace-nowrap">
+                              Rp {courier.price.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                          <p className="text-on-surface-variant text-xs mt-0.5">
+                            Pengiriman instant dari outlet Cizquake Bandung ({courier.duration})
+                          </p>
+                        </div>
+                        <span className={`material-symbols-outlined ${isSelected ? 'text-primary' : 'text-outline-variant/50'}`}>
+                          {isSelected ? 'check_circle' : 'radio_button_unchecked'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
-                <span className="material-symbols-outlined text-primary">check_circle</span>
-              </div>
+              ) : (
+                <div className="p-4 rounded-xl border-2 border-dashed border-outline-variant/40 text-left">
+                  <p className="text-xs text-on-surface-variant font-semibold">Pilih alamat pengiriman dulu untuk melihat pilihan kurir & ongkirnya.</p>
+                </div>
+              )}
             </section>
 
             {/* Payment Method Selector (Single Option: QRIS) */}
