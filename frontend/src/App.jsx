@@ -3263,7 +3263,7 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     </span>
                   </div>
                   <p className="text-on-surface-variant text-xs mt-0.5">
-                    Pengiriman instant dari outlet Buahbatu Bandung ({(selectedCourier || DEFAULT_COURIER).duration})
+                    Pengiriman instant dari outlet Cizquake Bandung ({(selectedCourier || DEFAULT_COURIER).duration})
                   </p>
                 </div>
                 <span className="material-symbols-outlined text-primary">check_circle</span>
