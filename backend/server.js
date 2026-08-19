@@ -1302,23 +1302,20 @@ app.post('/api/checkout', async (req, res) => {
   });
 });
 
-// Dipanggil begitu pembayaran sukses. Dulu fungsi ini langsung mengisi info
-// kurir palsu ("SPX Express") padahal belum ada kurir sungguhan yang
-// dipesan — sekarang kita biarkan status tetap 'idle' tanpa info kurir
-// (dessert-nya belum tentu siap juga), menunggu Admin memproses pesanan
-// lewat panel Admin. Booking kurir asli baru terjadi di dispatchBiteshipCourier,
-// dipanggil saat status diubah ke 'on_the_way'.
+// Dipanggil begitu pembayaran sukses — langsung memesan kurir instant
+// sungguhan (bukan menunggu Admin klik apa pun). Konsekuensinya: kurir bisa
+// saja tiba sebelum dessert selesai dikemas, jadi driver mungkin perlu
+// menunggu sebentar di lokasi. Ini pilihan sadar dari pemilik toko.
 async function bookCourierAutomatically(order) {
-  console.log(`[Cizquake] Pesanan ${order.orderId} sudah dibayar. Menunggu Admin memproses (Terima & Siapkan Pesanan) di panel Admin.`);
+  await dispatchBiteshipCourier(order);
 }
 
-// Booking kurir instant sungguhan (Grab/Gojek) lewat Biteship. Dipanggil
-// saat Admin menekan "Kirim Pesanan (Mulai Pengantaran)" — titik saat
-// dessert-nya benar-benar siap diambil kurir.
+// Booking kurir instant sungguhan (Grab/Gojek) lewat Biteship API.
 async function dispatchBiteshipCourier(order) {
   if (isMockBiteship) {
     console.log(`[Biteship] Kunci API belum diisi / masih placeholder. Melewati booking kurir sungguhan untuk order ${order.orderId}.`);
     await updateOrderFields(order.orderId, {
+      shippingStatus: 'driver_assigned',
       shippingOrderInfo: {
         courier_driver_name: 'Booking Manual (Biteship belum aktif)',
         courier_driver_phone: process.env.ORIGIN_CONTACT_PHONE || '',
@@ -1354,10 +1351,12 @@ async function dispatchBiteshipCourier(order) {
       delivery_type: 'now',
       order_note: `Pesanan Cizquake #${order.orderId}`,
       reference_id: order.orderId,
+      // No `category` here on purpose: Biteship rejects "food" (not a valid
+      // enum value on their side) and defaults it to "others" when omitted,
+      // confirmed against the live API.
       items: (order.items || []).map(it => ({
         name: it.name,
         description: 'Cizquake dessert box',
-        category: 'food',
         value: Math.max(it.price || 10000, 1),
         quantity: Math.max(it.quantity || 1, 1),
         length: 15,
@@ -1382,6 +1381,7 @@ async function dispatchBiteshipCourier(order) {
     }
 
     await updateOrderFields(order.orderId, {
+      shippingStatus: 'driver_assigned',
       shippingOrderInfo: {
         biteship_order_id: data.id,
         courier_order_id: (data.courier && data.courier.tracking_id) || null,
@@ -1983,13 +1983,9 @@ app.post('/api/admin/order/:id/status', async (req, res) => {
   await updateOrderFields(id, { shippingStatus });
   order.shippingStatus = shippingStatus;
 
-  // Begitu admin menekan "Kirim Pesanan (Mulai Pengantaran)", dessert-nya
-  // sudah siap — ini titik yang tepat untuk benar-benar memesan kurir
-  // instant (Grab/Gojek) via Biteship, bukan saat pembayaran baru masuk
-  // (kalau dipesan sedini itu, kurir akan tiba sebelum makanan jadi).
-  if (shippingStatus === 'on_the_way') {
-    await dispatchBiteshipCourier(order);
-  }
+  // Catatan: kurir sudah dipesan otomatis lebih awal, begitu pembayaran
+  // sukses (lihat bookCourierAutomatically) — bukan di sini lagi, supaya
+  // tidak double-booking kalau Admin juga menekan "Kirim Pesanan".
 
   // Kirim notifikasi WA status pengiriman baru ke pelanggan
   let statusText = '';

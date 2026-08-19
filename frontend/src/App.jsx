@@ -2369,39 +2369,26 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                                   </button>
                                 )}
 
-                                {order.paymentStatus === 'paid' && order.shippingStatus === 'idle' && (
-                                  <button
-                                    onClick={() => updateOrderStatus(order.orderId, 'preparing')}
-                                    className="px-4 py-2 bg-[#fabd00] text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-[#fabd00]/95"
-                                  >
-                                    Terima & Siapkan Pesanan
-                                  </button>
-                                )}
-
-                                {order.shippingStatus === 'preparing' && (
-                                  <button
-                                    onClick={() => updateOrderStatus(order.orderId, 'ready')}
-                                    className="px-4 py-2 bg-amber-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-amber-700"
-                                  >
-                                    Tandai Pesanan Siap
-                                  </button>
-                                )}
-
-                                {order.shippingStatus === 'ready' && (
-                                  <button
-                                    onClick={() => updateOrderStatus(order.orderId, 'on_the_way')}
-                                    className="px-4 py-2 bg-orange-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-orange-700"
-                                  >
-                                    Kirim Pesanan (Mulai Pengantaran)
-                                  </button>
-                                )}
-
-                                {order.shippingStatus === 'on_the_way' && (
+                                {/* Kurir sekarang dipesan otomatis begitu pembayaran sukses
+                                    (bukan lagi lewat tombol "Terima & Siapkan" -> "Siap" ->
+                                    "Kirim"), jadi begitu status sudah lewat dari 'idle',
+                                    tugas Admin tinggal menandai kalau sudah sampai tujuan. */}
+                                {['searching', 'driver_assigned', 'on_the_way'].includes(order.shippingStatus) && (
                                   <button
                                     onClick={() => updateOrderStatus(order.orderId, 'delivered')}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-blue-700"
                                   >
                                     Tandai Telah Tiba di Lokasi
+                                  </button>
+                                )}
+
+                                {order.shippingStatus === 'booking_failed' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(order.orderId, 'delivered')}
+                                    className="px-4 py-2 bg-red-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-red-700"
+                                    title="Booking kurir otomatis gagal — kirim manual, lalu tandai di sini setelah sampai"
+                                  >
+                                    ⚠️ Booking Gagal — Kirim Manual
                                   </button>
                                 )}
 
