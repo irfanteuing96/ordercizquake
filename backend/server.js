@@ -1440,6 +1440,24 @@ app.post('/api/payment-callback', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Invalid payload: order_id is missing' });
   }
 
+  // SECURITY: verify Midtrans' signature_key before trusting this payload.
+  // Without this, anyone could POST a forged { order_id, transaction_status:
+  // 'capture', fraud_status: 'accept' } body for ANY existing order id and
+  // get it marked paid + a real courier booked -- same class of hole as the
+  // simulate-pay endpoint, just via a different door. Formula per Midtrans
+  // docs: SHA512(order_id + status_code + gross_amount + server_key).
+  const serverKey = process.env.MIDTRANS_SERVER_KEY;
+  if (serverKey) {
+    const { status_code, gross_amount, signature_key } = notification;
+    const expectedSignature = crypto.createHash('sha512')
+      .update(`${orderId}${status_code}${gross_amount}${serverKey}`)
+      .digest('hex');
+    if (signature_key !== expectedSignature) {
+      console.warn(`[Midtrans Webhook] Signature verification failed for order ${orderId}`);
+      return res.status(401).json({ success: false, message: 'Invalid signature' });
+    }
+  }
+
   const transactionStatus = notification.transaction_status;
   const fraudStatus = notification.fraud_status;
 
