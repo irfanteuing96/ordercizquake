@@ -34,7 +34,13 @@ function Reveal({ children, className = '', delay = 0, variant = 'up', as: Tag =
                 }
               });
             },
-            { threshold: 0.15, rootMargin: '0px 0px -10% 0px' }
+            // Trigger while the element is still below the fold (positive
+            // bottom margin extends the "viewport" downward) and as soon as
+            // even a sliver of it would be visible (low threshold) — makes
+            // the reveal feel snappy instead of needing a deep scroll first.
+            // Pixels here, not percent — percent rootMargin against the
+            // implicit (null) root isn't reliably honored everywhere.
+            { threshold: 0.01, rootMargin: '0px 0px 200px 0px' }
           );
           observer.observe(node);
         });
