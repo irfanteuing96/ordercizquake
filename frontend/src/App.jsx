@@ -1506,23 +1506,13 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     />
                   </div>
 
-                  {/* Price & Black Ongkir Flat Card Row */}
-                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#28190E]/15">
-                    <div>
-                      <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Mini Box</p>
-                      <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
-                    </div>
-
-                    {/* Black Ongkir Flat Box with Truck Icon */}
-                    <div className="bg-[#28190E] text-[#fabd00] px-4 py-2.5 rounded-2xl shadow-md flex items-center gap-2.5 border border-[#28190E]">
-                      <div className="w-8 h-8 bg-[#fabd00]/20 rounded-xl flex items-center justify-center text-[#fabd00]">
-                        <span className="material-symbols-outlined text-base font-bold">local_shipping</span>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[9px] font-black uppercase tracking-wider text-[#fabd00]/80">Ongkir Flat Rate</p>
-                        <p className="text-xs font-black tracking-tight text-[#fabd00]">7 Rb Se-Bandung Raya</p>
-                      </div>
-                    </div>
+                  {/* Price Row -- the old "Ongkir Flat Rate 7 Rb Se-Bandung Raya"
+                      badge that used to sit here is gone on purpose: ongkir is
+                      now real-time Grab/Gojek pricing (varies by distance),
+                      not a flat rate, so that text was actively misleading. */}
+                  <div className="pt-3 border-t border-[#28190E]/15">
+                    <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Mini Box</p>
+                    <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
                   </div>
                 </section>
 
