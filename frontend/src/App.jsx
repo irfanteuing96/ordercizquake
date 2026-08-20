@@ -1506,14 +1506,6 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
                     />
                   </div>
 
-                  {/* Price Row -- the old "Ongkir Flat Rate 7 Rb Se-Bandung Raya"
-                      badge that used to sit here is gone on purpose: ongkir is
-                      now real-time Grab/Gojek pricing (varies by distance),
-                      not a flat rate, so that text was actively misleading. */}
-                  <div className="pt-3 border-t border-[#28190E]/15">
-                    <p className="text-[10px] font-bold text-[#3d2314] uppercase tracking-wider">Harga Mini Box</p>
-                    <p className="font-display font-black text-xl text-[#28190E]">Rp 10.000</p>
-                  </div>
                 </section>
 
                 {/* Categories scroll */}
