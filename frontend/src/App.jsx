@@ -2364,22 +2364,12 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
 
                               {/* Action Buttons */}
                               <div className="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10 mt-1">
-                                {order.paymentStatus === 'pending' && (
-                                  <button
-                                    onClick={async () => {
-                                      try {
-                                        await axios.post(`${BACKEND_URL}/api/order/${order.orderId}/simulate-pay`);
-                                        alert('Simulasi pembayaran lunas berhasil dipicu!');
-                                        fetchAdminOrders();
-                                      } catch (e) {
-                                        alert('Gagal menyimulasikan pembayaran.');
-                                      }
-                                    }}
-                                    className="px-4 py-2 bg-green-600 text-white rounded-full text-[11px] font-bold shadow-sm active:scale-95 transition-all hover:bg-green-700"
-                                  >
-                                    Simulasikan Lunas
-                                  </button>
-                                )}
+                                {/* "Simulasikan Lunas" dihapus dari sini (dulu memaksa
+                                    paymentStatus='paid' tanpa pembayaran nyata, langsung
+                                    memicu booking kurir asli -- backend juga sudah
+                                    menolak endpoint ini di production sekarang). Order
+                                    yang belum bayar biarkan pending sampai customer
+                                    beneran bayar / status Doku ke-deteksi otomatis. */}
 
                                 {/* Kurir sekarang dipesan otomatis begitu pembayaran sukses
                                     (bukan lagi lewat tombol "Terima & Siapkan" -> "Siap" ->
@@ -3648,29 +3638,16 @@ Berikut saya lampirkan foto/screenshot bukti transfer QRIS saya. Mohon segera di
 
           <main className="pt-20 px-container-margin-mobile max-w-2xl mx-auto flex flex-col gap-6">
             
-            {/* Developer Simulation Warning for Pending Orders */}
-            {trackingInfo.paymentStatus === 'pending' && (
-              <div className="w-full bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm text-center">
-                <p className="text-red-700 text-xs font-bold mb-2 uppercase tracking-wide">MODE SIMULATOR DEVELOPER (PENDING PAYMENT)</p>
-                <p className="text-[11px] text-red-600 mb-3 font-semibold">Klik tombol di bawah ini untuk menyimulasikan notifikasi sukses pembayaran.</p>
-                <button 
-                  onClick={async () => {
-                    try {
-                      const response = await axios.post(`${BACKEND_URL}/api/order/${trackingInfo.orderId}/simulate-pay`);
-                      if (response.data.success) {
-                        fetchOrderStatus();
-                      }
-                    } catch (err) {
-                      console.error('Error simulating payment:', err);
-                    }
-                  }} 
-                  className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-6 rounded-full active:scale-95 transition shadow-md shadow-red-200"
-                >
-                  Simulasikan Pembayaran Sukses
-                </button>
-              </div>
-            )}
-            
+            {/* SECURITY: the old "Simulasikan Pembayaran Sukses" dev-testing
+                bypass used to live here, reachable by ANY visitor (no auth)
+                via a guessable ?orderId=CIZ-00xx URL on a still-pending
+                order. Now that Biteship is production, clicking it would
+                force paymentStatus='paid' and dispatch a REAL courier for
+                free -- a real fraud hole. Removed entirely: real payment
+                detection (Doku webhook + the active status re-check in
+                GET /api/order/:id) is reliable now, so this bypass was pure
+                risk with no remaining legitimate use on the public site. */}
+
             {/* Summary Order Box */}
             <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 shadow-sm">
               <div className="flex items-start gap-4 text-left">

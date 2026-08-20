@@ -1715,6 +1715,21 @@ app.get('/api/order/:id', async (req, res) => {
 // ENDPOINT 6: SIMULATE PAYMENT (FOR TESTING SANDBOX & DEVELOPMENT)
 // -----------------
 app.post('/api/order/:id/simulate-pay', async (req, res) => {
+  // SECURITY: this endpoint force-marks an order as paid with zero auth
+  // check, which used to be reachable by ANYONE (no login needed) via
+  // guessable sequential order IDs (CIZ-0001, CIZ-0002, ...) -- either
+  // directly (curl/API) or through dev-testing buttons that used to be
+  // exposed on the public tracking page. That was harmless back when
+  // Biteship was in sandbox mode, but now that Biteship books REAL
+  // couriers in production, this was an active fraud hole: anyone could
+  // fake-pay any pending order and get a real courier dispatched for free.
+  // Real payment confirmation must always come from Doku's signature-
+  // verified webhook or the active status re-check -- never this bypass.
+  // Only allow it while Doku itself is running in mock/dev mode.
+  if (!isMockDoku) {
+    return res.status(403).json({ success: false, message: 'Endpoint simulasi pembayaran hanya tersedia dalam mode developer/testing.' });
+  }
+
   const { id } = req.params;
   const order = await getOrderById(id);
 
